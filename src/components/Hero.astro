@@ -1,0 +1,48 @@
+---
+import Stat from './Stat.astro';
+import { formatStat, type HeroStats } from '../lib/aggregate-stats';
+import config from '../lib/load-config';
+
+interface Props {
+  stats: HeroStats;
+}
+
+const { stats } = Astro.props;
+const tagline = config.meta.siteTagline;
+const portfolioCount = Math.max(0, stats.totalProjects - stats.openSourceCount);
+---
+<section class="hero">
+  {tagline && (
+    <p class="eyebrow">
+      <span class="eyebrow-mark" aria-hidden="true">✦</span>
+      <span>{tagline}</span>
+    </p>
+  )}
+  <h1 class="hero-title">{config.meta.siteTitle}</h1>
+  <div class="hero-stats">
+    <Stat
+      value={`${formatStat(stats.starsAndLikes)}+`}
+      label="Stars & likes"
+      sublabel={`across ${stats.openSourceCount} open-source ${stats.openSourceCount === 1 ? 'project' : 'projects'}`}
+    />
+    {config.ui.hero.showAllTimeInstalls && (
+      <Stat
+        value={`${formatStat(stats.allTimeInstalls)}+`}
+        label="All-time reach"
+        sublabel="Docker pulls + npm yearly + Chrome users"
+      />
+    )}
+    {config.ui.hero.showMonthlyReach && (
+      <Stat
+        value={formatStat(stats.monthlyReach)}
+        label="Monthly users"
+        sublabel="npm monthly downloads + Chrome users"
+      />
+    )}
+    <Stat
+      value={String(stats.totalProjects)}
+      label="Projects shipped"
+      sublabel={`${stats.openSourceCount} open-source · ${portfolioCount} portfolio`}
+    />
+  </div>
+</section>

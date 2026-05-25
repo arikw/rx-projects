@@ -1,0 +1,27 @@
+---
+interface Props {
+  tags: { name: string; count: number }[];
+  totalCount: number;
+}
+const { tags, totalCount } = Astro.props;
+---
+<div class="tag-filter" role="group" aria-label="Filter projects by tag">
+  <button
+    type="button"
+    class="tag-chip"
+    data-tag-filter=""
+    aria-pressed="true"
+  >
+    All <span class="tag-count">{totalCount}</span>
+  </button>
+  {tags.map(({ name, count }) => (
+    <button
+      type="button"
+      class="tag-chip"
+      data-tag-filter={name}
+      aria-pressed="false"
+    >
+      {name} <span class="tag-count">{count}</span>
+    </button>
+  ))}
+</div>

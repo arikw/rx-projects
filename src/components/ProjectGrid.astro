@@ -1,0 +1,97 @@
+---
+import ProjectCard from './ProjectCard.astro';
+import TagFilter from './TagFilter.astro';
+import type { Project } from '../types/project';
+
+interface Props {
+  projects: Project[];
+  pageSize: number;
+}
+const { projects, pageSize } = Astro.props;
+
+const tagCounts = new Map<string, number>();
+for (const p of projects) {
+  for (const t of p.tags) tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
+}
+const sortedTags = Array.from(tagCounts.entries())
+  .map(([name, count]) => ({ name, count }))
+  .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+---
+<section class="projects" data-page-size={pageSize}>
+  <header class="section-head">
+    <span class="section-label">All projects</span>
+    <span class="section-rule" aria-hidden="true"></span>
+    <span class="section-count">{String(projects.length).padStart(2, '0')}</span>
+  </header>
+
+  {sortedTags.length > 0 && <TagFilter tags={sortedTags} totalCount={projects.length} />}
+
+  <div class="projects-grid">
+    {projects.map((p) => <ProjectCard project={p} />)}
+  </div>
+
+  <p class="projects-empty" hidden>No projects match this tag.</p>
+
+  <div class="projects-more">
+    <button type="button" class="show-more">Show more</button>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const root = document.querySelector<HTMLElement>('.projects');
+    if (!root) return;
+    const pageSize = parseInt(root.dataset.pageSize ?? '12', 10);
+    const grid = root.querySelector<HTMLElement>('.projects-grid');
+    const empty = root.querySelector<HTMLElement>('.projects-empty');
+    const moreBtn = root.querySelector<HTMLButtonElement>('.show-more');
+    if (!grid || !empty || !moreBtn) return;
+
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-tag-filter]'));
+    const cards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
+
+    let activeTag = '';
+    let shown = pageSize;
+
+    function applyFilter() {
+      const matching = cards.filter((c) => {
+        if (!activeTag) return true;
+        const tags = (c.dataset.tags ?? '').split(',').filter(Boolean);
+        return tags.includes(activeTag);
+      });
+
+      cards.forEach((c) => c.classList.add('is-hidden'));
+      matching.slice(0, shown).forEach((c) => c.classList.remove('is-hidden'));
+
+      empty.hidden = matching.length > 0;
+      moreBtn.hidden = matching.length <= shown;
+    }
+
+    function setTag(tag: string) {
+      activeTag = tag;
+      shown = pageSize;
+      chips.forEach((c) => {
+        c.setAttribute('aria-pressed', String(c.dataset.tagFilter === tag));
+      });
+      applyFilter();
+
+      if (tag) {
+        history.replaceState(null, '', `#tag=${encodeURIComponent(tag)}`);
+      } else {
+        history.replaceState(null, '', location.pathname);
+      }
+    }
+
+    chips.forEach((c) => {
+      c.addEventListener('click', () => setTag(c.dataset.tagFilter ?? ''));
+    });
+
+    moreBtn.addEventListener('click', () => {
+      shown += pageSize;
+      applyFilter();
+    });
+
+    const hashMatch = location.hash.match(/tag=([^&]+)/);
+    setTag(hashMatch ? decodeURIComponent(hashMatch[1]) : '');
+  });
+</script>

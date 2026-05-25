@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import FeaturedRow from '../components/FeaturedRow.astro';
+import ProjectGrid from '../components/ProjectGrid.astro';
+import config from '../lib/load-config';
+import { loadProjects } from '../lib/load-projects';
+import { aggregateStats } from '../lib/aggregate-stats';
+
+const allProjects = await loadProjects();
+const stats = aggregateStats(allProjects);
+
+const featuredOrder = new Map(config.featured.map((slug, i) => [slug, i]));
+
+const featured = allProjects
+  .filter((p) => p.featured)
+  .sort((a, b) => (featuredOrder.get(a.id) ?? 999) - (featuredOrder.get(b.id) ?? 999));
+
+function signal(p: (typeof allProjects)[number]): number {
+  return (
+    (p.stats.stars ?? 0) +
+    (p.stats.pulls ?? 0) +
+    (p.stats.users ?? 0) +
+    (p.stats.downloadsMonthly ?? 0)
+  );
+}
+
+const nonFeatured = allProjects
+  .filter((p) => !p.featured)
+  .sort((a, b) => signal(b) - signal(a));
+---
+
+<BaseLayout
+  title={config.meta.siteTitle}
+  description={config.meta.siteDescription}
+>
+  <Hero stats={stats} />
+  <FeaturedRow projects={featured} />
+  <ProjectGrid projects={nonFeatured} pageSize={config.ui.pageSize} />
+</BaseLayout>

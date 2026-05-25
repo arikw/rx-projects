@@ -1,0 +1,21 @@
+---
+import ProjectCard from './ProjectCard.astro';
+import type { Project } from '../types/project';
+
+interface Props {
+  projects: Project[];
+}
+const { projects } = Astro.props;
+---
+{projects.length > 0 && (
+  <section class="featured">
+    <header class="section-head">
+      <span class="section-label">Featured</span>
+      <span class="section-rule" aria-hidden="true"></span>
+      <span class="section-count">{String(projects.length).padStart(2, '0')}</span>
+    </header>
+    <div class="featured-grid">
+      {projects.map((p) => <ProjectCard project={p} size="featured" />)}
+    </div>
+  </section>
+)}
