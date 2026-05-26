@@ -2,8 +2,11 @@ node_modules/
 dist/
 .astro/
 
-# Connector snapshot — persisted via actions/cache in CI; rebuilt locally on demand
-data/snapshot.json
+# Generated build artefacts (connector snapshots, etc.)
+# Gitignored locally so personal data stays out of upstream forks.
+# CI force-adds these on cron runs (see deploy.yml) — once tracked, gitignore
+# stops applying and updates flow normally on cloners' repos.
+generated/
 .env
 .env.*
 !.env.example

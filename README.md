@@ -4,7 +4,7 @@ Config-driven dev dashboard and project showcase. Built with [Astro](https://ast
 
 Pulls public signals from **GitHub**, **npm**, **Docker Hub**, and **Chrome Web Store** at build time, merges them with manual entries you control, and renders an "impact dashboard" plus a project grid with tag filtering.
 
-Designed to be cloned — edit one config file, set one repo secret, push, and you have your own.
+Designed to be cloned — edit one config file, push, and you have your own.
 
 ## Quick start
 
@@ -45,17 +45,11 @@ The whole dashboard is driven from this one file:
 
 Any source you leave empty or disable just contributes nothing — connectors degrade gracefully.
 
-### 4. Add a `GH_API_TOKEN` repo secret
-
-Settings → Secrets and variables → Actions → New repository secret. Create one named **`GH_API_TOKEN`** containing a [personal access token](https://github.com/settings/tokens) with `public_repo` read access.
-
-This bumps the GitHub connector from 60 to 5000 requests/hour. Builds still work without it but may rate-limit on larger accounts.
-
-### 5. Enable GitHub Pages
+### 4. Enable GitHub Pages
 
 Settings → Pages → Source: **GitHub Actions**.
 
-### 6. Push (or trigger manually)
+### 5. Push (or trigger manually)
 
 Push to the default branch — the workflow builds and deploys. A daily cron at 08:00 UTC also rebuilds so source-fetched stats stay fresh without manual pushes.
 
@@ -65,9 +59,12 @@ To trigger a one-off build without pushing: Actions tab → **Deploy** → **Run
 
 ## Inspecting connector data
 
-Every build emits `data.json` at the site root (e.g. `https://yoursite.example/data.json`) with the merged project list and a per-connector snapshot of what each source returned and when. Useful for debugging connector output and verifying tags/stats.
+Two views into what each connector returned and when:
 
-Each connector's snapshot is persisted across builds. If a source fails on the next run (API outage, rate limit, regex regression), the loader falls back to the most recent successful scrape for that source — only the affected connector goes stale, never the whole dashboard.
+- **`/data.json`** — emitted on every build at the site root (e.g. `https://yoursite.example/data.json`). Includes the merged project list plus a per-connector snapshot.
+- **`generated/snapshot.json`** — the persisted snapshot. Gitignored locally; the scheduled workflow commits it back to the repo as a durable backup (visible in the repo browser).
+
+Each connector's snapshot includes a `lastScrapedAt` timestamp. If a source fails on the next run (API outage, rate limit, scrape regression), the loader falls back to that connector's most recent successful scrape — only the affected source goes stale, never the whole dashboard.
 
 ## Advanced: keep some values out of git
 
@@ -89,11 +86,17 @@ The file is `.gitignored`. The loader shallow-merges it over `projects.config.ts
 
 Most cloners don't need this — editing `projects.config.ts` directly and committing is the normal path.
 
+## Advanced: higher GitHub API rate limit
+
+Optional. The workflow uses the auto-injected `GITHUB_TOKEN` by default, which gives you 1000 requests/hour — enough for typical accounts (one paged request per build).
+
+If you have a very large account or hit rate limits, create a personal access token with `public_repo` read access and add it as a repo secret named **`GH_API_TOKEN`**. The workflow prefers it over the auto-injected token when present (bumps the limit to 5000 req/hr).
+
 ## Commands
 
 ```bash
 npm run dev               # local dev server
-npm run build             # → dist/
+npm run build             # → dist/  +  generated/snapshot.json
 npm run preview           # serve dist/ locally
 ```
 
@@ -103,7 +106,8 @@ npm run preview           # serve dist/ locally
 .
 ├── astro.config.mjs                reads deployment.site/base from projects.config.ts
 ├── projects.config.ts              single source of truth (config-driven)
-├── data/snapshot.json              persisted per-connector results (gitignored)
+├── generated/snapshot.json         persisted per-connector results (gitignored locally;
+│                                   workflow commits it back as a backup)
 ├── src/
 │   ├── content.config.ts           Zod schema for optional detail pages
 │   ├── content/projects/           optional detail .mdx files (one per project slug)
@@ -118,5 +122,5 @@ npm run preview           # serve dist/ locally
 │   ├── types/                      Project, ProjectsConfig types
 │   └── utils/
 ├── tests/fixtures/                 connector fixtures for offline builds
-└── .github/workflows/deploy.yml    build + Pages deploy with snapshot cache
+└── .github/workflows/deploy.yml    build + Pages deploy with snapshot cache and commit-back
 ```

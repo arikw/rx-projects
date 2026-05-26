@@ -10,6 +10,8 @@ import type { Connector } from '../connectors/types';
 import {
   readSnapshot,
   writeSnapshot,
+  toSnapshotProject,
+  fromSnapshotProject,
   type ConnectorKey,
   type SnapshotFile,
 } from './snapshot-store';
@@ -45,12 +47,19 @@ async function runConnector(
   if (!run.enabled) {
     const cached = snapshot.connectors[run.key];
     return cached
-      ? { status: 'cached', projects: cached.projects, cachedAt: cached.lastScrapedAt }
+      ? {
+          status: 'cached',
+          projects: cached.projects.map(fromSnapshotProject),
+          cachedAt: cached.lastScrapedAt,
+        }
       : { status: 'empty' };
   }
   try {
     const projects = await run.fn(config, { fixtureMode: FIXTURE_MODE });
-    snapshot.connectors[run.key] = { lastScrapedAt: now, projects };
+    snapshot.connectors[run.key] = {
+      lastScrapedAt: now,
+      projects: projects.map(toSnapshotProject),
+    };
     return { status: 'fresh', projects };
   } catch (err) {
     console.warn(`[loader] connector "${run.key}" failed:`, err);
@@ -59,7 +68,11 @@ async function runConnector(
       console.warn(
         `[loader] falling back to cached "${run.key}" data from ${cached.lastScrapedAt}`,
       );
-      return { status: 'cached', projects: cached.projects, cachedAt: cached.lastScrapedAt };
+      return {
+        status: 'cached',
+        projects: cached.projects.map(fromSnapshotProject),
+        cachedAt: cached.lastScrapedAt,
+      };
     }
     return { status: 'empty' };
   }
