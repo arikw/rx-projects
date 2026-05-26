@@ -2,7 +2,9 @@ name: Deploy
 
 on:
   push:
-    branches: [master]
+    # Covers the two most common default-branch names so the workflow works
+    # for cloners regardless of which one they ended up with.
+    branches: [master, main]
   schedule:
     # Daily at 08:00 UTC — refreshes source-fetched stats so the dashboard
     # stays current without a manual push.
