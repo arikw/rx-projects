@@ -12,6 +12,16 @@
 import type { ProjectsConfig } from './src/types/config';
 
 const config: ProjectsConfig = {
+  deployment: {
+    // Public origin (no trailing slash) — where the site is actually served.
+    site: 'https://example.com',
+    // Path prefix the site is mounted at. Use '/' for root deployments
+    // (e.g. projects.example.com) or '/projects' for sub-path deployments.
+    base: '/',
+    trailingSlash: 'always',
+    format: 'directory',
+  },
+
   meta: {
     siteTitle: 'Dev Projects',
     siteDescription: 'A dev project showcase + impact dashboard.',

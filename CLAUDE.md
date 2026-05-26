@@ -4,9 +4,9 @@ Project context for Claude Code working in this repo.
 
 ## What this is
 
-Personal dev dashboard + clonable starter, published at `https://wzmn.net/projects/`. Aggregates public signals from **GitHub**, **npm**, **Docker Hub**, and **Chrome Web Store** at build time, merges them with manual entries you control, and renders an "impact dashboard" + project grid with tag filtering.
+Personal dev dashboard + clonable starter. Aggregates public signals from **GitHub**, **npm**, **Docker Hub**, and **Chrome Web Store** at build time, merges them with manual entries you control, and renders an "impact dashboard" + project grid with tag filtering.
 
-Built with **Astro 6**, deployed to **GitHub Pages**. The reverse-proxy topology that makes the public URL serve from GitHub Pages is private (see `CLAUDE.local.md`).
+Built with **Astro 6**. Production hosting and routing specifics live in `CLAUDE.local.md`.
 
 The project is designed to double as a starter: a cloner edits a single `projects.config.ts` and gets a working dashboard pointing at their own handles.
 
@@ -18,7 +18,7 @@ The project is designed to double as a starter: a cloner edits a single `project
 - Connectors: `src/connectors/{github,npm,docker,chrome}.ts` — each fetches at build time and returns a normalized `Project[]`. Failures are non-fatal; an unavailable source just contributes nothing.
 - Loader: `src/lib/load-projects.ts` runs enabled connectors in parallel, merges with `config.manual[]`, dedupes by slug, applies the `featured` pin list.
 - Optional detail pages: `src/content/projects/<slug>.mdx` auto-generates `/projects/<slug>/` when the slug matches a project's id (GitHub repo name, npm name, docker image, chrome slug, or manual slug).
-- URL strategy: `astro.config.mjs` sets `site: 'https://wzmn.net'` + `base: '/projects'`. The `/projects/` prefix carries through every internal href and canonical tag — **never hardcode `github.io` or strip the base**.
+- URL strategy: `astro.config.mjs` sources `site` and `base` from `projects.config.ts` (overridable via `projects.config.local.ts`). The `base` prefix carries through every internal href and canonical tag — **never hardcode the hosting platform's URL or strip the base**.
 
 ## Commands
 
@@ -37,8 +37,8 @@ npm run preview           # serve dist/ locally
 
 ## Deployment
 
-- `.github/workflows/deploy.yml` builds on push to `main` plus a daily cron and deploys `dist/` to GitHub Pages.
-- The `wzmn.net/projects/` routing topology lives in `docs/private/` (gitignored) — see `CLAUDE.local.md` for details.
+- `.github/workflows/deploy.yml` builds on push to `master` plus a daily cron and publishes `dist/` to the configured static host.
+- Production routing topology lives in `docs/private/` (gitignored) — see `CLAUDE.local.md` for details.
 
 ## Where things live that aren't in this file
 

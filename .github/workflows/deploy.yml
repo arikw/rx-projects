@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   schedule:
     # Daily at 08:00 UTC — refreshes source-fetched stats so the dashboard
     # stays current without a manual push.

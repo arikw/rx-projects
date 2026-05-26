@@ -34,7 +34,19 @@ export type ChromeSourceConfig = {
   extensionIds: string[];
 };
 
+export type DeploymentConfig = {
+  /** Absolute origin where the site is served (no trailing slash). */
+  site: string;
+  /** Path prefix the site is mounted at. Use `'/'` for root deployments. */
+  base: string;
+  /** Astro `trailingSlash` setting. */
+  trailingSlash?: 'always' | 'never' | 'ignore';
+  /** Astro `build.format` setting. */
+  format?: 'file' | 'directory' | 'preserve';
+};
+
 export type ProjectsConfig = {
+  deployment: DeploymentConfig;
   meta: {
     siteTitle: string;
     siteDescription: string;

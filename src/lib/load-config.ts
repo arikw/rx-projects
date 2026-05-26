@@ -14,6 +14,7 @@ function mergeConfig(base: ProjectsConfig, override?: ProjectsConfig): ProjectsC
   return {
     ...base,
     ...override,
+    deployment: { ...base.deployment, ...override.deployment },
     user: { ...base.user, ...override.user },
     sources: {
       github: { ...base.sources.github, ...override.sources?.github },
