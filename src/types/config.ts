@@ -46,6 +46,18 @@ export type GnomeSourceConfig = {
   extensionIds: number[];
 };
 
+export type GplaySourceConfig = {
+  /** Android package names (e.g. "com.example.app"), shared by the AppBrain
+   * and APKPure connectors. This is just the input list — not a connector. */
+  packages: string[];
+};
+
+/** AppBrain connector — rich Google Play stats (rating, installs). */
+export type AppbrainSourceConfig = { enabled: boolean };
+
+/** APKPure connector — Google Play listing presence + mirror link. */
+export type ApkpureSourceConfig = { enabled: boolean };
+
 export type DeploymentConfig = {
   /** Absolute origin where the site is served (no trailing slash). */
   site: string;
@@ -83,6 +95,9 @@ export type ProjectsConfig = {
     docker: DockerSourceConfig;
     chrome: ChromeSourceConfig;
     gnome: GnomeSourceConfig;
+    gplay: GplaySourceConfig;
+    appbrain: AppbrainSourceConfig;
+    apkpure: ApkpureSourceConfig;
   };
   /** Tag filter behaviour. */
   tags?: {

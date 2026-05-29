@@ -6,6 +6,8 @@ import { fetchNpmProjects } from '../connectors/npm';
 import { fetchDockerProjects } from '../connectors/docker';
 import { fetchChromeProjects } from '../connectors/chrome';
 import { fetchGnomeProjects } from '../connectors/gnome';
+import { fetchAppbrainProjects } from '../connectors/appbrain';
+import { fetchApkpureProjects } from '../connectors/apkpure';
 import { manualToProjects } from '../connectors/manual';
 import { mergeProjects } from './merge-projects';
 import type { Connector } from '../connectors/types';
@@ -32,6 +34,8 @@ const CONNECTORS: ConnectorRun[] = [
   { key: 'docker', enabled: false, fn: fetchDockerProjects },
   { key: 'chrome', enabled: false, fn: fetchChromeProjects },
   { key: 'gnome', enabled: false, fn: fetchGnomeProjects },
+  { key: 'appbrain', enabled: false, fn: fetchAppbrainProjects },
+  { key: 'apkpure', enabled: false, fn: fetchApkpureProjects },
 ];
 
 type ConnectorResult =

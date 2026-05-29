@@ -1,4 +1,4 @@
-export type ProjectSource = 'github' | 'npm' | 'docker' | 'chrome' | 'gnome' | 'manual';
+export type ProjectSource = 'github' | 'npm' | 'docker' | 'chrome' | 'gnome' | 'appbrain' | 'apkpure' | 'manual';
 
 export type ProjectKind =
   | 'app'
@@ -24,8 +24,15 @@ export type ProjectStats = {
   users?: number;
   rating?: number;
   ratingCount?: number;
+  /** Raw per-star rating counts [1★,2★,3★,4★,5★] (AppBrain). The builder counts
+   * 4–5★ as "likes" — so the threshold lives in aggregate-stats, not here. */
+  ratingHistogram?: number[];
   // gnome (extensions.gnome.org)
   gnomeDownloads?: number;
+  // Android app install/download count. AppBrain supplies the Google Play
+  // "10,000+" tier floor; APKPure supplies its own mirror count. The merge
+  // prefers AppBrain, so for a card on both this holds the Play figure.
+  installs?: number;
 };
 
 export type Project = {

@@ -9,6 +9,8 @@ const SOURCE_RANK: Record<ProjectSource, number> = {
   docker: 3,
   chrome: 4,
   gnome: 5,
+  appbrain: 6,
+  apkpure: 7,
 };
 
 /** Human-friendly name, stripped of source prefix and owner namespace. */
@@ -24,6 +26,8 @@ function nameKey(p: Project): string {
   }
   if (p.source === 'chrome') return lower(p.title).replace(/\s+/g, '-');
   if (p.source === 'gnome') return lower(p.id.replace(/^gnome:/, ''));
+  if (p.source === 'appbrain') return lower(p.id.replace(/^appbrain:/, ''));
+  if (p.source === 'apkpure') return lower(p.id.replace(/^apkpure:/, ''));
   return lower(p.id); // github, manual
 }
 

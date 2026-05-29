@@ -22,6 +22,9 @@ function mergeConfig(base: ProjectsConfig, override?: ProjectsConfig): ProjectsC
       docker: { ...base.sources.docker, ...override.sources?.docker },
       chrome: { ...base.sources.chrome, ...override.sources?.chrome },
       gnome: { ...base.sources.gnome, ...override.sources?.gnome },
+      gplay: { ...base.sources.gplay, ...override.sources?.gplay },
+      appbrain: { ...base.sources.appbrain, ...override.sources?.appbrain },
+      apkpure: { ...base.sources.apkpure, ...override.sources?.apkpure },
     },
     ui: {
       ...base.ui,

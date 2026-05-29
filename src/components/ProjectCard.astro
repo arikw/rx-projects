@@ -1,6 +1,7 @@
 ---
-import type { Project } from '../types/project';
+import type { Project, ProjectSource } from '../types/project';
 import { formatStat } from '../lib/aggregate-stats';
+import { sourceLabel } from '../lib/source-label';
 import ProjectThumb from './ProjectThumb.astro';
 
 interface Props {
@@ -24,8 +25,32 @@ if (p.stats.downloadsAllTime !== undefined && p.stats.downloadsAllTime > 0)
   stats.push({ text: `${formatStat(p.stats.downloadsAllTime)} downloads`, title: 'npm downloads (all-time)', icon: 'download' });
 if (p.stats.downloadsMonthly !== undefined && p.stats.downloadsMonthly > 0)
   stats.push({ text: `${formatStat(p.stats.downloadsMonthly)}/mo`, title: 'npm downloads in the last 30 days', icon: 'download' });
+const cardSources = p.sources ?? [p.source];
+
+// Friendly chip labels, deduped — so an AppBrain+APKPure card shows one
+// "Android app" chip rather than two raw source keys.
+const seenSourceLabels = new Set<string>();
+const sourceChips: { s: ProjectSource; label: string }[] = [];
+for (const s of cardSources) {
+  const label = sourceLabel(s);
+  if (seenSourceLabels.has(label)) continue;
+  seenSourceLabels.add(label);
+  sourceChips.push({ s, label });
+}
+
+if (p.stats.installs !== undefined && p.stats.installs > 0) {
+  // AppBrain wins the merge, so installs is the Google Play tier when present;
+  // otherwise it's APKPure's own mirror download count. Label honestly.
+  const fromPlay = cardSources.includes('appbrain');
+  stats.push({
+    text: fromPlay ? `${formatStat(p.stats.installs)}+ installs` : `${formatStat(p.stats.installs)} downloads`,
+    title: fromPlay ? 'Google Play installs (10,000+ tier)' : 'APKPure downloads',
+    icon: 'download',
+  });
+}
 if (p.stats.rating !== undefined && p.stats.ratingCount) {
-  stats.push({ text: `${p.stats.rating.toFixed(1)}★ (${formatStat(p.stats.ratingCount)})`, title: 'Chrome Web Store rating (number of ratings)' });
+  const ratingStore = cardSources.includes('chrome') ? 'Chrome Web Store' : 'Google Play';
+  stats.push({ text: `${p.stats.rating.toFixed(1)}★ (${formatStat(p.stats.ratingCount)})`, title: `${ratingStore} rating (number of ratings)` });
 }
 
 const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
@@ -46,8 +71,8 @@ const homepageHost = homepage ? homepage.replace(/^https?:\/\//, '').replace(/\/
       <span class="card-arrow" aria-hidden="true">↗</span>
     </a>
     <span class="card-sources">
-      {(p.sources ?? [p.source]).map((s) => (
-        <span class={`card-source card-source--${s}`}>{s}</span>
+      {sourceChips.map(({ s, label }) => (
+        <span class={`card-source card-source--${s}`}>{label}</span>
       ))}
     </span>
   </header>

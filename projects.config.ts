@@ -61,6 +61,11 @@ const config: ProjectsConfig = {
       enabled: true,
       extensionIds: [],       // numeric pk from extensions.gnome.org/extension/<pk>/...
     },
+    gplay: {
+      packages: [],           // Android package names, shared by appbrain + apkpure
+    },
+    appbrain: { enabled: true },   // Google Play stats (rating, installs) via AppBrain
+    apkpure: { enabled: true },    // Google Play listing presence via APKPure
   },
 
   // Project slugs to pin at the top of the page. Works for any source:
