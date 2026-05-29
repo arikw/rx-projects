@@ -66,6 +66,10 @@ const config: ProjectsConfig = {
     },
     appbrain: { enabled: true },   // Google Play stats (rating, installs) via AppBrain
     apkpure: { enabled: true },    // Google Play listing presence via APKPure
+    chromestats: {
+      enabled: true,
+      extensionIds: [],            // chrome-stats.com IDs (mirrors CWS, incl. taken-down)
+    },
   },
 
   // Manual authoritative facts, keyed by ORIGIN resource id (find it in

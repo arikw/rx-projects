@@ -70,6 +70,14 @@ export type AppbrainSourceConfig = { enabled: boolean };
 /** APKPure connector — Google Play listing presence + mirror link. */
 export type ApkpureSourceConfig = { enabled: boolean };
 
+/** chrome-stats.com — third-party Chrome Web Store mirror; carries extensions
+ * that have been taken down from CWS and richer per-extension intel. */
+export type ChromeStatsSourceConfig = {
+  enabled: boolean;
+  /** Chrome extension IDs to mirror. */
+  extensionIds: string[];
+};
+
 export type DeploymentConfig = {
   /** Absolute origin where the site is served (no trailing slash). */
   site: string;
@@ -110,6 +118,7 @@ export type ProjectsConfig = {
     gplay: GplaySourceConfig;
     appbrain: AppbrainSourceConfig;
     apkpure: ApkpureSourceConfig;
+    chromestats: ChromeStatsSourceConfig;
   };
   /** Tag filter behaviour. */
   tags?: {

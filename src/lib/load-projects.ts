@@ -8,6 +8,7 @@ import { fetchChromeProjects } from '../connectors/chrome';
 import { fetchGnomeProjects } from '../connectors/gnome';
 import { fetchAppbrainProjects } from '../connectors/appbrain';
 import { fetchApkpureProjects } from '../connectors/apkpure';
+import { fetchChromestatsProjects } from '../connectors/chromestats';
 import { manualToResults } from '../connectors/manual';
 import { buildProjects } from './build-projects';
 import type { Connector } from '../connectors/types';
@@ -25,6 +26,7 @@ const CONNECTORS: ConnectorRun[] = [
   { key: 'gnome', fn: fetchGnomeProjects },
   { key: 'appbrain', fn: fetchAppbrainProjects },
   { key: 'apkpure', fn: fetchApkpureProjects },
+  { key: 'chromestats', fn: fetchChromestatsProjects },
 ];
 
 type ConnectorRunResult =

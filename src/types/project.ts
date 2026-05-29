@@ -6,6 +6,7 @@ export type ProjectSource =
   | 'gnome'
   | 'appbrain'
   | 'apkpure'
+  | 'chromestats'
   | 'manual';
 
 export type ProjectKind =

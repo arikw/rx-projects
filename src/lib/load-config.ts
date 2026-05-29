@@ -25,6 +25,7 @@ function mergeConfig(base: ProjectsConfig, override?: ProjectsConfig): ProjectsC
       gplay: { ...base.sources.gplay, ...override.sources?.gplay },
       appbrain: { ...base.sources.appbrain, ...override.sources?.appbrain },
       apkpure: { ...base.sources.apkpure, ...override.sources?.apkpure },
+      chromestats: { ...base.sources.chromestats, ...override.sources?.chromestats },
     },
     ui: {
       ...base.ui,
