@@ -93,9 +93,13 @@ export const fetchGithubProjects: Connector = async (config, options) => {
   const cfg = config.sources.github;
   const excludeSet = new Set(cfg.excludeRepos);
 
+  // A repo named exactly after the handle is GitHub's "profile README" repo —
+  // it renders the README on the user's profile, not a real project.
+  const handleLower = handle.toLowerCase();
   return repos
     .filter((r) => cfg.includeForks || !r.fork)
     .filter((r) => !excludeSet.has(r.name))
+    .filter((r) => r.name.toLowerCase() !== handleLower)
     .map<ConnectorResult>((r) => ({
       // GitHub is the origin — its data is first-party, no mirror/native.
       // Archived repos still emit so URL extractors can merge them with their
