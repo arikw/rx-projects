@@ -71,6 +71,10 @@ const config: ProjectsConfig = {
       enabled: true,
       packages: [],          // Android package names to fetch live from play.google.com
     },
+    stackoverflow: {
+      enabled: true,
+      userId: '',             // numeric SO user id from stackoverflow.com/users/<id>/...
+    },
   },
 
   // Manual authoritative facts, keyed by ORIGIN resource id (find it in

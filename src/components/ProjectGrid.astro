@@ -21,8 +21,9 @@ const SOURCE_TO_GROUP: Record<string, string> = {
   'google-play': 'android',
   apkpure: 'android',
   appbrain: 'android',
+  stackoverflow: 'stackoverflow',
 };
-const GROUP_ORDER = ['github', 'npm', 'docker', 'chrome', 'android', 'gnome'];
+const GROUP_ORDER = ['github', 'npm', 'docker', 'chrome', 'android', 'gnome', 'stackoverflow'];
 
 function projectGroups(p: Project): string[] {
   const set = new Set<string>();

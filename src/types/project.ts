@@ -8,6 +8,7 @@ export type ProjectSource =
   | 'apkpure'
   | 'chromestats'
   | 'playstore'
+  | 'stackoverflow'
   | 'manual';
 
 export type ProjectKind =

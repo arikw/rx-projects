@@ -10,6 +10,7 @@ import { fetchAppbrainProjects } from '../connectors/appbrain';
 import { fetchApkpureProjects } from '../connectors/apkpure';
 import { fetchChromestatsProjects } from '../connectors/chromestats';
 import { fetchPlaystoreProjects } from '../connectors/playstore';
+import { fetchStackoverflowProjects } from '../connectors/stackoverflow';
 import { manualToResults } from '../connectors/manual';
 import { buildProjects } from './build-projects';
 import type { Connector } from '../connectors/types';
@@ -30,6 +31,7 @@ const CONNECTORS: ConnectorRun[] = [
   { key: 'apkpure', fn: fetchApkpureProjects },
   { key: 'chromestats', fn: fetchChromestatsProjects },
   { key: 'playstore', fn: fetchPlaystoreProjects },
+  { key: 'stackoverflow', fn: fetchStackoverflowProjects },
 ];
 
 type ConnectorRunResult =

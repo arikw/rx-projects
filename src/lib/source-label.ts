@@ -12,6 +12,7 @@ export const SOURCE_LABEL: Record<string, string> = {
   apkpure: 'Android app',
   playstore: 'Android app',
   'chrome-stats': 'Chrome',
+  stackoverflow: 'Stack Overflow',
   manual: 'Portfolio',
 };
 

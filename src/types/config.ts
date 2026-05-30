@@ -85,6 +85,14 @@ export type PlaystoreSourceConfig = {
   packages: string[];
 };
 
+/** Stack Overflow — surfaces a single card representing the user's profile
+ * (reputation, answer count, badges). One `userId` per profile. */
+export type StackoverflowSourceConfig = {
+  enabled: boolean;
+  /** Numeric SO user id (the `<id>` in stackoverflow.com/users/<id>/...). */
+  userId: string;
+};
+
 export type DeploymentConfig = {
   /** Absolute origin where the site is served (no trailing slash). */
   site: string;
@@ -127,6 +135,7 @@ export type ProjectsConfig = {
     apkpure: ApkpureSourceConfig;
     chromestats: ChromeStatsSourceConfig;
     playstore: PlaystoreSourceConfig;
+    stackoverflow: StackoverflowSourceConfig;
   };
   /** Tag filter behaviour. */
   tags?: {

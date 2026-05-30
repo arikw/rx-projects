@@ -74,6 +74,7 @@ const PLATFORM_TO_SOURCE_GROUP: Record<string, string> = {
   'google-play': 'android',
   apkpure: 'android',
   appbrain: 'android',
+  stackoverflow: 'stackoverflow',
 };
 
 function canonUrl(u?: string): string | null {
