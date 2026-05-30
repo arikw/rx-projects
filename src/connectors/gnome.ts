@@ -24,9 +24,16 @@ type EgoExtension = {
   downloads: number;
   /** Author-supplied project URL — usually the source repo. */
   url?: string;
+  /** Relative paths like "/static/images/plugin.png". */
+  icon?: string | null;
+  screenshot?: string | null;
   // NOTE: `uuid` (e.g. "name@author-domain") is intentionally never read or
   // stored — it can embed a private domain that must not reach committed data.
 };
+
+const EGO_BASE = 'https://extensions.gnome.org';
+const abs = (path?: string | null): string | undefined =>
+  path ? (path.startsWith('http') ? path : `${EGO_BASE}${path}`) : undefined;
 
 async function fetchOne(pk: number): Promise<EgoExtension | null> {
   const url = `https://extensions.gnome.org/extension-info/?pk=${encodeURIComponent(String(pk))}`;
@@ -71,6 +78,7 @@ export const fetchGnomeProjects: Connector = async (config, options) => {
         kind: 'extension',
         openSource: true,
         sourceUrl: repo,
+        images: [abs(e.icon), abs(e.screenshot)].filter((u): u is string => !!u),
         stats: { downloads: e.downloads },
       },
     };

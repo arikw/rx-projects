@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { Connector } from './types';
-import type { ConnectorResult } from '../types/project';
+import type { ConnectorResult, Review } from '../types/project';
 import { loadFixture } from '../lib/fixtures';
 import { readJsonCache, writeJsonCache } from '../lib/json-cache';
 
@@ -24,6 +24,10 @@ type AppbrainApp = {
   installs?: number;
   /** First year on Google Play (from firstSeenS). */
   year?: number;
+  /** App icon URL (Google-hosted). */
+  iconUrl?: string;
+  /** Positive review snippets surfaced by AppBrain's `commentInsights`. */
+  positiveQuotes?: string[];
 };
 
 type AppbrainCache = { version: 1; _generated: string; apps: Record<string, AppbrainApp> };
@@ -67,6 +71,8 @@ type Intel = {
   histogram?: number[];
   description?: string;
   year?: number;
+  iconUrl?: string;
+  positiveQuotes?: string[];
 };
 
 async function fetchIntel(pkg: string): Promise<Intel | null> {
@@ -95,6 +101,11 @@ async function fetchIntel(pkg: string): Promise<Intel | null> {
     const histogram = [1, 2, 3, 4, 5].map((i) => Number(d[`ratings${i}`]) || 0);
     const fsRaw = Number(d.firstSeenS);
     const year = Number.isFinite(fsRaw) && fsRaw > 0 ? new Date(fsRaw * 1000).getUTCFullYear() : undefined;
+    const ci = d.commentInsights as { positiveQuotes?: unknown } | undefined;
+    const rawQuotes = Array.isArray(ci?.positiveQuotes) ? (ci!.positiveQuotes as unknown[]) : [];
+    const positiveQuotes = rawQuotes
+      .map((q) => (typeof q === 'string' ? scrubEmails(q) : ''))
+      .filter((q) => q.length > 0);
     return {
       title: typeof d.name === 'string' && d.name ? d.name : pkg,
       rating: typeof d.rating === 'number' ? Math.round(d.rating * 100) / 100 : undefined,
@@ -103,6 +114,8 @@ async function fetchIntel(pkg: string): Promise<Intel | null> {
       description:
         typeof d.shortDescription === 'string' ? scrubEmails(d.shortDescription) || undefined : undefined,
       year,
+      iconUrl: typeof d.iconUrl === 'string' ? d.iconUrl : undefined,
+      positiveQuotes: positiveQuotes.length ? positiveQuotes : undefined,
     };
   } catch {
     return null;
@@ -147,6 +160,8 @@ async function scrapeApp(pkg: string): Promise<AppbrainApp | null> {
     ratingHistogram: intel.histogram,
     installs,
     year: intel.year,
+    iconUrl: intel.iconUrl,
+    positiveQuotes: intel.positiveQuotes,
   };
 }
 
@@ -187,6 +202,8 @@ export const fetchAppbrainProjects: Connector = async (config, options) => {
         firstReleased: a.year,
         tags: ['android'],
         kind: 'mobile',
+        images: a.iconUrl ? [a.iconUrl] : undefined,
+        reviews: a.positiveQuotes?.map<Review>((q) => ({ body: q, source: 'appbrain' })),
         stats: {
           ...(a.installs != null ? { installs: { value: a.installs, exact: false } } : {}),
           ...(a.rating != null && a.ratingCount != null

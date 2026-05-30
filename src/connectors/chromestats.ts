@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { Connector } from './types';
-import type { ConnectorResult } from '../types/project';
+import type { ConnectorResult, Review } from '../types/project';
 import { loadFixture } from '../lib/fixtures';
 import { readJsonCache, writeJsonCache } from '../lib/json-cache';
 
@@ -41,6 +41,8 @@ type ChromeStatsApp = {
   riskLikelihood?: number;
   permissions?: Array<{ key: string; risk: number }>;
   ranking?: unknown;
+  /** Visible review snippets (no author info captured). */
+  reviews?: Review[];
 };
 
 type ChromeStatsCache = { version: 1; _generated: string; apps: Record<string, ChromeStatsApp> };
@@ -170,17 +172,37 @@ function pickPermissions(record: string): Array<{ key: string; risk: number }> |
   return out.length ? out : undefined;
 }
 
-/** Pull the rating histogram from the /reviews subpage's SSR data. */
-async function scrapeHistogram(extId: string): Promise<number[] | null> {
+/** Pull the histogram + the review bodies from the /reviews subpage's SSR data. */
+async function scrapeReviewsPage(
+  extId: string,
+): Promise<{ histogram: number[] | null; reviews: Review[] }> {
   const url = `https://chrome-stats.com/d/${encodeURIComponent(extId)}/reviews`;
   const doc = await fetchHtml(url);
-  if (!doc) return null;
+  if (!doc) return { histogram: null, reviews: [] };
   const script = findHydrationScript(doc);
-  if (!script) return null;
-  const m = script.match(
+  if (!script) return { histogram: null, reviews: [] };
+
+  const hm = script.match(
     /\{\s*"1"\s*:\s*(\d+)\s*,\s*"2"\s*:\s*(\d+)\s*,\s*"3"\s*:\s*(\d+)\s*,\s*"4"\s*:\s*(\d+)\s*,\s*"5"\s*:\s*(\d+)\s*\}/,
   );
-  return m ? [Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4]), Number(m[5])] : null;
+  const histogram = hm ? [Number(hm[1]), Number(hm[2]), Number(hm[3]), Number(hm[4]), Number(hm[5])] : null;
+
+  // Each review record looks like:
+  //   {…,authorName:"T*****",rating:5,authorPicture:"…",id:"<extId>",authorId:"…",
+  //    body:"…",timestamp:"YYYY-MM-DD",isBadReviewer:false}
+  // Capture only rating + body + timestamp — author fields are PII.
+  const re = new RegExp(
+    `rating:(\\d).*?body:(${JS_STR}).*?timestamp:"([0-9-]+)"`,
+    'g',
+  );
+  const reviews: Review[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(script))) {
+    const body = decodeJsString(m[2]);
+    if (!body) continue;
+    reviews.push({ rating: Number(m[1]), body, ts: m[3], source: 'chrome-stats' });
+  }
+  return { histogram, reviews };
 }
 
 async function scrapeOne(extId: string): Promise<ChromeStatsApp | null> {
@@ -239,11 +261,13 @@ export const fetchChromestatsProjects: Connector = async (config, options) => {
       if (app) cache.apps[id] = app;
       await sleep(300);
     }
-    // Backfill the rating histogram from the /reviews subpage if missing.
+    // Backfill the rating histogram + reviews from the /reviews subpage when
+    // missing (we always re-fetch when either is absent).
     const entry = cache.apps[id];
-    if (entry && !entry.ratingHistogram) {
-      const hist = await scrapeHistogram(id);
-      if (hist) entry.ratingHistogram = hist;
+    if (entry && (!entry.ratingHistogram || !entry.reviews)) {
+      const { histogram, reviews } = await scrapeReviewsPage(id);
+      if (histogram) entry.ratingHistogram = histogram;
+      if (reviews.length) entry.reviews = reviews;
       await sleep(300);
     }
   }
@@ -275,7 +299,8 @@ export const fetchChromestatsProjects: Connector = async (config, options) => {
           ...(a.category ? [a.category.replace(/^\d+_/, '').split('/').pop()!] : []),
         ],
         kind: 'extension',
-        image: a.marqueeBanner ?? a.smallBanner,
+        images: [a.marqueeBanner, a.smallBanner].filter((u): u is string => !!u),
+        reviews: a.reviews,
         stats: {
           ...(a.userCount != null ? { users: a.userCount } : {}),
           ...(a.rating

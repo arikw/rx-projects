@@ -22,6 +22,7 @@ type ChromeExtension = {
   users?: number;
   rating?: number;
   ratingCount?: number;
+  image?: string;
 };
 
 function decodeEntities(s: string): string {
@@ -94,6 +95,8 @@ async function scrapeOne(id: string): Promise<ChromeExtension | null> {
     }
   }
 
+  const ogImage = html.match(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/)?.[1];
+
   return {
     id,
     title,
@@ -102,6 +105,7 @@ async function scrapeOne(id: string): Promise<ChromeExtension | null> {
     users,
     rating,
     ratingCount,
+    image: ogImage ? decodeEntities(ogImage) : undefined,
   };
 }
 
@@ -124,6 +128,7 @@ export const fetchChromeProjects: Connector = async (config, options) => {
       description: ext.description,
       tags: ['chrome-extension'],
       kind: 'extension',
+      images: ext.image ? [ext.image] : undefined,
       stats: {
         ...(ext.users != null ? { users: ext.users } : {}),
         ...(ext.rating != null && ext.ratingCount != null

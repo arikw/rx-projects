@@ -47,6 +47,16 @@ export type CanonicalStats = {
   rating?: { average: number; count: number; histogram?: number[] };
 };
 
+/** A user review on a third-party source (no author PII captured). */
+export type Review = {
+  rating?: number;
+  body: string;
+  /** ISO date / timestamp string. */
+  ts?: string;
+  /** Platform that supplied this review (e.g. 'chrome-stats', 'appbrain'). */
+  source?: string;
+};
+
 /**
  * One source's view of a project. The same project can be described by several
  * representations across connectors, each tagged by role:
@@ -67,7 +77,10 @@ export type Representation = {
   description?: string;
   /** First-publication year. */
   firstReleased?: number;
-  image?: string;
+  /** Icons / banners / screenshots this representation exposes. */
+  images?: string[];
+  videos?: string[];
+  reviews?: Review[];
   tags?: string[];
   kind?: ProjectKind;
   language?: string;
@@ -108,7 +121,13 @@ export type Project = {
   year?: number;
   /** The project's own website, distinct from `url`. */
   homepage?: string;
+  /** Primary image for the card thumb (first available across representations). */
   image?: string;
+  /** All image URLs collected across origins/mirrors/natives. */
+  images?: string[];
+  videos?: string[];
+  /** All collected reviews — for future "positive reviews" rotators etc. */
+  reviews?: Review[];
   kind?: ProjectKind;
   openSource?: boolean;
   /** Canonical source-repo URL when known. */

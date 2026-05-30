@@ -67,8 +67,9 @@ const homepageHost = homepage ? homepage.replace(/^https?:\/\//, '').replace(/\/
     </span>
   </header>
 
-  {(p.kind || showOssBadge || homepage) && (
+  {(p.kind || showOssBadge || homepage || p.year) && (
     <p class="card-badges">
+      {p.year && <span class="card-badge card-badge--year">since {p.year}</span>}
       {p.kind && <span class={`card-badge card-badge--kind card-badge--kind-${p.kind}`}>{p.kind}</span>}
       {showOssBadge && (
         <a

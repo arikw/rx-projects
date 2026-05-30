@@ -3,10 +3,12 @@ import type { CanonicalStats } from './project';
 /** A manual, authoritative origin fact injected by the builder, keyed by origin
  * resource id (e.g. "google-play:net.wzmn.games.brokencalc"). It enters the
  * reconcile as an `origin` representation, so it wins over scraped mirrors —
- * e.g. an exact Play Console install total the connectors can't reach. */
+ * e.g. an exact Play Console install total or a real first-release year the
+ * connectors can't reach. */
 export type ManualOrigin = {
   url?: string;
   asOf?: string;
+  firstReleased?: number;
   stats?: CanonicalStats;
 };
 

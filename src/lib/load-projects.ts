@@ -75,6 +75,7 @@ function manualOrigins(): ConnectorResult[] {
         id: resourceId.slice(idx + 1),
         url: fact.url,
         asOf: fact.asOf,
+        firstReleased: fact.firstReleased,
         stats: fact.stats,
       },
     });

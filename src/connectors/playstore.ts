@@ -83,6 +83,7 @@ async function scrapeOne(pkg: string): Promise<ConnectorResult | null> {
       tags: ['android', ...(category ? [category.toLowerCase().replace(/_/g, '-')] : [])],
       kind: 'mobile' as ProjectKind,
       openSource: false,
+      images: image ? [image] : undefined,
       stats: {
         ...(rating ? { rating } : {}),
       },

@@ -466,6 +466,12 @@ button {
   text-transform: lowercase;
 }
 
+.card-badge--year {
+  border-color: transparent;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .card-badge--oss {
   border-color: hsla(140, 35%, 50%, 0.4);
   color: hsl(140, 40%, 65%);

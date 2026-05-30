@@ -21,6 +21,8 @@ type ApkpureApp = {
   /** APKPure's own mirror download count. */
   downloads?: number;
   year?: number;
+  /** Screenshots APKPure hosts (ld+json `screenshot[]`). */
+  screenshots?: string[];
 };
 
 type ApkpureCache = { version: 1; _generated: string; apps: Record<string, ApkpureApp> };
@@ -82,7 +84,17 @@ type LdApp = {
     | { userInteractionCount?: number }
     | Array<{ userInteractionCount?: number }>;
   datePublished?: string;
+  screenshot?: Array<{ url?: string } | string> | { url?: string } | string;
 };
+
+function extractScreenshots(ld: LdApp | null): string[] {
+  const ss = ld?.screenshot;
+  if (!ss) return [];
+  const list = Array.isArray(ss) ? ss : [ss];
+  return list
+    .map((s) => (typeof s === 'string' ? s : s?.url))
+    .filter((u): u is string => !!u);
+}
 
 function findAppLd(doc: string): LdApp | null {
   const blocks = doc.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi);
@@ -134,16 +146,22 @@ async function scrapeApp(pkg: string): Promise<ApkpureApp | null> {
   if (typeof count === 'number' && count > 0) downloads = count;
   const year = ld?.datePublished ? new Date(ld.datePublished).getUTCFullYear() : undefined;
 
+  const ogImage = meta(doc, 'og:image');
+  const screenshots = extractScreenshots(ld);
   return {
     packageName: pkg,
     title,
     url: meta(doc, 'og:url') ?? url,
     description: description || undefined,
-    image: meta(doc, 'og:image'),
+    image: ogImage,
     rating,
     ratingCount,
     downloads,
     year: Number.isFinite(year) ? year : undefined,
+    screenshots:
+      ogImage || screenshots.length
+        ? [...new Set([...(ogImage ? [ogImage] : []), ...screenshots])]
+        : undefined,
   };
 }
 
@@ -186,14 +204,14 @@ export const fetchApkpureProjects: Connector = async (config, options) => {
             : {}),
         },
       },
-      // APKPure's own channel: its mirror download count + the image it hosts.
+      // APKPure's own channel: its mirror download count + the images it hosts.
       // `downloads` here are APKPure's own (summed, not reconciled with Play).
       native: {
         platform: 'apkpure',
         id: a.packageName,
         url: a.url,
         firstReleased: a.year,
-        image: a.image,
+        images: a.screenshots ?? (a.image ? [a.image] : undefined),
         stats: {
           ...(a.downloads != null ? { downloads: a.downloads } : {}),
         },
