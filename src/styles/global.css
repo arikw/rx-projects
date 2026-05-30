@@ -237,12 +237,12 @@ button {
   justify-content: center;
 }
 .thumb-icon-centered {
-  height: 64%;
+  max-height: 50%;
+  min-height: 48px;
   width: auto;
   max-width: 38%;
   object-fit: contain;
   border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
 }
 
 /* Brand-mark fallback: github/npm/docker mark on a brand-tinted backplate.

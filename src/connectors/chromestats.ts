@@ -43,6 +43,10 @@ type ChromeStatsApp = {
   ranking?: unknown;
   /** Visible review snippets (no author info captured). */
   reviews?: Review[];
+  /** chrome-stats's `extensionDeleted` flag — true once Google removes the
+   * listing from CWS. The cached user count then becomes a stale snapshot
+   * of the last observed value; we drop it from the canonical stats. */
+  isDeleted?: boolean;
 };
 
 type ChromeStatsCache = { version: 1; _generated: string; apps: Record<string, ChromeStatsApp> };
@@ -239,6 +243,10 @@ async function scrapeOne(extId: string): Promise<ChromeStatsApp | null> {
     riskImpact: pickNumber(record, 'riskImpact'),
     riskLikelihood: pickNumber(record, 'riskLikelihood'),
     permissions: pickPermissions(record),
+    // extensionDeleted lives outside the per-extension record (page-level
+    // SSR state), so search the whole hydration script. The script we fetched
+    // describes only this extension, so the flag is unambiguous here.
+    isDeleted: /\bextensionDeleted:true\b/.test(script),
   };
   return app;
 }
@@ -304,7 +312,10 @@ export const fetchChromestatsProjects: Connector = async (config, options) => {
         banner: a.marqueeBanner ?? a.smallBanner,
         reviews: a.reviews,
         stats: {
-          ...(a.userCount != null ? { users: a.userCount } : {}),
+          // Once an extension is removed from CWS, the cached userCount is a
+          // stale snapshot, not a current count — and presenting it as
+          // "weekly users" would be misleading. Rating stays (it's historical).
+          ...(!a.isDeleted && a.userCount != null ? { users: a.userCount } : {}),
           ...(a.rating
             ? {
                 rating: {

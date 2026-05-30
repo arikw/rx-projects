@@ -83,15 +83,25 @@ function pagesUrlFor(handle: string, repo: string): string {
   return `https://${handleLower}.github.io/${repo}/`;
 }
 
-/** Fetch the Pages site and extract a favicon URL. Tries (in order):
- *  - <link rel="icon" href="…">  (most common)
- *  - <link rel="shortcut icon" href="…">
- *  - <link rel="apple-touch-icon" href="…">
- *  - <pages-url>favicon.ico convention (last resort, no HEAD check). */
-async function fetchPagesFavicon(pagesUrl: string): Promise<string | null> {
+/** HEAD-check a URL to confirm it actually serves a resource. */
+async function isReachable(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+    return res.ok;
+  } catch { return false; }
+}
+
+/** Fetch the given URL's HTML and extract its favicon, resolved as absolute.
+ *  Returns null if nothing usable is found OR if the candidate URL doesn't
+ *  actually resolve to a real resource (avoids caching 404 URLs).
+ *
+ *  Looks at (in order):
+ *   - <link rel="icon|shortcut icon|apple-touch-icon|mask-icon" href="…">
+ *   - <pages-url>favicon.ico convention. */
+async function fetchPagesFavicon(targetUrl: string): Promise<string | null> {
   let html: string;
   try {
-    const res = await fetch(pagesUrl, {
+    const res = await fetch(targetUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) rx-dev-dashboard/0.1',
         Accept: 'text/html,application/xhtml+xml',
@@ -119,10 +129,20 @@ async function fetchPagesFavicon(pagesUrl: string): Promise<string | null> {
   );
   const href = html.match(relHref)?.[3] ?? html.match(hrefRel)?.[2];
   if (href) {
-    try { return new URL(href, pagesUrl).toString(); } catch { /* fallthrough */ }
+    try {
+      const resolved = new URL(href, targetUrl).toString();
+      // data: URIs are inline so always "reachable"; HTTP(S) URLs need a check
+      // because static sites with custom base paths often link to a favicon
+      // path that 404s when fetched from the bare github.io URL.
+      if (resolved.startsWith('data:') || (await isReachable(resolved))) return resolved;
+    } catch { /* fallthrough */ }
   }
-  // Fallback: assume favicon.ico at the pages-url base.
-  try { return new URL('favicon.ico', pagesUrl).toString(); } catch { return null; }
+  // Last resort: <pages-url>/favicon.ico. Only return if it actually exists.
+  try {
+    const fallback = new URL('favicon.ico', targetUrl).toString();
+    if (await isReachable(fallback)) return fallback;
+  } catch { /* fallthrough */ }
+  return null;
 }
 
 async function fetchPage(user: string, page: number, token?: string): Promise<GithubRepo[]> {
@@ -183,7 +203,18 @@ export const fetchGithubProjects: Connector = async (config, options) => {
     const results = await Promise.all(
       toFetch.map(async (r) => {
         const pagesUrl = pagesUrlFor(handle, r.name);
-        const favicon = await fetchPagesFavicon(pagesUrl);
+        // Try the repo's homepage first when set — Astro/Hugo/Jekyll sites
+        // with a custom `base` (e.g. /projects/, /blog/) emit favicon hrefs
+        // rooted at that base, so they resolve correctly only when fetched
+        // from the actual deployed URL. Fall back to the conventional
+        // <handle>.github.io/<repo>/ URL if the homepage doesn't yield one.
+        const homepage = r.homepage?.trim();
+        const targets = homepage && homepage !== pagesUrl ? [homepage, pagesUrl] : [pagesUrl];
+        let favicon: string | null = null;
+        for (const t of targets) {
+          favicon = await fetchPagesFavicon(t);
+          if (favicon) break;
+        }
         return [r.name, { pagesUrl, favicon }] as const;
       }),
     );
