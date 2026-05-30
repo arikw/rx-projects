@@ -18,8 +18,6 @@ type ApkpureApp = {
   image?: string;
   rating?: number;
   ratingCount?: number;
-  /** APKPure's own mirror download count. */
-  downloads?: number;
   year?: number;
   /** Screenshots APKPure hosts (ld+json `screenshot[]`). */
   screenshots?: string[];
@@ -80,9 +78,6 @@ function meta(doc: string, prop: string): string | undefined {
 type LdApp = {
   '@type'?: string;
   aggregateRating?: { ratingValue?: string | number; ratingCount?: string | number };
-  interactionStatistic?:
-    | { userInteractionCount?: number }
-    | Array<{ userInteractionCount?: number }>;
   datePublished?: string;
   screenshot?: Array<{ url?: string } | string> | { url?: string } | string;
 };
@@ -140,10 +135,6 @@ async function scrapeApp(pkg: string): Promise<ApkpureApp | null> {
     if (Number.isFinite(r) && r > 0) rating = Math.round(r * 100) / 100;
     if (Number.isFinite(c) && c > 0) ratingCount = c;
   }
-  let downloads: number | undefined;
-  const stat = ld?.interactionStatistic;
-  const count = Array.isArray(stat) ? stat[0]?.userInteractionCount : stat?.userInteractionCount;
-  if (typeof count === 'number' && count > 0) downloads = count;
   const year = ld?.datePublished ? new Date(ld.datePublished).getUTCFullYear() : undefined;
 
   const ogImage = meta(doc, 'og:image');
@@ -156,7 +147,6 @@ async function scrapeApp(pkg: string): Promise<ApkpureApp | null> {
     image: ogImage,
     rating,
     ratingCount,
-    downloads,
     year: Number.isFinite(year) ? year : undefined,
     screenshots:
       ogImage || screenshots.length
@@ -204,17 +194,16 @@ export const fetchApkpureProjects: Connector = async (config, options) => {
             : {}),
         },
       },
-      // APKPure's own channel: its mirror download count + the images it hosts.
-      // `downloads` here are APKPure's own (summed, not reconciled with Play).
+      // APKPure's own channel: the images it hosts. Its own download counter
+      // measures a different population (APK pulls from a third-party mirror,
+      // not Play installs) and is intentionally omitted so it doesn't get
+      // summed alongside Google Play installs on the card.
       native: {
         platform: 'apkpure',
         id: a.packageName,
         url: a.url,
         firstReleased: a.year,
         images: a.screenshots ?? (a.image ? [a.image] : undefined),
-        stats: {
-          ...(a.downloads != null ? { downloads: a.downloads } : {}),
-        },
       },
     }));
 };
