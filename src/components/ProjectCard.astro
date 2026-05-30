@@ -7,9 +7,20 @@ import ProjectThumb from './ProjectThumb.astro';
 interface Props {
   project: Project;
   size?: 'compact' | 'featured';
+  /** Space-separated source-group keys for the source-filter (e.g. "github npm"). */
+  sourceGroups?: string;
 }
-const { project: p, size = 'compact' } = Astro.props;
+const { project: p, size = 'compact', sourceGroups = '' } = Astro.props;
 const base = import.meta.env.BASE_URL;
+
+// Popularity signal for client-side "sort by popularity" — same formula as
+// the build-time default sort in index.astro so the order matches when the
+// user toggles back from year sort.
+const popularity =
+  (p.stats.stars ?? 0) +
+  (p.stats.downloads ?? 0) +
+  (p.stats.installs?.value ?? 0) +
+  (p.stats.users ?? 0);
 
 type CardStat = { text: string; title: string; icon?: 'download' | 'users' };
 const stats: CardStat[] = [];
@@ -46,14 +57,16 @@ for (const s of p.sources) {
 
 const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
 
-// Only badge open-source when no source chip already implies it.
-const showOssBadge = !!p.openSource && !p.sources.includes('github') && !p.sources.includes('npm');
-
 // Project's own website, if it has one distinct from its listing URL.
 const homepage = p.homepage && p.homepage !== p.url ? p.homepage : null;
 const homepageHost = homepage ? homepage.replace(/^https?:\/\//, '').replace(/\/$/, '') : null;
 ---
-<article class={`card card--${size}`} data-tags={p.tags.join(',')} data-source={p.sources.join(' ')}>
+<article
+  class={`card card--${size}`}
+  data-source-groups={sourceGroups}
+  data-year={p.year ?? ''}
+  data-popularity={popularity}
+>
   <ProjectThumb project={p} />
   <header class="card-head">
     <a class="card-title" href={p.url} rel="noopener" target="_blank">
@@ -67,19 +80,9 @@ const homepageHost = homepage ? homepage.replace(/^https?:\/\//, '').replace(/\/
     </span>
   </header>
 
-  {(p.kind || showOssBadge || homepage || p.year) && (
+  {(homepage || p.year) && (
     <p class="card-badges">
       {p.year && <span class="card-badge card-badge--year">since {p.year}</span>}
-      {p.kind && <span class={`card-badge card-badge--kind card-badge--kind-${p.kind}`}>{p.kind}</span>}
-      {showOssBadge && (
-        <a
-          class="card-badge card-badge--oss"
-          href={p.sourceUrl ?? p.url}
-          target="_blank"
-          rel="noopener"
-          title={p.sourceUrl ? `Source: ${p.sourceUrl}` : 'Open source'}
-        >open source</a>
-      )}
       {homepage && (
         <a
           class="card-badge card-badge--site"
@@ -111,12 +114,6 @@ const homepageHost = homepage ? homepage.replace(/^https?:\/\//, '').replace(/\/
           {s.text}
         </span>
       ))}
-    </p>
-  )}
-
-  {p.tags.length > 0 && (
-    <p class="card-tags">
-      {p.tags.slice(0, 4).map((t) => <span class="card-tag">{t}</span>)}
     </p>
   )}
 

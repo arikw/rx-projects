@@ -1,0 +1,50 @@
+---
+interface SourceEntry {
+  key: string;
+  label: string;
+  count: number;
+}
+interface Props {
+  totalCount: number;
+  sources: SourceEntry[];
+}
+const { totalCount, sources } = Astro.props;
+---
+<div class="filter-bar" role="group" aria-label="Filter and sort projects">
+  <div class="filter-row" aria-label="Filter by source">
+    <span class="filter-label">Source</span>
+    <button
+      type="button"
+      class="filter-chip"
+      data-filter-source=""
+      aria-pressed="true"
+    >
+      All <span class="filter-count">{totalCount}</span>
+    </button>
+    {sources.map(({ key, label, count }) => (
+      <button
+        type="button"
+        class="filter-chip"
+        data-filter-source={key}
+        aria-pressed="false"
+      >
+        {label} <span class="filter-count">{count}</span>
+      </button>
+    ))}
+  </div>
+  <div class="filter-row filter-row--sort" aria-label="Sort">
+    <span class="filter-label">Sort</span>
+    <button
+      type="button"
+      class="filter-chip"
+      data-filter-sort="popularity"
+      aria-pressed="true"
+    >Popularity</button>
+    <button
+      type="button"
+      class="filter-chip"
+      data-filter-sort="year"
+      aria-pressed="false"
+    >Year</button>
+  </div>
+</div>

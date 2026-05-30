@@ -451,7 +451,58 @@ button {
   font-weight: 500;
 }
 
-/* Tag filter */
+/* Source-filter + sort */
+.filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.filter-label {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.filter-chip {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  color: var(--fg);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.filter-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.filter-chip[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.filter-chip[aria-pressed='true'] .filter-count {
+  color: rgba(255, 255, 255, 0.7);
+}
+.filter-count {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-feature-settings: 'tnum';
+}
+
+/* Tag filter — legacy, kept for any other consumer */
 .tag-filter {
   display: flex;
   flex-wrap: wrap;

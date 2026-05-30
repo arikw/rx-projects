@@ -1,8 +1,7 @@
 ---
 import ProjectCard from './ProjectCard.astro';
-import TagFilter from './TagFilter.astro';
+import FilterBar from './FilterBar.astro';
 import type { Project } from '../types/project';
-import config from '../lib/load-config';
 
 interface Props {
   projects: Project[];
@@ -10,25 +9,39 @@ interface Props {
 }
 const { projects, pageSize } = Astro.props;
 
-const tagsCfg = config.tags ?? {};
-const topN = tagsCfg.topN ?? 8;
-const minCount = tagsCfg.minCount ?? 2;
-const excludeSet = new Set((tagsCfg.exclude ?? []).map((s) => s.toLowerCase()));
+// Map a project's raw sources (origin/native platforms) to a friendlier
+// "filter group" key for the source-filter chips. google-play / apkpure /
+// appbrain all belong to the android group; everything else passes through.
+const SOURCE_TO_GROUP: Record<string, string> = {
+  github: 'github',
+  npm: 'npm',
+  docker: 'docker',
+  chrome: 'chrome',
+  gnome: 'gnome',
+  'google-play': 'android',
+  apkpure: 'android',
+  appbrain: 'android',
+};
+const GROUP_ORDER = ['github', 'npm', 'docker', 'chrome', 'android', 'gnome'];
 
-const tagCounts = new Map<string, number>();
+function projectGroups(p: Project): string[] {
+  const set = new Set<string>();
+  for (const s of p.sources) {
+    const g = SOURCE_TO_GROUP[s];
+    if (g) set.add(g);
+  }
+  return [...set];
+}
+
+const groupCounts = new Map<string, number>();
 for (const p of projects) {
-  for (const t of p.tags) {
-    if (excludeSet.has(t.toLowerCase())) continue;
-    tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
+  for (const g of projectGroups(p)) {
+    groupCounts.set(g, (groupCounts.get(g) ?? 0) + 1);
   }
 }
-const sortedTags = Array.from(tagCounts.entries())
-  .filter(([, count]) => count >= minCount)
-  .map(([name, count]) => ({ name, count }))
-  .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-
-const primaryTags = sortedTags.slice(0, topN);
-const overflowTags = sortedTags.slice(topN);
+const sourceChips = GROUP_ORDER
+  .filter((g) => groupCounts.has(g))
+  .map((g) => ({ key: g, label: g, count: groupCounts.get(g)! }));
 ---
 <section class="projects" data-page-size={pageSize}>
   <header class="section-head">
@@ -37,19 +50,15 @@ const overflowTags = sortedTags.slice(topN);
     <span class="section-count">{String(projects.length).padStart(2, '0')}</span>
   </header>
 
-  {sortedTags.length > 0 && (
-    <TagFilter
-      primary={primaryTags}
-      overflow={overflowTags}
-      totalCount={projects.length}
-    />
-  )}
+  <FilterBar totalCount={projects.length} sources={sourceChips} />
 
   <div class="projects-grid">
-    {projects.map((p) => <ProjectCard project={p} />)}
+    {projects.map((p) => (
+      <ProjectCard project={p} sourceGroups={projectGroups(p).join(' ')} />
+    ))}
   </div>
 
-  <p class="projects-empty" hidden>No projects match this tag.</p>
+  <p class="projects-empty" hidden>No projects match.</p>
 
   <div class="projects-more">
     <button type="button" class="show-more">Show more</button>
@@ -66,43 +75,66 @@ const overflowTags = sortedTags.slice(topN);
     const moreBtn = root.querySelector<HTMLButtonElement>('.show-more');
     if (!grid || !empty || !moreBtn) return;
 
-    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-tag-filter]'));
+    const sourceChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-source]'));
+    const sortChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-sort]'));
     const cards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
 
-    let activeTag = '';
+    let activeSource = '';
+    let activeSort: 'popularity' | 'year' = 'popularity';
     let shown = pageSize;
+
+    const popularityOf = (c: HTMLElement) => parseFloat(c.dataset.popularity ?? '0');
+    const yearOf = (c: HTMLElement) => parseInt(c.dataset.year ?? '0', 10);
 
     function applyFilter() {
       const matching = cards.filter((c) => {
-        if (!activeTag) return true;
-        const tags = (c.dataset.tags ?? '').split(',').filter(Boolean);
-        return tags.includes(activeTag);
+        if (!activeSource) return true;
+        const groups = (c.dataset.sourceGroups ?? '').split(' ').filter(Boolean);
+        return groups.includes(activeSource);
+      });
+
+      const sorted = matching.slice().sort((a, b) => {
+        if (activeSort === 'year') return yearOf(b) - yearOf(a);
+        return popularityOf(b) - popularityOf(a);
       });
 
       cards.forEach((c) => c.classList.add('is-hidden'));
-      matching.slice(0, shown).forEach((c) => c.classList.remove('is-hidden'));
+      sorted.slice(0, shown).forEach((c) => {
+        c.classList.remove('is-hidden');
+        grid.appendChild(c);
+      });
+      // Move filtered-out cards to the end so DOM order matches sort order
+      // for the visible ones. They stay hidden via .is-hidden.
+      const visibleSet = new Set(sorted.slice(0, shown));
+      cards.filter((c) => !visibleSet.has(c)).forEach((c) => grid.appendChild(c));
 
       empty.hidden = matching.length > 0;
       moreBtn.hidden = matching.length <= shown;
     }
 
-    function setTag(tag: string) {
-      activeTag = tag;
+    function setSource(source: string) {
+      activeSource = source;
       shown = pageSize;
-      chips.forEach((c) => {
-        c.setAttribute('aria-pressed', String(c.dataset.tagFilter === tag));
+      sourceChips.forEach((c) => {
+        c.setAttribute('aria-pressed', String((c.dataset.filterSource ?? '') === source));
       });
       applyFilter();
-
-      if (tag) {
-        history.replaceState(null, '', `#tag=${encodeURIComponent(tag)}`);
-      } else {
-        history.replaceState(null, '', location.pathname);
-      }
     }
 
-    chips.forEach((c) => {
-      c.addEventListener('click', () => setTag(c.dataset.tagFilter ?? ''));
+    function setSort(sort: 'popularity' | 'year') {
+      activeSort = sort;
+      shown = pageSize;
+      sortChips.forEach((c) => {
+        c.setAttribute('aria-pressed', String(c.dataset.filterSort === sort));
+      });
+      applyFilter();
+    }
+
+    sourceChips.forEach((c) => {
+      c.addEventListener('click', () => setSource(c.dataset.filterSource ?? ''));
+    });
+    sortChips.forEach((c) => {
+      c.addEventListener('click', () => setSort((c.dataset.filterSort as 'popularity' | 'year') ?? 'popularity'));
     });
 
     moreBtn.addEventListener('click', () => {
@@ -110,7 +142,6 @@ const overflowTags = sortedTags.slice(topN);
       applyFilter();
     });
 
-    const hashMatch = location.hash.match(/tag=([^&]+)/);
-    setTag(hashMatch ? decodeURIComponent(hashMatch[1]) : '');
+    applyFilter();
   });
 </script>
