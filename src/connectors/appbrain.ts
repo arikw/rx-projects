@@ -202,7 +202,8 @@ export const fetchAppbrainProjects: Connector = async (config, options) => {
         firstReleased: a.year,
         tags: ['android'],
         kind: 'mobile',
-        images: a.iconUrl ? [a.iconUrl] : undefined,
+        // AppBrain's iconUrl is the Google-hosted square app icon.
+        icon: a.iconUrl,
         reviews: a.positiveQuotes?.map<Review>((q) => ({ body: q, source: 'appbrain' })),
         stats: {
           ...(a.installs != null ? { installs: { value: a.installs, exact: false } } : {}),

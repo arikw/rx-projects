@@ -77,8 +77,12 @@ export type Representation = {
   description?: string;
   /** First-publication year. */
   firstReleased?: number;
-  /** Icons / banners / screenshots this representation exposes. */
-  images?: string[];
+  /** Wide promotional art (e.g. Chrome Web Store marquee). One per rep. */
+  banner?: string;
+  /** Square app/extension icon. */
+  icon?: string;
+  /** Phone/screen captures of the running product. */
+  screenshots?: string[];
   videos?: string[];
   reviews?: Review[];
   tags?: string[];
@@ -121,10 +125,12 @@ export type Project = {
   year?: number;
   /** The project's own website, distinct from `url`. */
   homepage?: string;
-  /** Primary image for the card thumb (first available across representations). */
-  image?: string;
-  /** All image URLs collected across origins/mirrors/natives. */
-  images?: string[];
+  /** Wide hero artwork, when any rep supplies one. */
+  banner?: string;
+  /** Square app/extension icon, when any rep supplies one. */
+  icon?: string;
+  /** All screenshots collected across origins/mirrors/natives. */
+  screenshots?: string[];
   videos?: string[];
   /** All collected reviews — for future "positive reviews" rotators etc. */
   reviews?: Review[];

@@ -299,7 +299,9 @@ export const fetchChromestatsProjects: Connector = async (config, options) => {
           ...(a.category ? [a.category.replace(/^\d+_/, '').split('/').pop()!] : []),
         ],
         kind: 'extension',
-        images: [a.marqueeBanner, a.smallBanner].filter((u): u is string => !!u),
+        // chrome-stats supplies the real promo banners CWS displays at the top
+        // of a listing — prefer the marquee (1400×560), fall back to small.
+        banner: a.marqueeBanner ?? a.smallBanner,
         reviews: a.reviews,
         stats: {
           ...(a.userCount != null ? { users: a.userCount } : {}),

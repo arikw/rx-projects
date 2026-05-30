@@ -15,11 +15,12 @@ type ApkpureApp = {
   title: string;
   url: string;
   description?: string;
-  image?: string;
+  /** Square app icon (og:image). */
+  icon?: string;
   rating?: number;
   ratingCount?: number;
   year?: number;
-  /** Screenshots APKPure hosts (ld+json `screenshot[]`). */
+  /** Phone screenshots APKPure hosts (ld+json `screenshot[]`). */
   screenshots?: string[];
 };
 
@@ -137,21 +138,18 @@ async function scrapeApp(pkg: string): Promise<ApkpureApp | null> {
   }
   const year = ld?.datePublished ? new Date(ld.datePublished).getUTCFullYear() : undefined;
 
-  const ogImage = meta(doc, 'og:image');
   const screenshots = extractScreenshots(ld);
   return {
     packageName: pkg,
     title,
     url: meta(doc, 'og:url') ?? url,
     description: description || undefined,
-    image: ogImage,
+    // og:image is the square app icon, distinct from the phone screenshots.
+    icon: meta(doc, 'og:image'),
     rating,
     ratingCount,
     year: Number.isFinite(year) ? year : undefined,
-    screenshots:
-      ogImage || screenshots.length
-        ? [...new Set([...(ogImage ? [ogImage] : []), ...screenshots])]
-        : undefined,
+    screenshots: screenshots.length ? screenshots : undefined,
   };
 }
 
@@ -194,16 +192,17 @@ export const fetchApkpureProjects: Connector = async (config, options) => {
             : {}),
         },
       },
-      // APKPure's own channel: the images it hosts. Its own download counter
-      // measures a different population (APK pulls from a third-party mirror,
-      // not Play installs) and is intentionally omitted so it doesn't get
-      // summed alongside Google Play installs on the card.
+      // APKPure's own channel: the icon and screenshots it hosts. Its own
+      // download counter measures a different population (APK pulls from a
+      // third-party mirror, not Play installs) and is intentionally omitted so
+      // it doesn't get summed alongside Google Play installs on the card.
       native: {
         platform: 'apkpure',
         id: a.packageName,
         url: a.url,
         firstReleased: a.year,
-        images: a.screenshots ?? (a.image ? [a.image] : undefined),
+        icon: a.icon,
+        screenshots: a.screenshots,
       },
     }));
 };

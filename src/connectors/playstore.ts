@@ -83,7 +83,8 @@ async function scrapeOne(pkg: string): Promise<ConnectorResult | null> {
       tags: ['android', ...(category ? [category.toLowerCase().replace(/_/g, '-')] : [])],
       kind: 'mobile' as ProjectKind,
       openSource: false,
-      images: image ? [image] : undefined,
+      // Play Store's og:image is the 512×512 app icon, not a banner.
+      icon: image,
       stats: {
         ...(rating ? { rating } : {}),
       },

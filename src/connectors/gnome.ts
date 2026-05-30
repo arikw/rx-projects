@@ -78,7 +78,8 @@ export const fetchGnomeProjects: Connector = async (config, options) => {
         kind: 'extension',
         openSource: true,
         sourceUrl: repo,
-        images: [abs(e.icon), abs(e.screenshot)].filter((u): u is string => !!u),
+        icon: abs(e.icon),
+        screenshots: abs(e.screenshot) ? [abs(e.screenshot)!] : undefined,
         stats: { downloads: e.downloads },
       },
     };
