@@ -156,6 +156,18 @@ button {
   line-height: 1.4;
 }
 
+.hero-updated {
+  margin: 12px 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-feature-settings: 'tnum';
+  letter-spacing: 0.02em;
+}
+.hero-updated time {
+  color: var(--fg);
+  opacity: 0.7;
+}
+
 /* Section headers */
 .section-head {
   display: flex;

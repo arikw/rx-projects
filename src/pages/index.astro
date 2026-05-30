@@ -11,6 +11,9 @@ import { aggregateStats } from '../lib/aggregate-stats';
 
 const allProjects = await loadProjects();
 const stats = aggregateStats(allProjects);
+// Build timestamp — emitted into the static HTML; the cron-driven rebuild
+// in .github/workflows/deploy.yml refreshes it daily.
+const lastUpdated = new Date().toISOString();
 
 const featuredOrder = new Map(config.featured.map((slug, i) => [slug, i]));
 
@@ -37,7 +40,7 @@ const sortedAll = [...allProjects].sort((a, b) => signal(b) - signal(a));
   title={config.meta.siteTitle}
   description={config.meta.siteDescription}
 >
-  <Hero stats={stats} />
+  <Hero stats={stats} lastUpdated={lastUpdated} />
   {config.meta.siteAbout && <SiteAbout markdown={config.meta.siteAbout} />}
   <FeaturedRow projects={featured} />
   <ProjectGrid projects={sortedAll} pageSize={config.ui.pageSize} />

@@ -5,11 +5,26 @@ import config from '../lib/load-config';
 
 interface Props {
   stats: HeroStats;
+  lastUpdated?: string;
 }
 
-const { stats } = Astro.props;
+const { stats, lastUpdated } = Astro.props;
 const tagline = config.meta.siteTagline;
 const portfolioCount = Math.max(0, stats.totalProjects - stats.openSourceCount);
+
+// Render the build timestamp as a human-readable date in UTC so it doesn't
+// drift with the visitor's timezone.
+const lastUpdatedLabel = lastUpdated
+  ? new Date(lastUpdated).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
+    })
+  : null;
+const lastUpdatedIso = lastUpdated
+  ? new Date(lastUpdated).toISOString()
+  : undefined;
 ---
 <section class="hero">
   {tagline && (
@@ -45,4 +60,9 @@ const portfolioCount = Math.max(0, stats.totalProjects - stats.openSourceCount);
       sublabel={`${stats.openSourceCount} open-source · ${portfolioCount} portfolio`}
     />
   </div>
+  {lastUpdatedLabel && (
+    <p class="hero-updated">
+      Last updated <time datetime={lastUpdatedIso}>{lastUpdatedLabel}</time>
+    </p>
+  )}
 </section>
