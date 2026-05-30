@@ -1,6 +1,7 @@
 import type { Connector, UrlIdExtractor } from './types';
 import type { ConnectorResult, ProjectKind } from '../types/project';
 import { loadFixture, isPlaceholderHandle } from '../lib/fixtures';
+import { readJsonCache, writeJsonCache } from '../lib/json-cache';
 
 export const urlExtractors: UrlIdExtractor[] = [
   {
@@ -54,7 +55,69 @@ type GithubRepo = {
   updated_at: string;
   fork: boolean;
   archived: boolean;
+  has_pages: boolean;
 };
+
+// GitHub Pages favicon cache. Once we've fetched a repo's pages site and
+// pulled its favicon URL, it's frozen — favicons rarely change, and a missing
+// favicon (`null`) is a stable answer too. Delete generated/github-pages.json
+// to force a refresh.
+const PAGES_CACHE_PATH = 'generated/github-pages.json';
+type PagesEntry = { pagesUrl: string; favicon: string | null };
+type PagesCache = { version: 1; _generated: string; pages: Record<string, PagesEntry> };
+const PAGES_CACHE_NOTE =
+  'Auto-generated GitHub Pages favicons (fetched once per repo whose has_pages=true). Delete to refresh.';
+const emptyPagesCache = (): PagesCache => ({ version: 1, _generated: PAGES_CACHE_NOTE, pages: {} });
+
+/** Conventional Pages URL for a repo: user/org site if the repo name matches
+ * `<handle>.github.io`, project site otherwise. Custom domains still serve
+ * from this URL (or redirect to it); we leave cname detection to the user
+ * setting the repo's homepage field explicitly. */
+function pagesUrlFor(handle: string, repo: string): string {
+  const handleLower = handle.toLowerCase();
+  const repoLower = repo.toLowerCase();
+  if (repoLower === `${handleLower}.github.io`) return `https://${handleLower}.github.io/`;
+  return `https://${handleLower}.github.io/${repo}/`;
+}
+
+/** Fetch the Pages site and extract a favicon URL. Tries (in order):
+ *  - <link rel="icon" href="…">  (most common)
+ *  - <link rel="shortcut icon" href="…">
+ *  - <link rel="apple-touch-icon" href="…">
+ *  - <pages-url>favicon.ico convention (last resort, no HEAD check). */
+async function fetchPagesFavicon(pagesUrl: string): Promise<string | null> {
+  let html: string;
+  try {
+    const res = await fetch(pagesUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) rx-dev-dashboard/0.1',
+        Accept: 'text/html,application/xhtml+xml',
+      },
+      redirect: 'follow',
+    });
+    if (!res.ok) return null;
+    html = await res.text();
+  } catch {
+    return null;
+  }
+
+  // Match <link rel="<one of icon variants>" href="..."> in either attribute order.
+  const REL_VALUES = '(?:shortcut\\s+)?icon|apple-touch-icon|mask-icon';
+  const relHref = new RegExp(
+    `<link[^>]*\\brel=["'](?:${REL_VALUES})["'][^>]*\\bhref=["']([^"']+)["']`,
+    'i',
+  );
+  const hrefRel = new RegExp(
+    `<link[^>]*\\bhref=["']([^"']+)["'][^>]*\\brel=["'](?:${REL_VALUES})["']`,
+    'i',
+  );
+  const m = html.match(relHref) ?? html.match(hrefRel);
+  if (m) {
+    try { return new URL(m[1], pagesUrl).toString(); } catch { /* fallthrough */ }
+  }
+  // Fallback: assume favicon.ico at the pages-url base.
+  try { return new URL('favicon.ico', pagesUrl).toString(); } catch { return null; }
+}
 
 async function fetchPage(user: string, page: number, token?: string): Promise<GithubRepo[]> {
   const headers: Record<string, string> = {
@@ -96,11 +159,38 @@ export const fetchGithubProjects: Connector = async (config, options) => {
   // A repo named exactly after the handle is GitHub's "profile README" repo —
   // it renders the README on the user's profile, not a real project.
   const handleLower = handle.toLowerCase();
-  return repos
+
+  // Filter the repo list first; only THEN look up Pages favicons for the
+  // survivors (no point fetching favicons for repos we'll drop).
+  const keptRepos = repos
     .filter((r) => cfg.includeForks || !r.fork)
     .filter((r) => !excludeSet.has(r.name))
-    .filter((r) => r.name.toLowerCase() !== handleLower)
-    .map<ConnectorResult>((r) => ({
+    .filter((r) => r.name.toLowerCase() !== handleLower);
+
+  // Populate the favicon cache for any has_pages repos we haven't seen before.
+  const pagesCache = readJsonCache<PagesCache>(PAGES_CACHE_PATH, emptyPagesCache());
+  if (pagesCache.version !== 1 || !pagesCache.pages) Object.assign(pagesCache, emptyPagesCache());
+  pagesCache._generated = PAGES_CACHE_NOTE;
+
+  const toFetch = keptRepos.filter((r) => r.has_pages && !pagesCache.pages[r.name]);
+  if (toFetch.length) {
+    const results = await Promise.all(
+      toFetch.map(async (r) => {
+        const pagesUrl = pagesUrlFor(handle, r.name);
+        const favicon = await fetchPagesFavicon(pagesUrl);
+        return [r.name, { pagesUrl, favicon }] as const;
+      }),
+    );
+    for (const [name, entry] of results) pagesCache.pages[name] = entry;
+    writeJsonCache(PAGES_CACHE_PATH, pagesCache);
+  }
+
+  return keptRepos.map<ConnectorResult>((r) => {
+    const pagesEntry = r.has_pages ? pagesCache.pages[r.name] : undefined;
+    // Pages URL stands in as homepage when the repo doesn't set one explicitly,
+    // so the card's site badge surfaces it without changing UI.
+    const homepage = r.homepage?.trim() || pagesEntry?.pagesUrl || undefined;
+    return {
       // GitHub is the origin — its data is first-party, no mirror/native.
       // Archived repos still emit so URL extractors can merge them with their
       // npm / docker / chrome counterparts; the builder then drops the whole
@@ -120,8 +210,12 @@ export const fetchGithubProjects: Connector = async (config, options) => {
         openSource: true,
         archived: r.archived,
         sourceUrl: r.html_url,
-        homepage: r.homepage?.trim() ? r.homepage.trim() : undefined,
+        homepage,
+        // The Pages favicon doubles as a per-project icon — much more
+        // distinctive than the generic GitHub mark for repos that ship a site.
+        icon: pagesEntry?.favicon ?? undefined,
         stats: { stars: r.stargazers_count, forks: r.forks_count },
       },
-    }));
+    };
+  });
 };
