@@ -321,5 +321,7 @@ function buildProject(group: ConnectorResult[]): Project {
  *        rating is reconciled (max count), never summed.
  */
 export function buildProjects(results: ConnectorResult[]): Project[] {
-  return groupResults(results).map(buildProject);
+  return groupResults(results)
+    .filter((group) => !group.some((r) => repsOf(r).some((rep) => rep.archived)))
+    .map(buildProject);
 }

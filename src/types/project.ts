@@ -90,6 +90,9 @@ export type Representation = {
   language?: string;
   /** Whether this representation's project is open source. */
   openSource?: boolean;
+  /** Source flagged as archived (e.g. GitHub repo archived). Any archived
+   * rep in a merged group causes the whole project to be dropped. */
+  archived?: boolean;
   /** Canonical source-repo URL, when known. */
   sourceUrl?: string;
   /** The project's own website, distinct from `url`. */

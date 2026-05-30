@@ -94,11 +94,14 @@ export const fetchGithubProjects: Connector = async (config, options) => {
   const excludeSet = new Set(cfg.excludeRepos);
 
   return repos
-    .filter((r) => !r.archived)
     .filter((r) => cfg.includeForks || !r.fork)
     .filter((r) => !excludeSet.has(r.name))
     .map<ConnectorResult>((r) => ({
       // GitHub is the origin — its data is first-party, no mirror/native.
+      // Archived repos still emit so URL extractors can merge them with their
+      // npm / docker / chrome counterparts; the builder then drops the whole
+      // merged group, so a project shipped to npm with an archived repo
+      // disappears from the dashboard entirely.
       origin: {
         platform: 'github',
         id: r.name,
@@ -111,6 +114,7 @@ export const fetchGithubProjects: Connector = async (config, options) => {
         language: r.language ?? undefined,
         kind: deriveKind(r.topics ?? []),
         openSource: true,
+        archived: r.archived,
         sourceUrl: r.html_url,
         homepage: r.homepage?.trim() ? r.homepage.trim() : undefined,
         stats: { stars: r.stargazers_count, forks: r.forks_count },
