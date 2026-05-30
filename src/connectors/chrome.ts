@@ -140,10 +140,11 @@ export const fetchChromeProjects: Connector = async (config, options) => {
       description: ext.description,
       tags: ['chrome-extension'],
       kind: 'extension',
-      // CWS exposes og:image — the 440×280 small promo tile (wider than tall,
-      // not a square icon). chrome-stats supplies a larger marquee variant; if
-      // both exist the builder picks the freshest.
-      banner: ext.image,
+      // CWS's og:image is the extension's 128×128 icon (=s128-rj-…), not a
+      // banner. chrome-stats supplies the real marquee separately; when both
+      // exist the banner layout wins, when only this one does the icon layout
+      // renders the icon at a sane size instead of stretching it into a banner.
+      icon: ext.image,
       stats: {
         ...(ext.users != null ? { users: ext.users } : {}),
         ...(ext.rating != null && ext.ratingCount != null
