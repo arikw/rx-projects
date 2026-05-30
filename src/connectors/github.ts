@@ -104,19 +104,22 @@ async function fetchPagesFavicon(pagesUrl: string): Promise<string | null> {
     return null;
   }
 
-  // Match <link rel="<one of icon variants>" href="..."> in either attribute order.
+  // Match <link rel="<one of icon variants>" href="..."> in either attribute
+  // order. Crucially: capture href content based on its OPENING quote char
+  // (backreference) — so single quotes inside a double-quoted data: URI (and
+  // vice versa) don't terminate the capture early.
   const REL_VALUES = '(?:shortcut\\s+)?icon|apple-touch-icon|mask-icon';
   const relHref = new RegExp(
-    `<link[^>]*\\brel=["'](?:${REL_VALUES})["'][^>]*\\bhref=["']([^"']+)["']`,
-    'i',
+    `<link[^>]*?\\brel=(["'])(?:${REL_VALUES})\\1[^>]*?\\bhref=(["'])(.*?)\\2`,
+    'is',
   );
   const hrefRel = new RegExp(
-    `<link[^>]*\\bhref=["']([^"']+)["'][^>]*\\brel=["'](?:${REL_VALUES})["']`,
-    'i',
+    `<link[^>]*?\\bhref=(["'])(.*?)\\1[^>]*?\\brel=(["'])(?:${REL_VALUES})\\3`,
+    'is',
   );
-  const m = html.match(relHref) ?? html.match(hrefRel);
-  if (m) {
-    try { return new URL(m[1], pagesUrl).toString(); } catch { /* fallthrough */ }
+  const href = html.match(relHref)?.[3] ?? html.match(hrefRel)?.[2];
+  if (href) {
+    try { return new URL(href, pagesUrl).toString(); } catch { /* fallthrough */ }
   }
   // Fallback: assume favicon.ico at the pages-url base.
   try { return new URL('favicon.ico', pagesUrl).toString(); } catch { return null; }
