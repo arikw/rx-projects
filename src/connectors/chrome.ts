@@ -37,6 +37,7 @@ function decodeEntities(s: string): string {
 async function scrapeOne(id: string): Promise<ChromeExtension | null> {
   const url = `https://chromewebstore.google.com/detail/${encodeURIComponent(id)}`;
   let html: string;
+  let finalUrl: string;
   try {
     const res = await fetch(url, {
       headers: {
@@ -45,19 +46,25 @@ async function scrapeOne(id: string): Promise<ChromeExtension | null> {
       },
     });
     if (!res.ok) return null;
+    finalUrl = res.url;
     html = await res.text();
   } catch {
     return null;
   }
 
-  // Title: <title>Name - Chrome Web Store</title>
-  const titleMatch = html.match(/<title>([^<]+?)(?:\s*-\s*Chrome Web Store)?<\/title>/);
-  const title = titleMatch ? decodeEntities(titleMatch[1].trim()) : id;
+  // Taken-down extensions get redirected to `/detail/empty-title/<id>`
+  // (a structural slug CWS uses for removed listings). Live extensions get
+  // the real slug. The id stays in the URL either way, so the slug is the
+  // signal — chrome-stats's mirror supplies metadata for the removed ones.
+  const slug = finalUrl.match(/\/detail\/([^/]+)\//)?.[1];
+  if (slug === 'empty-title') return null;
 
-  // Taken-down extensions get redirected to the store landing page, whose
-  // <title> is just "Chrome Web Store". Treat that as "not found" — chromestats
-  // will supply the real metadata for the card.
-  if (title === 'Chrome Web Store') return null;
+  // Title: prefer og:title; fall back to <title>. Both come with a
+  // " - Chrome Web Store" suffix on this site, so strip it uniformly.
+  const ogTitle = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/)?.[1];
+  const titleTag = html.match(/<title>([^<]+)<\/title>/)?.[1];
+  const rawTitle = decodeEntities((ogTitle ?? titleTag ?? id).trim());
+  const title = rawTitle.replace(/\s*-\s*Chrome Web Store\s*$/, '');
 
   // Description: og:description or meta description
   const descMatch =
