@@ -69,6 +69,9 @@ const PAGES_CACHE_NOTE =
   'Auto-generated GitHub Pages favicons (fetched once per repo whose has_pages=true). Delete to refresh.';
 const emptyPagesCache = (): PagesCache => ({ version: 1, _generated: PAGES_CACHE_NOTE, pages: {} });
 
+/** Fallback icon for Pages projects whose site doesn't expose a favicon. */
+const GITHUB_FAVICON = 'https://github.com/favicon.ico';
+
 /** Conventional Pages URL for a repo: user/org site if the repo name matches
  * `<handle>.github.io`, project site otherwise. Custom domains still serve
  * from this URL (or redirect to it); we leave cname detection to the user
@@ -213,7 +216,10 @@ export const fetchGithubProjects: Connector = async (config, options) => {
         homepage,
         // The Pages favicon doubles as a per-project icon — much more
         // distinctive than the generic GitHub mark for repos that ship a site.
-        icon: pagesEntry?.favicon ?? undefined,
+        // If the Pages site has no detectable favicon, fall back to GitHub's
+        // own so the card still uses the icon layout (the Pages URL itself
+        // signals "this ships as a github-hosted site").
+        icon: pagesEntry?.favicon ?? (r.has_pages ? GITHUB_FAVICON : undefined),
         stats: { stars: r.stargazers_count, forks: r.forks_count },
       },
     };
