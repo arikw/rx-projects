@@ -54,6 +54,11 @@ async function scrapeOne(id: string): Promise<ChromeExtension | null> {
   const titleMatch = html.match(/<title>([^<]+?)(?:\s*-\s*Chrome Web Store)?<\/title>/);
   const title = titleMatch ? decodeEntities(titleMatch[1].trim()) : id;
 
+  // Taken-down extensions get redirected to the store landing page, whose
+  // <title> is just "Chrome Web Store". Treat that as "not found" — chromestats
+  // will supply the real metadata for the card.
+  if (title === 'Chrome Web Store') return null;
+
   // Description: og:description or meta description
   const descMatch =
     html.match(/<meta[^>]+property="og:description"[^>]+content="([^"]+)"/) ??
