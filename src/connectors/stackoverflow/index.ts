@@ -16,8 +16,11 @@ const CACHE_PATH = 'generated/stackoverflow.json';
 const REFRESH_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // What we keep from the SE API response. PII is deliberately *not* cached:
-// display_name and profile_image are the canonical identifying fields and
-// the dashboard publishes under the pseudonymous "Arik W." persona.
+// display_name is the canonical identifying field and the dashboard publishes
+// under the pseudonymous "Arik W." persona. profile_image *is* captured
+// because the user.profileImage config can opt in to using it as the
+// dashboard's portrait; if config.user.profileImage doesn't reach it, it just
+// rides along on the ProfileFact and never renders.
 type SOUser = {
   user_id: number;
   reputation: number;
@@ -25,6 +28,7 @@ type SOUser = {
   question_count?: number;
   badge_counts: { gold: number; silver: number; bronze: number };
   link: string;
+  profile_image?: string;
 };
 type SOCache = { version: 1; _generated: string; scrapedAt?: string; user?: SOUser };
 
@@ -49,6 +53,7 @@ async function fetchSOUser(userId: string): Promise<SOUser | null> {
       question_count: u.question_count,
       badge_counts: u.badge_counts ?? { gold: 0, silver: 0, bronze: 0 },
       link: u.link,
+      profile_image: u.profile_image,
     };
   } catch {
     return null;
@@ -106,6 +111,7 @@ export default defineConnector({
           { label: '🥈', value: u.badge_counts.silver },
           { label: '🥉', value: u.badge_counts.bronze },
         ].filter((d) => typeof d.value === 'number' && d.value > 0),
+        avatar: u.profile_image,
       },
     };
   },

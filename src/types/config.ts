@@ -123,6 +123,15 @@ export type ProjectsConfig = {
     docker: string;
     /** Optional short author bio rendered at the bottom of the page. Markdown. */
     bio?: string;
+    /** Profile image (avatar) source.
+     *   - `undefined` (default): auto — use the first available avatar from a
+     *     profile connector in manifest order (typically github first, then
+     *     stackoverflow, etc.).
+     *   - `false`: don't render an avatar at all.
+     *   - a connector key like `'github'` or `'stackoverflow'`: use that
+     *     source's avatar.
+     *   - any `http(s)://…` URL: use it directly (host your own portrait). */
+    profileImage?: false | string;
   };
   sources: {
     github: GithubSourceConfig;

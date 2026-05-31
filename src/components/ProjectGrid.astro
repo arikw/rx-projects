@@ -2,6 +2,7 @@
 import ProjectCard from './ProjectCard.astro';
 import FilterBar from './FilterBar.astro';
 import type { Project } from '../types/project';
+import config from '../lib/load-config';
 import { getPlatformToSourceGroup, getOrigins, getSourceGroup } from '../connectors/_registry';
 
 interface Props {
@@ -37,6 +38,27 @@ for (const p of projects) {
 const sourceChips = GROUP_ORDER
   .filter((g) => groupCounts.has(g))
   .map((g) => ({ key: g, label: g, count: groupCounts.get(g)! }));
+
+// Tag filter — top-N tags by count, with overflow revealed via a toggle.
+// Counts are global to start; the client-side script updates them per source
+// filter as the user picks one.
+const tagsCfg = config.tags ?? {};
+const topN = tagsCfg.topN ?? 8;
+const minCount = tagsCfg.minCount ?? 2;
+const excludeSet = new Set((tagsCfg.exclude ?? []).map((s) => s.toLowerCase()));
+const tagCounts = new Map<string, number>();
+for (const p of projects) {
+  for (const t of p.tags ?? []) {
+    if (excludeSet.has(t.toLowerCase())) continue;
+    tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
+  }
+}
+const sortedTags = Array.from(tagCounts.entries())
+  .filter(([, count]) => count >= minCount)
+  .map(([name, count]) => ({ name, count }))
+  .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+const primaryTags = sortedTags.slice(0, topN);
+const overflowTags = sortedTags.slice(topN);
 ---
 <section class="projects" data-page-size={pageSize}>
   <header class="section-head">
@@ -45,11 +67,20 @@ const sourceChips = GROUP_ORDER
     <span class="section-count">{String(projects.length).padStart(2, '0')}</span>
   </header>
 
-  <FilterBar totalCount={projects.length} sources={sourceChips} />
+  <FilterBar
+    totalCount={projects.length}
+    sources={sourceChips}
+    primaryTags={primaryTags}
+    overflowTags={overflowTags}
+  />
 
   <div class="projects-grid">
     {projects.map((p) => (
-      <ProjectCard project={p} sourceGroups={projectGroups(p).join(' ')} />
+      <ProjectCard
+        project={p}
+        sourceGroups={projectGroups(p).join(' ')}
+        tagList={(p.tags ?? []).join(' ')}
+      />
     ))}
   </div>
 
@@ -72,21 +103,69 @@ const sourceChips = GROUP_ORDER
 
     const sourceChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-source]'));
     const sortChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-sort]'));
+    const tagChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-tag]'));
+    const tagToggle = root.querySelector<HTMLButtonElement>('[data-tag-toggle]');
+    const totalCountEl = root.querySelector<HTMLElement>('[data-tag-count-total]');
     const cards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
 
     let activeSource = '';
     let activeSort: 'popularity' | 'year' = 'popularity';
+    let activeTag = '';
     let shown = pageSize;
+    let overflowExpanded = false;
 
     const popularityOf = (c: HTMLElement) => parseFloat(c.dataset.popularity ?? '0');
     const yearOf = (c: HTMLElement) => parseInt(c.dataset.year ?? '0', 10);
+    const tagsOf = (c: HTMLElement) =>
+      (c.dataset.tags ?? '').split(' ').filter(Boolean);
+    const matchesSource = (c: HTMLElement) =>
+      !activeSource ||
+      (c.dataset.sourceGroups ?? '').split(' ').filter(Boolean).includes(activeSource);
+    const matchesTag = (c: HTMLElement) =>
+      !activeTag || tagsOf(c).includes(activeTag);
+
+    /** Recompute the tag chip counts to reflect the active source filter. Tags
+     *  that don't appear under the current source get hidden; the "+N more"
+     *  toggle's label updates with the remaining overflow count. */
+    function refreshTagCounts() {
+      const sourceMatching = cards.filter(matchesSource);
+      const counts = new Map<string, number>();
+      for (const c of sourceMatching) {
+        for (const t of tagsOf(c)) counts.set(t, (counts.get(t) ?? 0) + 1);
+      }
+      if (totalCountEl) totalCountEl.textContent = String(sourceMatching.length);
+
+      let overflowAvailable = 0;
+      tagChips.forEach((chip) => {
+        const tag = chip.dataset.filterTag ?? '';
+        if (!tag) return; // "All" chip handled by totalCountEl above
+        const count = counts.get(tag) ?? 0;
+        const valueEl = chip.querySelector<HTMLElement>('.filter-count');
+        if (valueEl) valueEl.textContent = String(count);
+        const isOverflow = chip.classList.contains('filter-chip--overflow');
+        const shouldShow = count > 0;
+        if (shouldShow) {
+          if (!isOverflow || overflowExpanded) chip.removeAttribute('hidden');
+          if (isOverflow && !overflowExpanded) chip.setAttribute('hidden', '');
+          if (isOverflow) overflowAvailable += 1;
+        } else {
+          chip.setAttribute('hidden', '');
+        }
+      });
+      if (tagToggle) {
+        if (overflowAvailable === 0) {
+          tagToggle.setAttribute('hidden', '');
+        } else {
+          tagToggle.removeAttribute('hidden');
+          if (!overflowExpanded) {
+            tagToggle.textContent = `+ ${overflowAvailable} more`;
+          }
+        }
+      }
+    }
 
     function applyFilter() {
-      const matching = cards.filter((c) => {
-        if (!activeSource) return true;
-        const groups = (c.dataset.sourceGroups ?? '').split(' ').filter(Boolean);
-        return groups.includes(activeSource);
-      });
+      const matching = cards.filter((c) => matchesSource(c) && matchesTag(c));
 
       const sorted = matching.slice().sort((a, b) => {
         if (activeSort === 'year') return yearOf(b) - yearOf(a);
@@ -98,8 +177,6 @@ const sourceChips = GROUP_ORDER
         c.classList.remove('is-hidden');
         grid.appendChild(c);
       });
-      // Move filtered-out cards to the end so DOM order matches sort order
-      // for the visible ones. They stay hidden via .is-hidden.
       const visibleSet = new Set(sorted.slice(0, shown));
       cards.filter((c) => !visibleSet.has(c)).forEach((c) => grid.appendChild(c));
 
@@ -113,6 +190,15 @@ const sourceChips = GROUP_ORDER
       sourceChips.forEach((c) => {
         c.setAttribute('aria-pressed', String((c.dataset.filterSource ?? '') === source));
       });
+      // If the previously active tag no longer exists under this source, clear it.
+      refreshTagCounts();
+      if (activeTag) {
+        const chip = tagChips.find((c) => c.dataset.filterTag === activeTag);
+        if (chip?.hasAttribute('hidden')) {
+          setTag('');
+          return;
+        }
+      }
       applyFilter();
     }
 
@@ -125,18 +211,45 @@ const sourceChips = GROUP_ORDER
       applyFilter();
     }
 
+    function setTag(tag: string) {
+      activeTag = tag;
+      shown = pageSize;
+      tagChips.forEach((c) => {
+        c.setAttribute('aria-pressed', String((c.dataset.filterTag ?? '') === tag));
+      });
+      applyFilter();
+    }
+
     sourceChips.forEach((c) => {
       c.addEventListener('click', () => setSource(c.dataset.filterSource ?? ''));
     });
     sortChips.forEach((c) => {
-      c.addEventListener('click', () => setSort((c.dataset.filterSort as 'popularity' | 'year') ?? 'popularity'));
+      c.addEventListener('click', () =>
+        setSort((c.dataset.filterSort as 'popularity' | 'year') ?? 'popularity'),
+      );
     });
+    tagChips.forEach((c) => {
+      c.addEventListener('click', () => setTag(c.dataset.filterTag ?? ''));
+    });
+
+    if (tagToggle) {
+      const overflowCount = parseInt(tagToggle.dataset.overflowCount ?? '0', 10);
+      tagToggle.addEventListener('click', () => {
+        overflowExpanded = !overflowExpanded;
+        tagToggle.setAttribute('aria-expanded', String(overflowExpanded));
+        tagToggle.textContent = overflowExpanded
+          ? 'Fewer tags'
+          : `+ ${overflowCount} more`;
+        refreshTagCounts();
+      });
+    }
 
     moreBtn.addEventListener('click', () => {
       shown = cards.length;
       applyFilter();
     });
 
+    refreshTagCounts();
     applyFilter();
   });
 </script>

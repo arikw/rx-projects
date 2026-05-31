@@ -4,14 +4,29 @@ import { marked } from 'marked';
 interface Props {
   name: string;
   bio: string;
+  /** Optional portrait URL; resolved from config.user.profileImage. */
+  avatar?: string | null;
 }
-const { name, bio } = Astro.props;
+const { name, bio, avatar } = Astro.props;
 const html = await marked.parse(bio.trim(), { async: true });
 ---
-<aside class="author-bio">
-  <header class="author-bio-head">
-    <span class="author-bio-label">About the author</span>
-    <strong class="author-bio-name">{name}</strong>
-  </header>
-  <div class="author-bio-body" set:html={html} />
+<aside class={`author-bio${avatar ? ' author-bio--with-avatar' : ''}`}>
+  {avatar && (
+    <img
+      class="author-bio-avatar"
+      src={avatar}
+      alt=""
+      width="64"
+      height="64"
+      loading="lazy"
+      decoding="async"
+    />
+  )}
+  <div class="author-bio-content">
+    <header class="author-bio-head">
+      <span class="author-bio-label">About the author</span>
+      <strong class="author-bio-name">{name}</strong>
+    </header>
+    <div class="author-bio-body" set:html={html} />
+  </div>
 </aside>

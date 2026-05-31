@@ -13,6 +13,19 @@ import { aggregateStats } from '../lib/aggregate-stats';
 const allProjects = await loadProjects();
 const profiles = getProfiles();
 const stats = aggregateStats(allProjects);
+
+// Resolve which avatar (if any) to render in the author bio. Honours
+// config.user.profileImage; defaults to the first profile fact that has one.
+function resolveProfileImage(): string | null {
+  const pref = config.user.profileImage;
+  if (pref === false) return null;
+  if (typeof pref === 'string' && /^https?:\/\//.test(pref)) return pref;
+  if (typeof pref === 'string' && pref.length > 0) {
+    return profiles.find((p) => p.source === pref)?.avatar ?? null;
+  }
+  return profiles.find((p) => p.avatar)?.avatar ?? null;
+}
+const profileImage = resolveProfileImage();
 // Build timestamp — emitted into the static HTML at the bottom of the page;
 // the cron-driven rebuild in .github/workflows/deploy.yml refreshes it daily.
 const lastUpdatedIso = new Date().toISOString();
@@ -53,7 +66,7 @@ const sortedAll = [...allProjects].sort((a, b) => signal(b) - signal(a));
   {config.meta.siteAbout && <SiteAbout markdown={config.meta.siteAbout} />}
   <FeaturedRow projects={featured} />
   <ProjectGrid projects={sortedAll} pageSize={config.ui.pageSize} />
-  {config.user.bio && <AuthorBio name={config.user.name} bio={config.user.bio} />}
+  {config.user.bio && <AuthorBio name={config.user.name} bio={config.user.bio} avatar={profileImage} />}
   <footer class="site-foot">
     <p>
       Last updated <time datetime={lastUpdatedIso}>{lastUpdatedLabel}</time>

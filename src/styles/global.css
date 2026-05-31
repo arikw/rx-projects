@@ -657,6 +657,11 @@ a.card-source:hover {
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
+.filter-chip[hidden] {
+  /* Plain [hidden] is normally `display: none`, but `.filter-chip`'s
+     inline-flex wins by specificity — restore the hide. */
+  display: none;
+}
 .filter-chip:hover {
   border-color: var(--accent);
   color: var(--accent);
@@ -842,6 +847,20 @@ a.card-source:hover {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg-elev, transparent);
+}
+.author-bio--with-avatar {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 22px;
+  align-items: start;
+}
+.author-bio-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
 }
 
 .author-bio-head {

@@ -5,6 +5,7 @@ type GithubUser = {
   public_repos: number;
   followers: number;
   html_url: string;
+  avatar_url?: string;
 };
 
 /** Fetch the GitHub user profile (one cheap REST call) — surfaces public
@@ -39,6 +40,7 @@ export async function fetchGithubProfile(
       label: 'GitHub',
       headline: { value: u.public_repos, label: 'public repos' },
       details: u.followers > 0 ? [{ label: 'followers', value: u.followers }] : [],
+      avatar: u.avatar_url,
     };
   } catch {
     return null;

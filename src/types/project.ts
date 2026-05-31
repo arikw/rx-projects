@@ -66,6 +66,11 @@ export type ProfileFact = {
   headline: { value: number | string; label: string };
   /** Secondary details — small chips beside the headline (badges, repo count). */
   details?: Array<{ label: string; value: number | string }>;
+  /** Profile avatar / photo URL. Used by AuthorBio to render the dashboard
+   *  owner's portrait. Connectors that surface a public profile image
+   *  (GitHub's avatar_url, Stack Overflow's profile_image) populate this when
+   *  available; the config field `user.profileImage` chooses which to use. */
+  avatar?: string;
 };
 
 /** A user review on a third-party source (no author PII captured). */

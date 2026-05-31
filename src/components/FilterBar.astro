@@ -4,11 +4,19 @@ interface SourceEntry {
   label: string;
   count: number;
 }
+interface TagEntry {
+  name: string;
+  count: number;
+}
 interface Props {
   totalCount: number;
   sources: SourceEntry[];
+  primaryTags: TagEntry[];
+  overflowTags: TagEntry[];
 }
-const { totalCount, sources } = Astro.props;
+const { totalCount, sources, primaryTags, overflowTags } = Astro.props;
+const hasOverflow = overflowTags.length > 0;
+const hasTags = primaryTags.length > 0 || hasOverflow;
 ---
 <div class="filter-bar" role="group" aria-label="Filter and sort projects">
   <div class="filter-row" aria-label="Filter by source">
@@ -32,6 +40,53 @@ const { totalCount, sources } = Astro.props;
       </button>
     ))}
   </div>
+  {hasTags && (
+    <div class="filter-row filter-row--tags" aria-label="Filter by tag">
+      <span class="filter-label">Tag</span>
+      <button
+        type="button"
+        class="filter-chip"
+        data-filter-tag=""
+        aria-pressed="true"
+      >
+        All <span class="filter-count" data-tag-count-total>{totalCount}</span>
+      </button>
+      {primaryTags.map(({ name, count }) => (
+        <button
+          type="button"
+          class="filter-chip filter-chip--tag"
+          data-filter-tag={name}
+          data-base-count={count}
+          aria-pressed="false"
+        >
+          {name} <span class="filter-count">{count}</span>
+        </button>
+      ))}
+      {overflowTags.map(({ name, count }) => (
+        <button
+          type="button"
+          class="filter-chip filter-chip--tag filter-chip--overflow"
+          data-filter-tag={name}
+          data-base-count={count}
+          aria-pressed="false"
+          hidden
+        >
+          {name} <span class="filter-count">{count}</span>
+        </button>
+      ))}
+      {hasOverflow && (
+        <button
+          type="button"
+          class="filter-chip filter-chip-toggle"
+          data-tag-toggle
+          aria-expanded="false"
+          data-overflow-count={overflowTags.length}
+        >
+          + {overflowTags.length} more
+        </button>
+      )}
+    </div>
+  )}
   <div class="filter-row filter-row--sort" aria-label="Sort">
     <span class="filter-label">Sort</span>
     <button
