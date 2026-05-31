@@ -93,7 +93,19 @@ button {
 
 /* Hero */
 .hero {
+  /* Default gap to whatever follows the hero (siteAbout, featured row, …).
+     Stays at 32px when the ProfilePresence strip is absent. */
   margin-bottom: 32px;
+}
+/* When the ProfilePresence strip *is* rendered immediately below, shrink the
+   gap — the strip's chips read as part of the same visual unit as the hero
+   numbers, so they shouldn't be visually divorced by a full section's space.
+   :has() narrows the override to exactly this case; if profiles is empty the
+   strip section isn't emitted at all, the selector doesn't match, and the
+   32px default holds — preserving the gap between hero and the description
+   text (or whatever sits beneath the hero). */
+.hero:has(+ .profile-presence) {
+  margin-bottom: 12px;
 }
 
 .eyebrow {
