@@ -44,6 +44,7 @@ function formatDate(ts?: string): string | null {
           <article
             class="review-slide"
             data-index={i}
+            data-state={i === 0 ? 'active' : ''}
             aria-current={i === 0 ? 'true' : 'false'}
             aria-hidden={i === 0 ? 'false' : 'true'}
             style={`--card-accent: ${tintFor(r)}`}
@@ -131,10 +132,23 @@ function formatDate(ts?: string): string | null {
       function show(next: number) {
         const idx = ((next % slides.length) + slides.length) % slides.length;
         if (idx === current) return;
-        slides[current].setAttribute('aria-current', 'false');
-        slides[current].setAttribute('aria-hidden', 'true');
-        slides[idx].setAttribute('aria-current', 'true');
-        slides[idx].setAttribute('aria-hidden', 'false');
+
+        // Outgoing: slide-out animation (toward the left).
+        const outgoing = slides[current];
+        outgoing.dataset.state = 'leaving';
+        outgoing.setAttribute('aria-current', 'false');
+        outgoing.setAttribute('aria-hidden', 'true');
+
+        // Incoming: clear state, force reflow so the browser re-evaluates,
+        // then set 'active' to restart the slide-in animation from the right.
+        const incoming = slides[idx];
+        incoming.dataset.state = '';
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+        void incoming.offsetWidth;
+        incoming.dataset.state = 'active';
+        incoming.setAttribute('aria-current', 'true');
+        incoming.setAttribute('aria-hidden', 'false');
+
         if (dots.length) {
           dots[current]?.setAttribute('aria-current', 'false');
           dots[idx]?.setAttribute('aria-current', 'true');

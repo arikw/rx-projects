@@ -202,20 +202,34 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* Vertically centre the content within the slide so short reviews sit in
+     the middle of the cell (which sizes to the tallest review). Long
+     reviews fill the height naturally. */
+  justify-content: center;
   text-align: center;
   gap: 18px;
+  /* Default state: parked off-screen to the right, invisible. Animations
+     (driven by data-state) handle the actual entrances and exits so each
+     transition consistently slides out to the left and slides in from the
+     right, regardless of what state the slide was previously in. */
   opacity: 0;
-  visibility: hidden;
-  transform: translateY(6px);
-  transition: opacity 0.55s ease, transform 0.55s ease, visibility 0s linear 0.55s;
   pointer-events: none;
 }
-.review-slide[aria-current='true'] {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  transition: opacity 0.55s ease, transform 0.55s ease;
+.review-slide[data-state='active'] {
+  animation: review-slide-in 0.55s ease forwards;
   pointer-events: auto;
+}
+.review-slide[data-state='leaving'] {
+  animation: review-slide-out 0.55s ease forwards;
+  pointer-events: none;
+}
+@keyframes review-slide-in {
+  from { opacity: 0; transform: translateX(48px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes review-slide-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-48px); }
 }
 .review-slide-mark {
   font-family: Georgia, 'Times New Roman', serif;
@@ -245,10 +259,14 @@ button {
   white-space: nowrap;
 }
 .review-slide-rating-filled {
-  color: var(--card-accent, var(--accent));
+  /* Fixed amber across all reviews so the star row always reads as a
+     star rating, regardless of the project's iconColor (which previously
+     made some star rows render in black, blue, etc.). */
+  color: #f5a623;
 }
 .review-slide-rating-empty {
-  opacity: 0.22;
+  color: #f5a623;
+  opacity: 0.18;
 }
 .review-slide-foot {
   display: flex;
@@ -329,8 +347,13 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .review-slide {
-    transition: opacity 0s, transform 0s;
+  .review-slide[data-state='active'],
+  .review-slide[data-state='leaving'] {
+    animation: none;
+  }
+  .review-slide[data-state='active'] {
+    opacity: 1;
+    transform: none;
   }
   .review-dot {
     transition: none;
