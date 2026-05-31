@@ -42,6 +42,9 @@ export type ChromeStatsApp = {
    * listing from CWS. The cached user count then becomes a stale snapshot
    * of the last observed value; we drop it from the canonical stats. */
   isDeleted?: boolean;
+  /** YouTube videos chrome-stats lists for the extension. Stored as the
+   *  watch/embed URLs the SSR hydration data exposes. */
+  videos?: string[];
 };
 
 // chrome-stats sits behind Cloudflare. curl with realistic headers works;
@@ -235,6 +238,20 @@ export async function scrapeOne(extId: string): Promise<ChromeStatsApp | null> {
     // SSR state), so search the whole hydration script. The script we fetched
     // describes only this extension, so the flag is unambiguous here.
     isDeleted: /\bextensionDeleted:true\b/.test(script),
+    // Videos are emitted as `{thumbnail:"…",video:"https://…youtube.com/…"}`
+    // entries, and the videos array often sits outside the per-extension
+    // record window. The fetched script describes only this extension, so
+    // the YouTube URLs found anywhere in it belong to this listing.
+    videos: extractVideos(script),
   };
   return app;
+}
+
+/** Extract YouTube video URLs from a chrome-stats hydration script. */
+function extractVideos(script: string): string[] | undefined {
+  const out = new Set<string>();
+  const re = /\bvideo:\s*(["'])((?:https?:\/\/)?(?:www\.)?youtube(?:-nocookie)?\.com\/[^"']+)\1/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(script))) out.add(m[2]);
+  return out.size ? [...out] : undefined;
 }

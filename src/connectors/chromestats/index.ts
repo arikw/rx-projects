@@ -75,6 +75,7 @@ export const fetchChromestatsProjects: Connector = async (config, options) => {
         // chrome-stats supplies the real promo banners CWS displays at the top
         // of a listing — prefer the marquee (1400×560), fall back to small.
         banner: a.marqueeBanner ?? a.smallBanner,
+        videos: a.videos,
         reviews: a.reviews,
         stats: {
           // Once an extension is removed from CWS, the cached userCount is a

@@ -23,6 +23,8 @@ type ApkpureApp = {
   year?: number;
   /** Phone screenshots APKPure hosts (ld+json `screenshot[]`). */
   screenshots?: string[];
+  /** YouTube trailer URLs the listing embeds (`<iframe src="…/embed/<id>">`). */
+  videos?: string[];
 };
 
 type ApkpureCache = { version: 1; _generated: string; apps: Record<string, ApkpureApp> };
@@ -93,6 +95,18 @@ function extractScreenshots(ld: LdApp | null): string[] {
     .filter((u): u is string => !!u);
 }
 
+/** Pull YouTube embed URLs from the listing's trailer placeholder. APKPure
+ *  lazy-loads the iframe — the YouTube URL ships in `data-src="…"` (not
+ *  `src=`); the real iframe gets created in the browser after a click /
+ *  scroll. Match either attribute. Decode `&amp;` → `&` and deduplicate. */
+function extractVideos(doc: string): string[] {
+  const out = new Set<string>();
+  const re = /\b(?:data-)?src=["']([^"']*youtube(?:-nocookie)?\.com\/embed\/[^"']+)["']/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(doc))) out.add(m[1].replace(/&amp;/g, '&'));
+  return [...out];
+}
+
 function findAppLd(doc: string): LdApp | null {
   const blocks = doc.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi);
   if (!blocks) return null;
@@ -140,6 +154,7 @@ async function scrapeApp(pkg: string): Promise<ApkpureApp | null> {
   const year = ld?.datePublished ? new Date(ld.datePublished).getUTCFullYear() : undefined;
 
   const screenshots = extractScreenshots(ld);
+  const videos = extractVideos(doc);
   return {
     packageName: pkg,
     title,
@@ -151,6 +166,7 @@ async function scrapeApp(pkg: string): Promise<ApkpureApp | null> {
     ratingCount,
     year: Number.isFinite(year) ? year : undefined,
     screenshots: screenshots.length ? screenshots : undefined,
+    videos: videos.length ? videos : undefined,
   };
 }
 
@@ -204,6 +220,7 @@ export const fetchApkpureProjects: Connector = async (config, options) => {
         firstReleased: a.year,
         icon: a.icon,
         screenshots: a.screenshots,
+        videos: a.videos,
       },
     }));
 };
