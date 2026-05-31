@@ -13,9 +13,15 @@ import { aggregateStats } from '../lib/aggregate-stats';
 const allProjects = await loadProjects();
 const profiles = getProfiles();
 const stats = aggregateStats(allProjects);
-// Build timestamp — emitted into the static HTML; the cron-driven rebuild
-// in .github/workflows/deploy.yml refreshes it daily.
-const lastUpdated = new Date().toISOString();
+// Build timestamp — emitted into the static HTML at the bottom of the page;
+// the cron-driven rebuild in .github/workflows/deploy.yml refreshes it daily.
+const lastUpdatedIso = new Date().toISOString();
+const lastUpdatedLabel = new Date(lastUpdatedIso).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
 
 const featuredOrder = new Map(config.featured.map((slug, i) => [slug, i]));
 
@@ -42,10 +48,15 @@ const sortedAll = [...allProjects].sort((a, b) => signal(b) - signal(a));
   title={config.meta.siteTitle}
   description={config.meta.siteDescription}
 >
-  <Hero stats={stats} lastUpdated={lastUpdated} />
+  <Hero stats={stats} />
   <ProfilePresence profiles={profiles} />
   {config.meta.siteAbout && <SiteAbout markdown={config.meta.siteAbout} />}
   <FeaturedRow projects={featured} />
   <ProjectGrid projects={sortedAll} pageSize={config.ui.pageSize} />
   {config.user.bio && <AuthorBio name={config.user.name} bio={config.user.bio} />}
+  <footer class="site-foot">
+    <p>
+      Last updated <time datetime={lastUpdatedIso}>{lastUpdatedLabel}</time>
+    </p>
+  </footer>
 </BaseLayout>

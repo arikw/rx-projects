@@ -165,14 +165,21 @@ button {
   line-height: 1.4;
 }
 
-.hero-updated {
-  margin: 12px 0 0;
+/* Build timestamp — page metadata. Lives at the very bottom of the page so
+   it doesn't accidentally act as a divider between major content sections
+   (which is how it read when nested inside the hero). */
+.site-foot {
+  margin: 64px auto 24px;
+  text-align: center;
   font-size: 0.78rem;
   color: var(--muted);
   font-feature-settings: 'tnum';
   letter-spacing: 0.02em;
 }
-.hero-updated time {
+.site-foot p {
+  margin: 0;
+}
+.site-foot time {
   color: var(--fg);
   opacity: 0.7;
 }
