@@ -177,6 +177,129 @@ button {
   line-height: 1.4;
 }
 
+/* Review carousel — horizontal scroller of recent positive reviews, one per
+   project, round-robin'd when there are fewer projects than slots. */
+.review-carousel {
+  margin: 0 0 48px;
+}
+.review-carousel-track {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 2px;
+  padding: 4px 2px 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-color: var(--border) transparent;
+}
+.review-carousel-track::-webkit-scrollbar {
+  height: 8px;
+}
+.review-carousel-track::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+.review-card {
+  flex: 0 0 320px;
+  scroll-snap-align: start;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--card-accent, var(--accent));
+  border-radius: 14px;
+  padding: 18px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  box-shadow:
+    0 1px 2px rgba(15, 17, 21, 0.04),
+    0 4px 12px rgba(15, 17, 21, 0.04);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.review-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 2px 4px rgba(15, 17, 21, 0.06),
+    0 10px 20px rgba(15, 17, 21, 0.08);
+}
+.review-card-quote-mark {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 3.2rem;
+  line-height: 0.6;
+  color: var(--card-accent, var(--accent));
+  opacity: 0.32;
+  margin: 4px 0 -4px;
+}
+.review-card-body {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--fg);
+  flex: 1;
+  /* Clamp long bodies so the cards don't blow up the row height. */
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.review-card-rating {
+  font-size: 0.85rem;
+  color: var(--card-accent, var(--accent));
+  letter-spacing: 2px;
+  margin-top: 2px;
+}
+.review-card-rating-empty {
+  opacity: 0.22;
+}
+.review-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+  font-feature-settings: 'tnum';
+}
+.review-card-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  text-decoration: none;
+  color: var(--fg);
+  transition: color 0.15s;
+}
+.review-card-source:hover {
+  color: var(--accent);
+}
+.review-card-source-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--bg-elev, transparent);
+  flex-shrink: 0;
+}
+.review-card-source-icon--placeholder {
+  background: var(--card-accent, var(--accent));
+  opacity: 0.6;
+}
+.review-card-source-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.review-card-source-tag {
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 /* Build timestamp — page metadata. Lives at the very bottom of the page so
    it doesn't accidentally act as a divider between major content sections
    (which is how it read when nested inside the hero). */

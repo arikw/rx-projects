@@ -1,0 +1,72 @@
+---
+import type { CarouselReview } from '../lib/pick-reviews';
+import { sourceLabel } from '../lib/source-label';
+
+interface Props {
+  reviews: CarouselReview[];
+}
+const { reviews } = Astro.props;
+
+// Soft tint per card — pull from the project's iconColor when available so
+// the carousel inherits the same "what this project is about" colour rhythm
+// the icon-only cards use. Falls back to a neutral accent otherwise.
+function tintFor(r: CarouselReview): string {
+  return r.projectIconColor ?? 'var(--accent)';
+}
+---
+{reviews.length > 0 && (
+  <section class="review-carousel" aria-label="Recent positive reviews">
+    <header class="section-head">
+      <span class="section-label">What users say</span>
+      <span class="section-rule" aria-hidden="true"></span>
+      <span class="section-count">{String(reviews.length).padStart(2, '0')}</span>
+    </header>
+
+    <div class="review-carousel-track" tabindex="0">
+      {reviews.map((r) => (
+        <article
+          class="review-card"
+          style={`--card-accent: ${tintFor(r)}`}
+        >
+          <div class="review-card-quote-mark" aria-hidden="true">&ldquo;</div>
+          <p class="review-card-body">{r.body}</p>
+
+          {typeof r.rating === 'number' && r.rating > 0 && (
+            <div class="review-card-rating" aria-label={`${r.rating} out of 5 stars`}>
+              {'★'.repeat(Math.min(5, Math.max(0, Math.round(r.rating))))}
+              <span class="review-card-rating-empty">
+                {'★'.repeat(Math.max(0, 5 - Math.round(r.rating)))}
+              </span>
+            </div>
+          )}
+
+          <footer class="review-card-foot">
+            <a
+              class="review-card-source"
+              href={r.projectUrl}
+              target="_blank"
+              rel="noopener"
+              title={`Open ${r.projectTitle}`}
+            >
+              {r.projectIcon ? (
+                <img
+                  class="review-card-source-icon"
+                  src={r.projectIcon}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <span class="review-card-source-icon review-card-source-icon--placeholder" aria-hidden="true" />
+              )}
+              <span class="review-card-source-title">{r.projectTitle}</span>
+            </a>
+            {r.source && (
+              <span class="review-card-source-tag">via {sourceLabel(r.source)}</span>
+            )}
+          </footer>
+        </article>
+      ))}
+    </div>
+  </section>
+)}

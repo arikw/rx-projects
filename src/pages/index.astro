@@ -3,12 +3,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 import ProfilePresence from '../components/ProfilePresence.astro';
 import FeaturedRow from '../components/FeaturedRow.astro';
+import ReviewCarousel from '../components/ReviewCarousel.astro';
 import ProjectGrid from '../components/ProjectGrid.astro';
 import SiteAbout from '../components/SiteAbout.astro';
 import AuthorBio from '../components/AuthorBio.astro';
 import config from '../lib/load-config';
 import { loadProjects, getProfiles } from '../lib/load-projects';
 import { aggregateStats } from '../lib/aggregate-stats';
+import { pickCarouselReviews } from '../lib/pick-reviews';
 
 const allProjects = await loadProjects();
 const profiles = getProfiles();
@@ -55,6 +57,8 @@ function signal(p: (typeof allProjects)[number]): number {
 // in the row above but also appear here so the source-filter counts and
 // the popularity/year sort include the whole catalogue.
 const sortedAll = [...allProjects].sort((a, b) => signal(b) - signal(a));
+
+const carouselReviews = pickCarouselReviews(allProjects, 10);
 ---
 
 <BaseLayout
@@ -65,6 +69,7 @@ const sortedAll = [...allProjects].sort((a, b) => signal(b) - signal(a));
   <ProfilePresence profiles={profiles} />
   {config.meta.siteAbout && <SiteAbout markdown={config.meta.siteAbout} />}
   <FeaturedRow projects={featured} />
+  <ReviewCarousel reviews={carouselReviews} />
   <ProjectGrid projects={sortedAll} pageSize={config.ui.pageSize} />
   {config.user.bio && <AuthorBio name={config.user.name} bio={config.user.bio} avatar={profileImage} />}
   <footer class="site-foot">
