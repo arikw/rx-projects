@@ -1,5 +1,6 @@
 import baseConfig from '../../projects.config';
 import type { ProjectsConfig } from '../types/config';
+import { getDefaultSourcesConfig } from '../connectors/_registry';
 
 // Vite glob picks up projects.config.local.ts if it exists (gitignored).
 // When absent, the glob returns {} and we use the base config as-is.
@@ -9,26 +10,35 @@ const localModules = import.meta.glob<{ default: ProjectsConfig }>(
 );
 const localConfig: ProjectsConfig | undefined = Object.values(localModules)[0]?.default;
 
+function mergeSources(
+  base: ProjectsConfig['sources'],
+  override?: ProjectsConfig['sources'],
+): ProjectsConfig['sources'] {
+  // Start from the registry's manifest defaults so a newly added connector
+  // shows up automatically without anyone having to edit this file.
+  const out: Record<string, unknown> = { ...getDefaultSourcesConfig() };
+  const b = base as unknown as Record<string, unknown>;
+  const o = (override ?? {}) as unknown as Record<string, unknown>;
+  for (const key of new Set([...Object.keys(out), ...Object.keys(b), ...Object.keys(o)])) {
+    out[key] = {
+      ...(out[key] as object | undefined),
+      ...(b[key] as object | undefined),
+      ...(o[key] as object | undefined),
+    };
+  }
+  return out as ProjectsConfig['sources'];
+}
+
 function mergeConfig(base: ProjectsConfig, override?: ProjectsConfig): ProjectsConfig {
-  if (!override) return base;
+  if (!override) {
+    return { ...base, sources: mergeSources(base.sources) };
+  }
   return {
     ...base,
     ...override,
     deployment: { ...base.deployment, ...override.deployment },
     user: { ...base.user, ...override.user },
-    sources: {
-      github: { ...base.sources.github, ...override.sources?.github },
-      npm: { ...base.sources.npm, ...override.sources?.npm },
-      docker: { ...base.sources.docker, ...override.sources?.docker },
-      chrome: { ...base.sources.chrome, ...override.sources?.chrome },
-      gnome: { ...base.sources.gnome, ...override.sources?.gnome },
-      gplay: { ...base.sources.gplay, ...override.sources?.gplay },
-      appbrain: { ...base.sources.appbrain, ...override.sources?.appbrain },
-      apkpure: { ...base.sources.apkpure, ...override.sources?.apkpure },
-      chromestats: { ...base.sources.chromestats, ...override.sources?.chromestats },
-      playstore: { ...base.sources.playstore, ...override.sources?.playstore },
-      stackoverflow: { ...base.sources.stackoverflow, ...override.sources?.stackoverflow },
-    },
+    sources: mergeSources(base.sources, override.sources),
     ui: {
       ...base.ui,
       ...override.ui,

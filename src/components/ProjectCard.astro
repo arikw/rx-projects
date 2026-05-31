@@ -2,6 +2,7 @@
 import type { Project } from '../types/project';
 import { formatStat } from '../lib/aggregate-stats';
 import { sourceLabel } from '../lib/source-label';
+import { getPlatformToSourceGroup } from '../connectors/_registry';
 import ProjectThumb from './ProjectThumb.astro';
 
 interface Props {
@@ -52,13 +53,9 @@ if (p.year)
 // Friendly chip labels, deduped — e.g. a google-play + apkpure card shows one
 // "Android app" chip rather than two raw platform keys. Each chip resolves
 // to a clickable URL via project.sourceUrls (origin URL preferred, mirror
-// URL as fallback when the origin is removed).
-const SOURCE_TO_GROUP: Record<string, string> = {
-  github: 'github', npm: 'npm', docker: 'docker',
-  gnome: 'gnome', chrome: 'chrome',
-  'google-play': 'android', apkpure: 'android', appbrain: 'android',
-  stackoverflow: 'stackoverflow',
-};
+// URL as fallback when the origin is removed). Source→group map is derived
+// from the registry.
+const SOURCE_TO_GROUP: Record<string, string> = getPlatformToSourceGroup();
 const seenSourceLabels = new Set<string>();
 const sourceChips: { s: string; label: string; href?: string }[] = [];
 for (const s of p.sources) {

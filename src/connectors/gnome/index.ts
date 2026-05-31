@@ -1,6 +1,7 @@
-import type { Connector, UrlIdExtractor } from './types';
-import type { ConnectorResult } from '../types/project';
-import { loadFixture } from '../lib/fixtures';
+import type { Connector } from '../types';
+import type { ConnectorResult } from '../../types/project';
+import { defineConnector, type UrlIdExtractor } from '../_define';
+import { loadFixture } from '../../lib/fixtures';
 
 export const urlExtractors: UrlIdExtractor[] = [
   {
@@ -85,3 +86,18 @@ export const fetchGnomeProjects: Connector = async (config, options) => {
     };
   });
 };
+
+/** Manifest — picked up by `_registry.ts` via auto-discovery. */
+export default defineConnector({
+  key: 'gnome',
+  label: 'GNOME',
+  urlExtractors,
+  defaultConfig: {
+    enabled: true,
+    extensionIds: [] as number[],
+  },
+  fetch: async (config, opts) => {
+    const projects = await fetchGnomeProjects(config, opts);
+    return { projects };
+  },
+});

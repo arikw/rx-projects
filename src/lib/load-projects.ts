@@ -1,65 +1,44 @@
 import { getCollection } from 'astro:content';
 import config from './load-config';
-import type { ConnectorResult, Project } from '../types/project';
-import { fetchGithubProjects } from '../connectors/github';
-import { fetchNpmProjects } from '../connectors/npm';
-import { fetchDockerProjects } from '../connectors/docker';
-import { fetchChromeProjects } from '../connectors/chrome';
-import { fetchGnomeProjects } from '../connectors/gnome';
-import { fetchAppbrainProjects } from '../connectors/appbrain';
-import { fetchApkpureProjects } from '../connectors/apkpure';
-import { fetchChromestatsProjects } from '../connectors/chromestats';
-import { fetchPlaystoreProjects } from '../connectors/playstore';
-import { fetchStackoverflowProjects } from '../connectors/stackoverflow';
+import type { ConnectorResult, Project, ProfileFact } from '../types/project';
 import { manualToResults } from '../connectors/manual';
 import { buildProjects } from './build-projects';
-import type { Connector } from '../connectors/types';
+import { getAll } from '../connectors/_registry';
+import type { ConnectorManifest } from '../connectors/_define';
 import { readSnapshot, writeSnapshot, type ConnectorKey, type SnapshotFile } from './snapshot-store';
 import { resolveIconColors } from './icon-color';
 
 const FIXTURE_MODE = process.env.CONNECTORS_FIXTURE === '1';
 
-type ConnectorRun = { key: ConnectorKey; fn: Connector };
-
-const CONNECTORS: ConnectorRun[] = [
-  { key: 'github', fn: fetchGithubProjects },
-  { key: 'npm', fn: fetchNpmProjects },
-  { key: 'docker', fn: fetchDockerProjects },
-  { key: 'chrome', fn: fetchChromeProjects },
-  { key: 'gnome', fn: fetchGnomeProjects },
-  { key: 'appbrain', fn: fetchAppbrainProjects },
-  { key: 'apkpure', fn: fetchApkpureProjects },
-  { key: 'chromestats', fn: fetchChromestatsProjects },
-  { key: 'playstore', fn: fetchPlaystoreProjects },
-  { key: 'stackoverflow', fn: fetchStackoverflowProjects },
-];
-
 type ConnectorRunResult =
-  | { status: 'fresh' | 'cached'; results: ConnectorResult[] }
+  | { status: 'fresh' | 'cached'; results: ConnectorResult[]; profile?: ProfileFact }
   | { status: 'empty' };
 
 let memo: Promise<Project[]> | null = null;
 let lastSnapshot: SnapshotFile | null = null;
+let lastProfiles: ProfileFact[] = [];
 
 async function runConnector(
-  run: ConnectorRun,
+  manifest: ConnectorManifest,
   enabled: boolean,
   snapshot: SnapshotFile,
   now: string,
 ): Promise<ConnectorRunResult> {
+  const key = manifest.key as ConnectorKey;
   if (!enabled) {
-    const cached = snapshot.connectors[run.key];
+    const cached = snapshot.connectors[key];
     return cached ? { status: 'cached', results: cached.results } : { status: 'empty' };
   }
   try {
-    const results = await run.fn(config, { fixtureMode: FIXTURE_MODE });
-    snapshot.connectors[run.key] = { lastScrapedAt: now, results };
-    return { status: 'fresh', results };
+    const out = await manifest.fetch(config, { fixtureMode: FIXTURE_MODE });
+    const results = out.projects ?? [];
+    snapshot.connectors[key] = { lastScrapedAt: now, results };
+    return { status: 'fresh', results, profile: out.profile };
   } catch (err) {
-    console.warn(`[loader] connector "${run.key}" failed:`, err);
-    const cached = snapshot.connectors[run.key];
+    console.warn(`[loader] connector "${key}" failed:`, err);
+    const cached = snapshot.connectors[key];
     if (cached) {
-      console.warn(`[loader] falling back to cached "${run.key}" data from ${cached.lastScrapedAt}`);
+      console.warn(`[loader] falling back to cached "${key}" data from ${cached.lastScrapedAt}`);
       return { status: 'cached', results: cached.results };
     }
     return { status: 'empty' };
@@ -90,11 +69,16 @@ async function loadOnce(): Promise<Project[]> {
   const snapshot = readSnapshot();
   const now = new Date().toISOString();
 
+  const manifests = getAll();
+  const sourcesCfg = config.sources as unknown as Record<string, { enabled?: boolean }>;
   const results = await Promise.all(
-    CONNECTORS.map((run) => runConnector(run, config.sources[run.key].enabled, snapshot, now)),
+    manifests.map((m) => runConnector(m, sourcesCfg[m.key]?.enabled ?? true, snapshot, now)),
   );
   writeSnapshot(snapshot);
   lastSnapshot = snapshot;
+  lastProfiles = results
+    .map((r) => (r.status === 'empty' ? undefined : r.profile))
+    .filter((p): p is ProfileFact => !!p);
 
   const connectorResults = results.flatMap((r) => (r.status === 'empty' ? [] : r.results));
   const all = [...connectorResults, ...manualToResults(config), ...manualOrigins()];
@@ -140,4 +124,10 @@ export function loadProjects(): Promise<Project[]> {
 
 export function getSnapshot(): SnapshotFile | null {
   return lastSnapshot;
+}
+
+/** Profile facts emitted by data-only / dual-output connectors during the
+ *  current build. Available after loadProjects() resolves. */
+export function getProfiles(): ProfileFact[] {
+  return lastProfiles;
 }

@@ -1,9 +1,10 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import type { Connector } from './types';
-import type { ConnectorResult } from '../types/project';
-import { loadFixture } from '../lib/fixtures';
-import { readJsonCache, writeJsonCache } from '../lib/json-cache';
+import type { Connector } from '../types';
+import type { ConnectorResult } from '../../types/project';
+import { defineConnector } from '../_define';
+import { loadFixture } from '../../lib/fixtures';
+import { readJsonCache, writeJsonCache } from '../../lib/json-cache';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const run = promisify(execFile);
@@ -206,3 +207,16 @@ export const fetchApkpureProjects: Connector = async (config, options) => {
       },
     }));
 };
+
+/** Manifest — picked up by `_registry.ts` via auto-discovery.
+ *  apkpure is a MIRROR of playstore (the Android origin). Inherits the
+ *  "Android app" label + the "android" source-group via mirrorOf chain. */
+export default defineConnector({
+  key: 'apkpure',
+  mirrorOf: 'playstore',
+  defaultConfig: { enabled: true },
+  fetch: async (config, opts) => {
+    const projects = await fetchApkpureProjects(config, opts);
+    return { projects };
+  },
+});

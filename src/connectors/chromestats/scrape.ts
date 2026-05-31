@@ -1,19 +1,14 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import type { Connector } from './types';
-import type { ConnectorResult, Review } from '../types/project';
-import { loadFixture } from '../lib/fixtures';
-import { readJsonCache, writeJsonCache } from '../lib/json-cache';
+import type { Review } from '../../types/project';
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const run = promisify(execFile);
 
-const CACHE_PATH = 'generated/chrome-stats.json';
 const UA = 'Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0';
 
 // What we whitelist from the chrome-stats SSR data. We deliberately DROP
 // developer email and authorId (PII) per the project's anonymity rules.
-type ChromeStatsApp = {
+export type ChromeStatsApp = {
   id: string;
   name?: string;
   description?: string;
@@ -48,13 +43,6 @@ type ChromeStatsApp = {
    * of the last observed value; we drop it from the canonical stats. */
   isDeleted?: boolean;
 };
-
-type ChromeStatsCache = { version: 1; _generated: string; apps: Record<string, ChromeStatsApp> };
-
-const NOTE =
-  'Auto-generated chrome-stats.com cache. Fetched once per extension id; delete the file to refresh. PII (email, authorId) is intentionally omitted.';
-
-const emptyCache = (): ChromeStatsCache => ({ version: 1, _generated: NOTE, apps: {} });
 
 // chrome-stats sits behind Cloudflare. curl with realistic headers works;
 // Node's fetch (undici) is fingerprinted and 403'd. Same trick as appbrain.
@@ -177,7 +165,7 @@ function pickPermissions(record: string): Array<{ key: string; risk: number }> |
 }
 
 /** Pull the histogram + the review bodies from the /reviews subpage's SSR data. */
-async function scrapeReviewsPage(
+export async function scrapeReviewsPage(
   extId: string,
 ): Promise<{ histogram: number[] | null; reviews: Review[] }> {
   const url = `https://chrome-stats.com/d/${encodeURIComponent(extId)}/reviews`;
@@ -209,7 +197,7 @@ async function scrapeReviewsPage(
   return { histogram, reviews };
 }
 
-async function scrapeOne(extId: string): Promise<ChromeStatsApp | null> {
+export async function scrapeOne(extId: string): Promise<ChromeStatsApp | null> {
   const url = `https://chrome-stats.com/d/${encodeURIComponent(extId)}`;
   const doc = await fetchHtml(url);
   if (!doc) return null;
@@ -250,82 +238,3 @@ async function scrapeOne(extId: string): Promise<ChromeStatsApp | null> {
   };
   return app;
 }
-
-export const fetchChromestatsProjects: Connector = async (config, options) => {
-  // Shared list with the chrome connector — like AppBrain/APKPure share
-  // sources.gplay.packages.
-  const extensionIds = config.sources.chrome.extensionIds;
-  if (!extensionIds.length) return [];
-
-  if (options?.fixtureMode) return loadFixture('chromestats');
-
-  const cache = readJsonCache<ChromeStatsCache>(CACHE_PATH, emptyCache());
-  if (cache.version !== 1 || !cache.apps) Object.assign(cache, emptyCache());
-  cache._generated = NOTE;
-
-  for (const id of extensionIds) {
-    if (!cache.apps[id]) {
-      const app = await scrapeOne(id);
-      if (app) cache.apps[id] = app;
-      await sleep(300);
-    }
-    // Backfill the rating histogram + reviews from the /reviews subpage when
-    // missing (we always re-fetch when either is absent).
-    const entry = cache.apps[id];
-    if (entry && (!entry.ratingHistogram || !entry.reviews)) {
-      const { histogram, reviews } = await scrapeReviewsPage(id);
-      if (histogram) entry.ratingHistogram = histogram;
-      if (reviews.length) entry.reviews = reviews;
-      await sleep(300);
-    }
-  }
-  writeJsonCache(CACHE_PATH, cache);
-
-  return extensionIds
-    .map((id) => cache.apps[id])
-    .filter((a): a is ChromeStatsApp => !!a)
-    .map<ConnectorResult>((a) => ({
-      // The origin is the Chrome Web Store extension — same `platform: 'chrome'`
-      // as the chrome.ts connector, so when an extension exists on BOTH the
-      // builder reconciles them per origin id. We deliberately omit `url`: for
-      // taken-down extensions the CWS listing is dead, so the builder falls
-      // through to the (alive) chrome-stats mirror url below. When chrome.ts
-      // also contributes, it supplies the real CWS url and that wins.
-      origin: { platform: 'chrome', id: a.id },
-      mirror: {
-        platform: 'chrome-stats',
-        id: a.id,
-        url: a.url,
-        asOf: a.lastUpdate,
-        title: a.name,
-        description: a.description,
-        firstReleased: a.creationDate ? new Date(a.creationDate).getUTCFullYear() : undefined,
-        tags: [
-          'chrome-extension',
-          // chrome-stats categories look like "productivity/workflow" or
-          // "14_fun"; strip the numeric prefix and take the leaf word.
-          ...(a.category ? [a.category.replace(/^\d+_/, '').split('/').pop()!] : []),
-        ],
-        kind: 'extension',
-        // chrome-stats supplies the real promo banners CWS displays at the top
-        // of a listing — prefer the marquee (1400×560), fall back to small.
-        banner: a.marqueeBanner ?? a.smallBanner,
-        reviews: a.reviews,
-        stats: {
-          // Once an extension is removed from CWS, the cached userCount is a
-          // stale snapshot, not a current count — and presenting it as
-          // "weekly users" would be misleading. Rating stays (it's historical).
-          ...(!a.isDeleted && a.userCount != null ? { users: a.userCount } : {}),
-          ...(a.rating
-            ? {
-                rating: {
-                  average: a.rating.value,
-                  count: a.rating.count,
-                  ...(a.ratingHistogram ? { histogram: a.ratingHistogram } : {}),
-                },
-              }
-            : {}),
-        },
-      },
-    }));
-};

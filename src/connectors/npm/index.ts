@@ -1,6 +1,16 @@
-import type { Connector, UrlIdExtractor } from './types';
-import type { ConnectorResult } from '../types/project';
-import { loadFixture, isPlaceholderHandle } from '../lib/fixtures';
+import type { Connector } from '../types';
+import type { ConnectorResult } from '../../types/project';
+import { defineConnector, type UrlIdExtractor } from '../_define';
+import { loadFixture, isPlaceholderHandle } from '../../lib/fixtures';
+import {
+  readNpmCache,
+  writeNpmCache,
+  sumAllTime,
+  REFETCH,
+  type NpmDownloadsCache,
+  type PackageDownloads,
+} from '../../lib/npm-downloads-cache';
+import iconSvg from './icon.svg?raw';
 
 export const urlExtractors: UrlIdExtractor[] = [
   {
@@ -11,14 +21,6 @@ export const urlExtractors: UrlIdExtractor[] = [
     },
   },
 ];
-import {
-  readNpmCache,
-  writeNpmCache,
-  sumAllTime,
-  REFETCH,
-  type NpmDownloadsCache,
-  type PackageDownloads,
-} from '../lib/npm-downloads-cache';
 
 type NpmLinks = { npm: string; homepage?: string; repository?: string };
 
@@ -219,3 +221,23 @@ export const fetchNpmProjects: Connector = async (config, options) => {
     },
   }));
 };
+
+/** Manifest — picked up by `_registry.ts` via auto-discovery. */
+export default defineConnector({
+  key: 'npm',
+  label: 'npm',
+  brandMark: {
+    svg: iconSvg,
+    tint: '#2d0707',
+    fg: '#cb3837',
+  },
+  urlExtractors,
+  defaultConfig: {
+    enabled: true,
+    packages: [] as string[],
+  },
+  fetch: async (config, opts) => {
+    const projects = await fetchNpmProjects(config, opts);
+    return { projects };
+  },
+});

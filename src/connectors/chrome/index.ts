@@ -1,6 +1,7 @@
-import type { Connector, UrlIdExtractor } from './types';
-import type { ConnectorResult } from '../types/project';
-import { loadFixture } from '../lib/fixtures';
+import type { Connector } from '../types';
+import type { ConnectorResult } from '../../types/project';
+import { defineConnector, type UrlIdExtractor } from '../_define';
+import { loadFixture } from '../../lib/fixtures';
 
 /** Recognise both the legacy `chrome.google.com/webstore/detail/<slug>/<id>`
  * and the new `chromewebstore.google.com/detail/<slug?>/<id>` URLs. */
@@ -154,3 +155,18 @@ export const fetchChromeProjects: Connector = async (config, options) => {
     },
   }));
 };
+
+/** Manifest — picked up by `_registry.ts` via auto-discovery. */
+export default defineConnector({
+  key: 'chrome',
+  label: 'Chrome',
+  urlExtractors,
+  defaultConfig: {
+    enabled: true,
+    extensionIds: [] as string[],
+  },
+  fetch: async (config, opts) => {
+    const projects = await fetchChromeProjects(config, opts);
+    return { projects };
+  },
+});

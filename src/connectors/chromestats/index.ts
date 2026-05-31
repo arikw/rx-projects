@@ -1,0 +1,110 @@
+import type { Connector } from '../types';
+import type { ConnectorResult } from '../../types/project';
+import { defineConnector } from '../_define';
+import { loadFixture } from '../../lib/fixtures';
+import { readJsonCache, writeJsonCache } from '../../lib/json-cache';
+import { scrapeOne, scrapeReviewsPage, type ChromeStatsApp } from './scrape';
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const CACHE_PATH = 'generated/chrome-stats.json';
+
+type ChromeStatsCache = { version: 1; _generated: string; apps: Record<string, ChromeStatsApp> };
+
+const NOTE =
+  'Auto-generated chrome-stats.com cache. Fetched once per extension id; delete the file to refresh. PII (email, authorId) is intentionally omitted.';
+
+const emptyCache = (): ChromeStatsCache => ({ version: 1, _generated: NOTE, apps: {} });
+
+export const fetchChromestatsProjects: Connector = async (config, options) => {
+  // Shared list with the chrome connector — like AppBrain/APKPure share
+  // sources.gplay.packages.
+  const extensionIds = config.sources.chrome.extensionIds;
+  if (!extensionIds.length) return [];
+
+  if (options?.fixtureMode) return loadFixture('chromestats');
+
+  const cache = readJsonCache<ChromeStatsCache>(CACHE_PATH, emptyCache());
+  if (cache.version !== 1 || !cache.apps) Object.assign(cache, emptyCache());
+  cache._generated = NOTE;
+
+  for (const id of extensionIds) {
+    if (!cache.apps[id]) {
+      const app = await scrapeOne(id);
+      if (app) cache.apps[id] = app;
+      await sleep(300);
+    }
+    // Backfill the rating histogram + reviews from the /reviews subpage when
+    // missing (we always re-fetch when either is absent).
+    const entry = cache.apps[id];
+    if (entry && (!entry.ratingHistogram || !entry.reviews)) {
+      const { histogram, reviews } = await scrapeReviewsPage(id);
+      if (histogram) entry.ratingHistogram = histogram;
+      if (reviews.length) entry.reviews = reviews;
+      await sleep(300);
+    }
+  }
+  writeJsonCache(CACHE_PATH, cache);
+
+  return extensionIds
+    .map((id) => cache.apps[id])
+    .filter((a): a is ChromeStatsApp => !!a)
+    .map<ConnectorResult>((a) => ({
+      // The origin is the Chrome Web Store extension — same `platform: 'chrome'`
+      // as the chrome.ts connector, so when an extension exists on BOTH the
+      // builder reconciles them per origin id. We deliberately omit `url`: for
+      // taken-down extensions the CWS listing is dead, so the builder falls
+      // through to the (alive) chrome-stats mirror url below. When chrome.ts
+      // also contributes, it supplies the real CWS url and that wins.
+      origin: { platform: 'chrome', id: a.id },
+      mirror: {
+        platform: 'chrome-stats',
+        id: a.id,
+        url: a.url,
+        asOf: a.lastUpdate,
+        title: a.name,
+        description: a.description,
+        firstReleased: a.creationDate ? new Date(a.creationDate).getUTCFullYear() : undefined,
+        tags: [
+          'chrome-extension',
+          // chrome-stats categories look like "productivity/workflow" or
+          // "14_fun"; strip the numeric prefix and take the leaf word.
+          ...(a.category ? [a.category.replace(/^\d+_/, '').split('/').pop()!] : []),
+        ],
+        kind: 'extension',
+        // chrome-stats supplies the real promo banners CWS displays at the top
+        // of a listing — prefer the marquee (1400×560), fall back to small.
+        banner: a.marqueeBanner ?? a.smallBanner,
+        reviews: a.reviews,
+        stats: {
+          // Once an extension is removed from CWS, the cached userCount is a
+          // stale snapshot, not a current count — and presenting it as
+          // "weekly users" would be misleading. Rating stays (it's historical).
+          ...(!a.isDeleted && a.userCount != null ? { users: a.userCount } : {}),
+          ...(a.rating
+            ? {
+                rating: {
+                  average: a.rating.value,
+                  count: a.rating.count,
+                  ...(a.ratingHistogram ? { histogram: a.ratingHistogram } : {}),
+                },
+              }
+            : {}),
+        },
+      },
+    }));
+};
+
+/** Manifest — picked up by `_registry.ts` via auto-discovery.
+ *  chromestats is a MIRROR of chrome — inherits label / brand from the origin. */
+export default defineConnector({
+  key: 'chromestats',
+  mirrorOf: 'chrome',
+  // The mirror rep uses platform: 'chrome-stats' (the legacy hyphenated form).
+  platformAliases: ['chrome-stats'],
+  defaultConfig: { enabled: true },
+  fetch: async (config, opts) => {
+    const projects = await fetchChromestatsProjects(config, opts);
+    return { projects };
+  },
+});

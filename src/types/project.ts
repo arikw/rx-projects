@@ -48,6 +48,26 @@ export type CanonicalStats = {
   rating?: { average: number; count: number; histogram?: number[] };
 };
 
+/** Aggregate "I exist over there" metric from a profile source (Stack Overflow,
+ *  GitHub-as-a-person, dev.to, …). Emitted by data-only connectors and
+ *  rendered in the ProfilePresence strip below the hero — *not* as a card.
+ *
+ *  Distinct from a Project: there's no thing being shipped, just a person's
+ *  presence + a number or two summarising it. */
+export type ProfileFact = {
+  /** Source key — matches the emitting connector's manifest key. */
+  source: string;
+  /** Outbound link to the profile. */
+  url: string;
+  /** Friendly label. Mirror-of-origin style isn't used here — profile sources
+   *  are always standalone. */
+  label: string;
+  /** Headline metric — surfaced prominently (reputation, follower count, …). */
+  headline: { value: number | string; label: string };
+  /** Secondary details — small chips beside the headline (badges, repo count). */
+  details?: Array<{ label: string; value: number | string }>;
+};
+
 /** A user review on a third-party source (no author PII captured). */
 export type Review = {
   rating?: number;

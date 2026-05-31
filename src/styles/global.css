@@ -286,10 +286,15 @@ button {
   align-items: center;
   justify-content: center;
 }
-.thumb-brand-mark {
+.thumb-brand-mark,
+.thumb-brand-mark > svg {
   width: 72px;
   height: 72px;
+  display: block;
   opacity: 0.88;
+}
+.thumb-brand-mark > svg {
+  fill: currentColor;
 }
 
 /* Screenshot background + icon overlay: store-listing pattern. */

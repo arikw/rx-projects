@@ -1,6 +1,7 @@
-import type { Connector, UrlIdExtractor } from './types';
-import type { ConnectorResult, ProjectKind } from '../types/project';
-import { loadFixture } from '../lib/fixtures';
+import type { Connector } from '../types';
+import type { ConnectorResult, ProjectKind } from '../../types/project';
+import { defineConnector, type UrlIdExtractor } from '../_define';
+import { loadFixture } from '../../lib/fixtures';
 
 export const urlExtractors: UrlIdExtractor[] = [
   {
@@ -105,3 +106,26 @@ export const fetchPlaystoreProjects: Connector = async (config, options) => {
   }
   return out;
 };
+
+/** Manifest — picked up by `_registry.ts` via auto-discovery.
+ *  playstore is the ORIGIN for the "android" source-group. Mirrors (appbrain,
+ *  apkpure) inherit this label via mirrorOf and the source-group via
+ *  sourceGroup. The chip label rendered to users is "Android app". */
+export default defineConnector({
+  key: 'playstore',
+  label: 'Android app',
+  sourceGroup: 'android',
+  // playstore reps use platform: 'google-play' (the canonical Play resource
+  // identifier, also used in manual `origins` config). Alias it so the
+  // platform→source-group lookup still resolves.
+  platformAliases: ['google-play'],
+  urlExtractors,
+  defaultConfig: {
+    enabled: true,
+    packages: [] as string[],
+  },
+  fetch: async (config, opts) => {
+    const projects = await fetchPlaystoreProjects(config, opts);
+    return { projects };
+  },
+});

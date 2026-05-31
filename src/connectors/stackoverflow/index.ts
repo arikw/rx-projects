@@ -1,7 +1,9 @@
-import type { Connector, UrlIdExtractor } from './types';
-import type { ConnectorResult } from '../types/project';
-import { loadFixture } from '../lib/fixtures';
-import { readJsonCache, writeJsonCache } from '../lib/json-cache';
+import type { Connector } from '../types';
+import type { ConnectorResult } from '../../types/project';
+import { defineConnector, type UrlIdExtractor } from '../_define';
+import { loadFixture } from '../../lib/fixtures';
+import { readJsonCache, writeJsonCache } from '../../lib/json-cache';
+import iconSvg from './icon.svg?raw';
 
 export const urlExtractors: UrlIdExtractor[] = [
   {
@@ -34,7 +36,9 @@ const NOTE =
 const empty = (): SOCache => ({ version: 1, _generated: NOTE });
 
 /** Stack Overflow as an inline Simple Icons SVG (CC0). Used as the card icon
- *  so we don't need to fetch the user's profile photo. */
+ *  so we don't need to fetch the user's profile photo. Until the ProjectCard
+ *  consumer refactor drops the per-result `icon` field in favour of the
+ *  brandMark on the manifest, the card still needs a URL/data-URI here. */
 const SO_ICON =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
@@ -120,3 +124,29 @@ export const fetchStackoverflowProjects: Connector = async (config, options) => 
     },
   ];
 };
+
+/** Manifest — picked up by `_registry.ts` via auto-discovery.
+ *  The brandMark here describes what the card SHOULD render once consumers
+ *  switch to reading brand marks from the manifest. The orange backplate that
+ *  was baked into SO_ICON moves to `tint`; the white stack glyph in
+ *  `icon.svg` uses `fill="currentColor"` so `fg` controls it. Until then, the
+ *  connector keeps emitting `icon: SO_ICON` (a data URI of the orange tile +
+ *  glyph) so the existing ProjectCard layout still renders. */
+export default defineConnector({
+  key: 'stackoverflow',
+  label: 'Stack Overflow',
+  brandMark: {
+    svg: iconSvg,
+    tint: '#f48024',
+    fg: '#ffffff',
+  },
+  urlExtractors,
+  defaultConfig: {
+    enabled: true,
+    userId: '',
+  },
+  fetch: async (config, opts) => {
+    const projects = await fetchStackoverflowProjects(config, opts);
+    return { projects };
+  },
+});

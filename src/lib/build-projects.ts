@@ -5,22 +5,10 @@ import type {
   ProjectKind,
   Representation,
 } from '../types/project';
-import type { UrlIdExtractor } from '../connectors/types';
-import { urlExtractors as githubExt } from '../connectors/github';
-import { urlExtractors as npmExt } from '../connectors/npm';
-import { urlExtractors as dockerExt } from '../connectors/docker';
-import { urlExtractors as chromeExt } from '../connectors/chrome';
-import { urlExtractors as gnomeExt } from '../connectors/gnome';
-import { urlExtractors as playstoreExt } from '../connectors/playstore';
+import type { UrlIdExtractor } from '../connectors/_define';
+import { getAllUrlExtractors, getPlatformToSourceGroup } from '../connectors/_registry';
 
-const ALL_EXTRACTORS: UrlIdExtractor[] = [
-  ...githubExt,
-  ...npmExt,
-  ...dockerExt,
-  ...chromeExt,
-  ...gnomeExt,
-  ...playstoreExt,
-];
+const ALL_EXTRACTORS: UrlIdExtractor[] = getAllUrlExtractors();
 
 const EXTRACTOR_BY_HOST = new Map<string, UrlIdExtractor>();
 for (const ex of ALL_EXTRACTORS) for (const h of ex.hostnames) EXTRACTOR_BY_HOST.set(h, ex);
@@ -63,18 +51,13 @@ const rankOf = (p: string): number => PLATFORM_RANK[p] ?? 99;
 // Map a rep's platform key to its user-facing "source-group" — for chip
 // labels and per-source URL resolution. Origins and their mirrors map to the
 // same group, so a chrome card whose CWS listing is dead can still resolve
-// CHROME → chrome-stats.com via the mirror.
+// CHROME → chrome-stats.com via the mirror. Derived from the registry —
+// each manifest contributes its key (and platformAliases for legacy
+// rep.platform strings like 'chrome-stats' and 'google-play'). Add the
+// 'manual' fallback so manual origin entries still group correctly.
 const PLATFORM_TO_SOURCE_GROUP: Record<string, string> = {
-  github: 'github',
-  npm: 'npm',
-  docker: 'docker',
-  gnome: 'gnome',
-  chrome: 'chrome',
-  'chrome-stats': 'chrome',
-  'google-play': 'android',
-  apkpure: 'android',
-  appbrain: 'android',
-  stackoverflow: 'stackoverflow',
+  ...getPlatformToSourceGroup(),
+  manual: 'manual',
 };
 
 function canonUrl(u?: string): string | null {

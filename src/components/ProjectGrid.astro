@@ -2,6 +2,7 @@
 import ProjectCard from './ProjectCard.astro';
 import FilterBar from './FilterBar.astro';
 import type { Project } from '../types/project';
+import { getPlatformToSourceGroup, getOrigins, getSourceGroup } from '../connectors/_registry';
 
 interface Props {
   projects: Project[];
@@ -12,18 +13,11 @@ const { projects, pageSize } = Astro.props;
 // Map a project's raw sources (origin/native platforms) to a friendlier
 // "filter group" key for the source-filter chips. google-play / apkpure /
 // appbrain all belong to the android group; everything else passes through.
-const SOURCE_TO_GROUP: Record<string, string> = {
-  github: 'github',
-  npm: 'npm',
-  docker: 'docker',
-  chrome: 'chrome',
-  gnome: 'gnome',
-  'google-play': 'android',
-  apkpure: 'android',
-  appbrain: 'android',
-  stackoverflow: 'stackoverflow',
-};
-const GROUP_ORDER = ['github', 'npm', 'docker', 'chrome', 'android', 'gnome', 'stackoverflow'];
+// Derived from the registry — each manifest contributes itself and its
+// platformAliases.
+const SOURCE_TO_GROUP: Record<string, string> = getPlatformToSourceGroup();
+// Chip display order: each origin's source-group, deduped, in manifest order.
+const GROUP_ORDER = [...new Set(getOrigins().map((m) => getSourceGroup(m.key)))];
 
 function projectGroups(p: Project): string[] {
   const set = new Set<string>();
