@@ -24,7 +24,11 @@ function normalizeKind(raw?: string): ProjectKind | undefined {
 export function manualToResults(config: ProjectsConfig): ConnectorResult[] {
   return config.manual.map((m) => ({
     origin: {
-      platform: 'manual',
+      // Default platform 'manual' (chip reads "Portfolio"). When the entry
+      // declares `source`, use that string instead — same value drives the
+      // chip label via sourceLabel(), with an auto-capitalised fallback
+      // for keys that aren't registered as connectors.
+      platform: m.source ?? 'manual',
       id: m.slug,
       url: m.url,
       title: m.title,

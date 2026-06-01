@@ -13,19 +13,19 @@ const { projects, pageSize } = Astro.props;
 
 // Map a project's raw sources (origin/native platforms) to a friendlier
 // "filter group" key for the source-filter chips. google-play / apkpure /
-// appbrain all belong to the android group; everything else passes through.
-// Derived from the registry — each manifest contributes itself and its
-// platformAliases.
+// appbrain all belong to the android group; registered connectors pass
+// through their own key; everything else (e.g. a one-off `'firefox'` set
+// by a ManualProject's `source` field) falls back to its platform key
+// directly so it still gets a chip.
 const SOURCE_TO_GROUP: Record<string, string> = getPlatformToSourceGroup();
-// Chip display order: each origin's source-group, deduped, in manifest order.
-const GROUP_ORDER = [...new Set(getOrigins().map((m) => getSourceGroup(m.key)))];
+// Chip display order: each registered origin's source-group, deduped, in
+// manifest order. Unregistered groups (one-offs from ManualProject.source)
+// are appended alphabetically after the registered ones.
+const REGISTERED_ORDER = [...new Set(getOrigins().map((m) => getSourceGroup(m.key)))];
 
 function projectGroups(p: Project): string[] {
   const set = new Set<string>();
-  for (const s of p.sources) {
-    const g = SOURCE_TO_GROUP[s];
-    if (g) set.add(g);
-  }
+  for (const s of p.sources) set.add(SOURCE_TO_GROUP[s] ?? s);
   return [...set];
 }
 
@@ -35,7 +35,10 @@ for (const p of projects) {
     groupCounts.set(g, (groupCounts.get(g) ?? 0) + 1);
   }
 }
-const sourceChips = GROUP_ORDER
+const extraGroups = [...groupCounts.keys()]
+  .filter((g) => !REGISTERED_ORDER.includes(g))
+  .sort();
+const sourceChips = [...REGISTERED_ORDER, ...extraGroups]
   .filter((g) => groupCounts.has(g))
   .map((g) => ({ key: g, label: g, count: groupCounts.get(g)! }));
 

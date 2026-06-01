@@ -42,6 +42,15 @@ export type ManualProject = {
    *  YouTube embed URLs (`https://www.youtube.com/embed/<id>?…`) pass
    *  through to the dashboard as upstream embeds. */
   videos?: string[];
+  /** Where this project lived. Drives the card's source-chip label.
+   *  Omit (default) → chip reads "Portfolio".
+   *  Set to a known connector key (`'github'` / `'chrome'` / `'npm'` /
+   *  `'docker'` / `'gnome'` / `'stackoverflow'`, etc.) → chip reads that
+   *  connector's brand label.
+   *  Set to any other short lowercase key (e.g. `'firefox'`, `'edge'`,
+   *  `'wordpress'`) → chip reads the auto-capitalised form ("Firefox",
+   *  "Edge", "Wordpress"). */
+  source?: string;
 };
 
 export type GithubSourceConfig = {

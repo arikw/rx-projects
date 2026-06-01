@@ -297,8 +297,10 @@ function buildProject(group: ConnectorResult[]): Project {
   const sourceUrls: Record<string, string> = {};
   for (const rep of repsByPlatformRank) {
     if (!rep.url) continue;
-    const groupKey = PLATFORM_TO_SOURCE_GROUP[rep.platform];
-    if (!groupKey) continue;
+    // Unregistered platforms (e.g. `'firefox'` set by a ManualProject's
+    // `source` field) get their url stored under their own platform key,
+    // so the card's chip can still link out via `p.sourceUrls[platform]`.
+    const groupKey = PLATFORM_TO_SOURCE_GROUP[rep.platform] ?? rep.platform;
     if (!sourceUrls[groupKey]) sourceUrls[groupKey] = rep.url;
   }
 

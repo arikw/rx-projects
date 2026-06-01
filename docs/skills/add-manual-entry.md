@@ -59,10 +59,42 @@ type ManualProject = {
   banner?: string;         // Wide promo / marketing tile URL. Triggers the banner layout.
   screenshots?: string[];  // Phone/screen captures. Paired with `icon` → screenshot+icon stack.
   videos?: string[];       // Trailer URLs (direct .mp4 — cached; YouTube embed — pass-through).
+  // Where the project lived — drives the source-chip label on the card.
+  // See "Picking the right `source`" below for guidance.
+  source?: string;
 };
 ```
 
 Minimum viable entry: `{ slug, title, description }`. Everything else is optional. Without any of `icon`/`banner`/`screenshots`, the card falls back to a generic initials-on-gradient thumb.
+
+## Picking the right `source`
+
+The `source` field drives the **source-chip label** on the project card (the small pill under the title that reads "GITHUB ↗" / "CHROME ↗" / "PORTFOLIO" on existing cards). Set it from the project's actual host platform — NOT the platform that's hosting the screenshot you fetched (e.g. Wayback Machine, Imgur). Common values:
+
+| The project lived on… | Use `source` value | Chip will read |
+|---|---|---|
+| GitHub repo only | `'github'` (or omit and set `sourceUrl`) | `GITHUB ↗` |
+| npm | `'npm'` | `NPM` |
+| Docker Hub | `'docker'` | `DOCKER` |
+| Chrome Web Store | `'chrome'` | `CHROME` |
+| Firefox Add-ons (AMO) | `'firefox'` | `FIREFOX` |
+| Microsoft Edge Add-ons | `'edge'` | `EDGE` |
+| Safari Extensions Gallery | `'safari'` | `SAFARI` |
+| WordPress Plugin Directory | `'wordpress'` | `WORDPRESS` |
+| GNOME Shell Extensions | `'gnome'` | `GNOME` |
+| Google Play Store | `'google-play'` | `GOOGLE PLAY` |
+| Apple App Store | `'app-store'` | `App-store` *(label-fallback — fine but you can rename in `src/lib/source-label.ts` if you want it prettier)* |
+| Self-hosted website / personal project | omit | `PORTFOLIO` |
+| Truly platform-less (e.g. a printed zine, a binary you handed out) | omit | `PORTFOLIO` |
+
+Heuristics for the AI assistant adding the entry:
+
+- **Read the URL.** A Wayback / archive snapshot of `addons.mozilla.org/...` ⇒ `source: 'firefox'`. A snapshot of `chromewebstore.google.com/...` ⇒ `source: 'chrome'`. A snapshot of `wordpress.org/plugins/...` ⇒ `source: 'wordpress'`. Do not let the archive domain mislead you — the source is the ORIGINAL host, not the archive host.
+- **Match a connector key when one fits.** Anything in `src/connectors/<key>/` is a first-class source (`github`, `npm`, `docker`, `chrome`, `gnome`, `stackoverflow`, …). Use that exact key so the chip picks up the right label.
+- **Lowercase, one-word keys for everything else.** No spaces, no plural-S, no version numbers. The label is auto-capitalised at the first letter (so `'firefox'` → `'Firefox'`).
+- **Don't invent a key when the connector exists.** Use `'github'`, NOT `'gh'` or `'github-pages'`, when the project lived as a GitHub repo.
+
+Acceptable to leave `source` omitted only if the project genuinely had no public host (closed-source internal tool, retired binary, conference talk, etc.) — those legitimately read as "PORTFOLIO".
 
 ### ManualOrigin
 
@@ -142,7 +174,7 @@ The `ManualProject.featured` field exists but is a per-entry shortcut; `config.f
 1. **Confirm which kind** (manual project vs manual origin) — ask if unclear.
 2. **Confirm which file** (committed vs local) — default to local.
 3. **Gather the data**:
-   - For a manual project: `slug`, `title`, `description` minimum. Ask for anything else that makes sense (url, year, tags, kind, and ESPECIALLY media — if the project has a marketing page or screenshots, offer to wire them up via `icon` / `banner` / `screenshots`, otherwise the card renders as a plain initials tile).
+   - For a manual project: `slug`, `title`, `description` minimum. Decide `source` from where the project *actually* lived (see "Picking the right `source`" above — the platform is what determines the chip; never confuse it with the page you're scraping from). Then ask for anything else that makes sense (url, year, tags, kind, and ESPECIALLY media — if the project has a marketing page or screenshots, offer to wire them up via `icon` / `banner` / `screenshots`, otherwise the card renders as a plain initials tile).
    - For a manual origin: the origin resource id (look in `generated/snapshot.json` if the user doesn't know it offhand), and which stat(s) to override with which values.
 4. **Edit the file**. Insert into the right array/object. Match the surrounding indentation/style. The existing config files have commented-out examples — uncomment-style additions are fine.
 5. **Verify** with `npm run build` and a quick inspection of `dist/data.json` for the new entry.

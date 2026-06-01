@@ -693,11 +693,37 @@ button {
   gap: 28px;
 }
 
-/* Project grid */
+/* Project grid — flex so an underfilled row (1–2 cards on a 3-col viewport,
+   e.g. after the source filter narrows the visible set) keeps the cards at
+   their packed-row width and centres them, rather than letting a single card
+   stretch across the whole grid. Column thresholds mirror what the previous
+   `repeat(auto-fit, minmax(260px, 1fr))` grid produced. */
 .projects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 28px;
+}
+/* 3 columns by default (the desktop case): each card claims 1/3 of the grid
+   minus its share of the two 28px gaps. */
+.projects-grid > .card {
+  width: calc((100% - 56px) / 3);
+  min-width: 260px;
+}
+/* 2 columns (~580–880 px viewport). Below the 3-col threshold of the old
+   auto-fit grid (3 × 260 + 2 × 28 = 836 px of grid width, ≈ 868 px viewport). */
+@media (max-width: 880px) {
+  .projects-grid > .card {
+    width: calc((100% - 28px) / 2);
+  }
+}
+/* 1 column on phones. Cards drop the min-width so they stretch edge-to-edge
+   within the page padding instead of leaving uneven gutters. */
+@media (max-width: 600px) {
+  .projects-grid > .card {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 /* Cards */

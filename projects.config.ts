@@ -106,6 +106,20 @@ const config: ProjectsConfig = {
   // Optional matching MDX in src/content/projects/<slug>.mdx generates a
   // detail page at /projects/<slug>/.
   manual: [
+    {
+      slug: 'back-to-google',
+      title: 'Back to Google',
+      description: "Go back to your last Google results page from your current tab's history list.",
+      url: 'https://web.archive.org/web/20170912104531/https://addons.mozilla.org/en-US/firefox/addon/back-to-google/',
+      source: 'firefox',
+      tags: ['firefox', 'extension', 'retired'],
+      year: 2009,
+      kind: 'extension',
+      icon: 'https://web.archive.org/web/20170909200644im_/https://addons.cdn.mozilla.net/user-media/addon_icons/7/7206-64.png?modified=1281033339',
+      screenshots: [
+        'https://web.archive.org/web/20170909200644im_/https://addons.cdn.mozilla.net/user-media/previews/full/22/22335.png?modified=1331218902',
+      ],
+    },
     // Example:
     // {
     //   slug: 'internal-workflow-tool',

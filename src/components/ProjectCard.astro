@@ -67,8 +67,12 @@ for (const s of p.sources) {
   const label = sourceLabel(s);
   if (seenSourceLabels.has(label)) continue;
   seenSourceLabels.add(label);
-  const group = SOURCE_TO_GROUP[s];
-  const href = group ? p.sourceUrls?.[group] : undefined;
+  // Registered connector → use its source-group; one-off platforms (e.g.
+  // `'firefox'` declared by a ManualProject.source) → look up their own
+  // platform key directly. buildProjects stores sourceUrls under either,
+  // so the chip becomes clickable for both cases.
+  const group = SOURCE_TO_GROUP[s] ?? s;
+  const href = p.sourceUrls?.[group];
   sourceChips.push({ s, label, href });
 }
 
