@@ -75,13 +75,17 @@ const overflowTags = sortedTags.slice(topN);
   />
 
   <div class="projects-grid">
-    {projects.map((p) => (
-      <ProjectCard
-        project={p}
-        sourceGroups={projectGroups(p).join(' ')}
-        tagList={(p.tags ?? []).join(' ')}
-      />
-    ))}
+    {projects.map((p) => {
+      const rank = config.featured.indexOf(p.id);
+      return (
+        <ProjectCard
+          project={p}
+          sourceGroups={projectGroups(p).join(' ')}
+          tagList={(p.tags ?? []).join(' ')}
+          featuredRank={rank >= 0 ? rank : undefined}
+        />
+      );
+    })}
   </div>
 
   <p class="projects-empty" hidden>No projects match.</p>
@@ -108,14 +112,21 @@ const overflowTags = sortedTags.slice(topN);
     const totalCountEl = root.querySelector<HTMLElement>('[data-tag-count-total]');
     const cards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
 
+    type Sort = 'featured' | 'popularity' | 'year';
     let activeSource = '';
-    let activeSort: 'popularity' | 'year' = 'popularity';
+    let activeSort: Sort = 'featured';
     let activeTag = '';
     let shown = pageSize;
     let overflowExpanded = false;
 
     const popularityOf = (c: HTMLElement) => parseFloat(c.dataset.popularity ?? '0');
     const yearOf = (c: HTMLElement) => parseInt(c.dataset.year ?? '0', 10);
+    // Featured rank: 0-based index in config.featured for pinned projects,
+    // Infinity for everything else. Drives the default "Featured" sort.
+    const featuredRankOf = (c: HTMLElement) => {
+      const r = parseInt(c.dataset.featuredRank ?? '', 10);
+      return Number.isFinite(r) ? r : Infinity;
+    };
     const tagsOf = (c: HTMLElement) =>
       (c.dataset.tags ?? '').split(' ').filter(Boolean);
     const matchesSource = (c: HTMLElement) =>
@@ -169,6 +180,12 @@ const overflowTags = sortedTags.slice(topN);
 
       const sorted = matching.slice().sort((a, b) => {
         if (activeSort === 'year') return yearOf(b) - yearOf(a);
+        if (activeSort === 'featured') {
+          const ra = featuredRankOf(a);
+          const rb = featuredRankOf(b);
+          if (ra !== rb) return ra - rb;
+          return popularityOf(b) - popularityOf(a);
+        }
         return popularityOf(b) - popularityOf(a);
       });
 
@@ -202,7 +219,7 @@ const overflowTags = sortedTags.slice(topN);
       applyFilter();
     }
 
-    function setSort(sort: 'popularity' | 'year') {
+    function setSort(sort: Sort) {
       activeSort = sort;
       shown = pageSize;
       sortChips.forEach((c) => {
@@ -225,7 +242,7 @@ const overflowTags = sortedTags.slice(topN);
     });
     sortChips.forEach((c) => {
       c.addEventListener('click', () =>
-        setSort((c.dataset.filterSort as 'popularity' | 'year') ?? 'popularity'),
+        setSort((c.dataset.filterSort as Sort) ?? 'featured'),
       );
     });
     tagChips.forEach((c) => {

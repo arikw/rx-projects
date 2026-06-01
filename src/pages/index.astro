@@ -2,7 +2,6 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 import ProfilePresence from '../components/ProfilePresence.astro';
-import FeaturedRow from '../components/FeaturedRow.astro';
 import ReviewCarousel from '../components/ReviewCarousel.astro';
 import ProjectGrid from '../components/ProjectGrid.astro';
 import SiteAbout from '../components/SiteAbout.astro';
@@ -38,11 +37,13 @@ const lastUpdatedLabel = new Date(lastUpdatedIso).toLocaleDateString('en-US', {
   timeZone: 'UTC',
 });
 
-const featuredOrder = new Map(config.featured.map((slug, i) => [slug, i]));
-
-const featured = allProjects
-  .filter((p) => p.featured)
-  .sort((a, b) => (featuredOrder.get(a.id) ?? 999) - (featuredOrder.get(b.id) ?? 999));
+// Featured projects no longer get their own row — they're pinned to the
+// top of the project grid via the default "Featured" sort. Their order
+// follows the user's hand-curated `config.featured` array; everything
+// non-featured falls through to popularity sort within itself.
+const featuredOrder = new Map(config.featured.map((slug, i) => [slug, i] as const));
+const featuredRank = (p: (typeof allProjects)[number]): number =>
+  featuredOrder.get(p.id) ?? Infinity;
 
 function signal(p: (typeof allProjects)[number]): number {
   return (
@@ -53,10 +54,14 @@ function signal(p: (typeof allProjects)[number]): number {
   );
 }
 
-// "All projects" really shows all of them — featured ones get highlighted
-// in the row above but also appear here so the source-filter counts and
-// the popularity/year sort include the whole catalogue.
-const sortedAll = [...allProjects].sort((a, b) => signal(b) - signal(a));
+// Default sort = featured-then-popularity. Mirror the client-side default
+// in ProjectGrid so the SSR HTML matches what the user sees pre-hydration.
+const sortedAll = [...allProjects].sort((a, b) => {
+  const ra = featuredRank(a);
+  const rb = featuredRank(b);
+  if (ra !== rb) return ra - rb;
+  return signal(b) - signal(a);
+});
 
 const carouselReviews = pickCarouselReviews(allProjects, 10);
 ---
@@ -68,7 +73,6 @@ const carouselReviews = pickCarouselReviews(allProjects, 10);
   <Hero stats={stats} />
   <ProfilePresence profiles={profiles} />
   {config.meta.siteAbout && <SiteAbout markdown={config.meta.siteAbout} />}
-  <FeaturedRow projects={featured} />
   <ProjectGrid projects={sortedAll} pageSize={config.ui.pageSize} />
   <ReviewCarousel reviews={carouselReviews} />
   {config.user.bio && <AuthorBio name={config.user.name} bio={config.user.bio} avatar={profileImage} />}

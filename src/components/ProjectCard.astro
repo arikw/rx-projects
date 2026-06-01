@@ -12,8 +12,11 @@ interface Props {
   sourceGroups?: string;
   /** Space-separated tag list for the tag-filter chips. */
   tagList?: string;
+  /** 0-based index in config.featured when this project is pinned. Drives
+   *  the client-side "Featured" sort. Omit for non-featured cards. */
+  featuredRank?: number;
 }
-const { project: p, size = 'compact', sourceGroups = '', tagList = '' } = Astro.props;
+const { project: p, size = 'compact', sourceGroups = '', tagList = '', featuredRank } = Astro.props;
 const base = import.meta.env.BASE_URL;
 
 // Popularity signal for client-side "sort by popularity" — same formula as
@@ -78,6 +81,7 @@ const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
   data-tags={tagList}
   data-year={p.year ?? ''}
   data-popularity={popularity}
+  data-featured-rank={featuredRank ?? ''}
 >
   <ProjectThumb project={p} />
   <header class="card-head">
