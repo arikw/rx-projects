@@ -81,6 +81,10 @@ export default defineConnector({
     svg: iconSvg,
     tint: '#061d35',
     fg: '#2496ED',
+    // Docker's brand blue as the tile in dark mode — the deep navy
+    // disappears against the page background otherwise.
+    darkTint: '#2496ED',
+    darkFg: '#ffffff',
   },
   urlExtractors,
   defaultConfig: {

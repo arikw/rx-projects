@@ -8,6 +8,17 @@
 html {
   font-family: 'Fraunces Variable', Georgia, serif;
   -webkit-text-size-adjust: 100%;
+  /* Reserve scrollbar space on both sides so the desktop layout stays
+     visually symmetric — without this, the right gutter looks wider than
+     the left whenever a vertical scrollbar is present. No-op on touch
+     devices (where the scrollbar is an overlay). */
+  scrollbar-gutter: stable both-edges;
+  /* Suppress horizontal scrollbar caused by transient overflow (e.g. the
+     review carousel's slide-in animation starts at translateX(48px),
+     briefly pushing the slide past the viewport). Body alone isn't
+     enough on iOS Safari / some Android Chrome builds, which treat html
+     as the authoritative scroller — clip both. */
+  overflow-x: clip;
 }
 
 body {
@@ -16,6 +27,12 @@ body {
   color: var(--fg);
   line-height: 1.55;
   font-feature-settings: 'ss01';
+  /* Suppress horizontal scrollbar caused by elements transiently sticking
+     past the viewport edge (e.g. the review carousel's slide-in animation
+     starts at translateX(48px)). Clipping at body level keeps individual
+     element drop shadows intact — clipping on a nearer parent would chop
+     them at the box edge. */
+  overflow-x: clip;
 }
 
 a {
@@ -34,6 +51,10 @@ button {
 
 /* Color tokens */
 :root {
+  /* Declare both schemes so light-dark() in component CSS resolves correctly
+     (used to switch brand-mark tints between light/dark modes without
+     duplicating rules everywhere). */
+  color-scheme: light dark;
   --bg: #fafaf7;
   --fg: #1a1a1a;
   --muted: #6a6a6a;
@@ -44,17 +65,36 @@ button {
   --card-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.04);
 }
 
+/* Dark tokens — applied when:
+   1. system prefers dark AND user hasn't overridden to light, OR
+   2. user has explicitly chosen dark via the header toggle.
+   `data-theme="light"` always wins back to the :root defaults above. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0e0f10;
-    --fg: #e8e6e1;
-    --muted: #909090;
-    --border: #2a2a2a;
-    --accent: #8ab2d3;
-    --accent-soft: #1a2532;
-    --card-bg: #161718;
-    --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.02), 0 8px 24px rgba(0, 0, 0, 0.3);
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #0c0d0f;
+    --fg: #ecebe5;
+    --muted: #a8a39a;
+    --border: #3a3c41;
+    --accent: #94bcdb;
+    --accent-soft: #243246;
+    --card-bg: #1e2024;
+    --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 8px 24px rgba(0, 0, 0, 0.45);
   }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0c0d0f;
+  --fg: #ecebe5;
+  --muted: #a8a39a;
+  --border: #3a3c41;
+  --accent: #94bcdb;
+  --accent-soft: #243246;
+  --card-bg: #1e2024;
+  --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+:root[data-theme='light'] {
+  color-scheme: light;
 }
 
 /* Page chrome */
@@ -90,6 +130,54 @@ button {
   border-radius: 50%;
   background: var(--accent);
 }
+
+/* Theme toggle — round pill in the header. Renders the icon that matches
+   the *next* state (moon in light mode → click to go dark; sun in dark
+   mode → click to go light). */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--fg);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+}
+.theme-toggle:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.theme-icon {
+  width: 18px;
+  height: 18px;
+}
+/* Default (light mode): show moon, hide sun. */
+.theme-icon-sun { display: none; }
+.theme-icon-moon { display: block; }
+/* System dark (no explicit override): swap to sun. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .theme-icon-sun { display: block; }
+  :root:not([data-theme='light']) .theme-icon-moon { display: none; }
+}
+/* Explicit overrides always win. */
+:root[data-theme='dark'] .theme-icon-sun { display: block; }
+:root[data-theme='dark'] .theme-icon-moon { display: none; }
+:root[data-theme='light'] .theme-icon-sun { display: none; }
+:root[data-theme='light'] .theme-icon-moon { display: block; }
 
 /* Hero */
 .hero {
@@ -321,6 +409,75 @@ button {
   font-feature-settings: 'tnum';
 }
 
+/* Prev / next arrows — sit just outside the 720px carousel on roomy viewports
+   and tuck inside (with a softer background) once the carousel hugs the
+   viewport edges. The carousel container is position:relative so absolute
+   positioning here resolves against the slide stage. */
+.review-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--fg);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 1px 2px rgba(15, 17, 21, 0.04),
+    0 4px 14px rgba(15, 17, 21, 0.08);
+  transition: background 0.15s, color 0.15s, transform 0.15s, border-color 0.15s;
+  z-index: 2;
+}
+.review-arrow:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  transform: translateY(-50%) scale(1.05);
+}
+.review-arrow:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.review-arrow svg {
+  width: 18px;
+  height: 18px;
+}
+.review-arrow-prev { left: -56px; }
+.review-arrow-next { right: -56px; }
+/* Narrow viewports: straddle the left / right borders of the carousel so the
+   border line passes through the centre of each button (half inside the
+   slide, half outside, sitting in the page gutter). Button shrinks to 32px
+   so its half-width exactly equals the page's 16px horizontal padding —
+   the outer edge sits flush at the page edge instead of spilling into the
+   scrollbar / overflowing clientWidth. */
+@media (max-width: 880px) {
+  /* Pull the carousel in on each side so the arrow buttons (straddling the
+     slide's borders) and their drop shadow have breathing room — without
+     this they sit flush at the page edge and the shadow gets clipped. */
+  .review-carousel {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+  .review-arrow {
+    width: 32px;
+    height: 32px;
+    background: color-mix(in srgb, var(--card-bg) 90%, transparent);
+    backdrop-filter: blur(6px);
+    box-shadow:
+      0 1px 2px rgba(15, 17, 21, 0.06),
+      0 2px 6px rgba(15, 17, 21, 0.10);
+  }
+  .review-arrow svg { width: 14px; height: 14px; }
+  .review-arrow-prev { left: -16px; }
+  .review-arrow-next { right: -16px; }
+}
+
 /* Dots */
 .review-dots {
   display: flex;
@@ -398,7 +555,7 @@ button {
    accent (not a full wash). One per data-only connector. */
 .profile-presence {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
   /* Same 48px section gap below as every other major section. The visual
      pairing with the hero above is created via .hero:has(+ .profile-presence)

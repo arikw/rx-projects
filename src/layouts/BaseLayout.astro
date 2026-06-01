@@ -1,5 +1,6 @@
 ---
 import BaseHead from '../components/BaseHead.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
 import config from '../lib/load-config';
 import '@fontsource-variable/fraunces';
 import '../styles/global.css';
@@ -28,6 +29,7 @@ const home = import.meta.env.BASE_URL;
             <span class="brand-dot" aria-hidden="true"></span>
             <span>{config.meta.siteTitle}</span>
           </a>
+          <ThemeToggle />
         </nav>
       </header>
       <main class="site-main">

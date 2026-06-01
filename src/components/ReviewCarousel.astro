@@ -107,17 +107,54 @@ function formatDate(ts?: string): string | null {
     </div>
 
     {reviews.length > 1 && (
-      <nav class="review-dots" aria-label="Choose a review">
-        {reviews.map((_, i) => (
-          <button
-            type="button"
-            class="review-dot"
-            data-jump={i}
-            aria-label={`Show review ${i + 1} of ${reviews.length}`}
-            aria-current={i === 0 ? 'true' : 'false'}
-          />
-        ))}
-      </nav>
+      <>
+        <button
+          type="button"
+          class="review-arrow review-arrow-prev"
+          data-step="-1"
+          aria-label="Previous review"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M15 6l-6 6 6 6"
+              stroke="currentColor"
+              stroke-width="2"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="review-arrow review-arrow-next"
+          data-step="1"
+          aria-label="Next review"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M9 6l6 6-6 6"
+              stroke="currentColor"
+              stroke-width="2"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+
+        <nav class="review-dots" aria-label="Choose a review">
+          {reviews.map((_, i) => (
+            <button
+              type="button"
+              class="review-dot"
+              data-jump={i}
+              aria-label={`Show review ${i + 1} of ${reviews.length}`}
+              aria-current={i === 0 ? 'true' : 'false'}
+            />
+          ))}
+        </nav>
+      </>
     )}
   </section>
 )}
@@ -175,6 +212,14 @@ function formatDate(ts?: string): string | null {
         dot.addEventListener('click', () => {
           const i = parseInt(dot.dataset.jump ?? '0', 10);
           show(i);
+          resetTimer();
+        });
+      });
+
+      root.querySelectorAll<HTMLButtonElement>('.review-arrow').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const step = parseInt(btn.dataset.step ?? '1', 10);
+          show(current + step);
           resetTimer();
         });
       });

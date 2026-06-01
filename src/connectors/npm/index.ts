@@ -230,6 +230,10 @@ export default defineConnector({
     svg: iconSvg,
     tint: '#2d0707',
     fg: '#cb3837',
+    // npm's own red on dark mode: skip the deep-burgundy tile and go
+    // straight to the brand red as the surface so it pops.
+    darkTint: '#cb3837',
+    darkFg: '#ffffff',
   },
   urlExtractors,
   defaultConfig: {

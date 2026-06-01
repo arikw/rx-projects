@@ -22,6 +22,10 @@ export default defineConnector({
     svg: iconSvg,
     tint: '#0a0c12',
     fg: '#ffffff',
+    // Light tile + dark Octocat in dark mode so the brand stays visible
+    // (near-black tile blends into the page background otherwise).
+    darkTint: '#e8e6e1',
+    darkFg: '#1a1a1a',
   },
   urlExtractors,
   defaultConfig: {

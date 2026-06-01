@@ -28,6 +28,13 @@ export type BrandMark = {
   svg: string;
   tint: string;
   fg: string;
+  /** Optional dark-mode override for `tint` — set this when the light-mode
+   *  tint is too dark to remain visible against the dark page background
+   *  (e.g. GitHub's near-black). Falls back to `tint` when absent. */
+  darkTint?: string;
+  /** Optional dark-mode override for `fg` — paired with `darkTint`. Falls
+   *  back to `fg` when absent. */
+  darkFg?: string;
 };
 
 /** What `export default defineConnector(…)` describes. */

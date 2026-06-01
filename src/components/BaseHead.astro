@@ -18,6 +18,21 @@ const faviconURL = `${import.meta.env.BASE_URL}favicon.svg`;
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="generator" content={Astro.generator} />
 
+<!-- Apply stored theme before CSS paints to avoid a flash of the wrong
+     scheme on reload. Runs synchronously; safe to fail. -->
+<script is:inline>
+  (function () {
+    try {
+      var t = localStorage.getItem('theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {
+      /* storage blocked — fall back to system preference */
+    }
+  })();
+</script>
+
 <link rel="canonical" href={canonicalURL} />
 <link rel="icon" type="image/svg+xml" href={faviconURL} />
 

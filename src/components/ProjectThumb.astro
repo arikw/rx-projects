@@ -95,7 +95,7 @@ const shortTitle =
   ) : brand ? (
     <div
       class="thumb-brand"
-      style={`background: ${brand.tint}; color: ${brand.fg}`}
+      style={`background: light-dark(${brand.tint}, ${brand.darkTint ?? brand.tint}); color: light-dark(${brand.fg}, ${brand.darkFg ?? brand.fg})`}
     >
       <span class="thumb-brand-mark" set:html={brand.svg} />
     </div>
