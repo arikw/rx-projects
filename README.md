@@ -70,6 +70,10 @@ Each connector's snapshot includes a `lastScrapedAt` timestamp. If a source fail
 
 See **[docs/connectors.md](docs/connectors.md)** for the connector manifest pattern, folder layout, brand-mark setup, URL extractors, mirror relationships, and per-connector config. Connectors are auto-discovered — adding one is a single new folder under `src/connectors/`.
 
+## Adding a manual entry
+
+See **[docs/manual-entries.md](docs/manual-entries.md)** for the two shapes of manual entry the config accepts — a `ManualProject` for projects no connector covers (closed-source / retired / not-on-any-platform) and a `ManualOrigin` for authoritative overrides of scraped numbers. The guide is structured so an AI assistant (Claude, Cursor, Cline, etc.) can be pointed at it and walk the user through the right questions.
+
 ## Advanced: keep some values out of git
 
 If you want some config values to live outside the committed file (e.g. handles you'd rather not put in a public repo, or a different deployment URL when testing locally), create `projects.config.local.ts` next to `projects.config.ts`:
