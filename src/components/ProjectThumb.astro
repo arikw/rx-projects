@@ -27,6 +27,12 @@ const fg = `hsl(${hue}, 22%, 70%)`;
 const iconTint = p.iconColor
   ? `linear-gradient(135deg, color-mix(in srgb, ${p.iconColor} 60%, #15181d 40%), color-mix(in srgb, ${p.iconColor} 32%, #15181d 68%))`
   : `linear-gradient(135deg, ${bgA}, ${bgB})`;
+// Thumb-stack (screenshot + icon-overlay) wants a slick PASTEL backplate
+// pulled from the icon — high lightness, low saturation, so the icon's
+// vignette halo reads soft instead of sitting on a muddy dark plate.
+const stackTint = p.iconColor
+  ? `linear-gradient(135deg, color-mix(in srgb, ${p.iconColor} 32%, #fdfbf8 68%), color-mix(in srgb, ${p.iconColor} 18%, #fdfbf8 82%))`
+  : `linear-gradient(135deg, ${bgA}, ${bgB})`;
 const tint = `linear-gradient(135deg, ${bgA}, ${bgB})`;
 
 // Pick layout from what's in each bucket. Connectors decide what kind of
@@ -88,7 +94,7 @@ const shortTitle =
       <img class="thumb-banner" src={banner} alt="" loading="lazy" />
     )
   ) : screenshot && icon ? (
-    <div class="thumb-stack" style={`background: ${tint}`}>
+    <div class="thumb-stack" style={`background: ${stackTint}`}>
       <img class="thumb-bg" src={screenshot} alt="" loading="lazy" />
       <img class="thumb-icon-overlay" src={icon} alt="" loading="lazy" />
     </div>

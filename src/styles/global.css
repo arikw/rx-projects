@@ -955,19 +955,28 @@ button {
   height: 100%;
   object-fit: cover;
   object-position: center top;
-  filter: brightness(0.55);
 }
 .thumb-icon-overlay {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 56px;
-  height: 56px;
+  left: 16px;
+  bottom: 16px;
+  width: 60px;
+  height: 60px;
   object-fit: contain;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+  border-radius: 13px;
   background: #fff;
+  /* Double-frame so the icon stands out on ANY screenshot:
+       inner 2px solid white ring — pops against dark / busy bg
+       outer 1px dark ring        — pops against light / white bg
+     Plus a deep drop shadow, tight contact shadow, and a wide
+     soft dark halo that pools around the icon — darkens the
+     surrounding screenshot region for a focused, lifted badge. */
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 3px rgba(0, 0, 0, 0.22),
+    0 12px 26px rgba(0, 0, 0, 0.65),
+    0 3px 6px rgba(0, 0, 0, 0.45),
+    0 0 80px 10px rgba(0, 0, 0, 0.7);
 }
 
 .card > :not(.thumb) {

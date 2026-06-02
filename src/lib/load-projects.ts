@@ -121,12 +121,12 @@ async function loadOnce(): Promise<Project[]> {
 
   const built = buildProjects(all);
 
-  // Extract a dominant colour for each icon-only card so its backplate
-  // reflects the icon. Banner / screenshot+icon stack cards already have
-  // foreground art that defines their colour; brand-mark cards have a brand
-  // colour. So we only need this for icon-only (no banner, no screenshots).
+  // Extract a dominant colour for each card that has an icon — the backplate
+  // (icon-only frame, screenshot+icon stack) pulls a pastel version of this
+  // colour. Banner-only cards skip extraction since the foreground art owns
+  // the whole tile and there's no backplate visible.
   const iconUrlsForColor = built
-    .filter((p) => p.icon && !p.banner && !(p.screenshots && p.screenshots.length > 0))
+    .filter((p) => p.icon && !p.banner)
     .map((p) => p.icon!);
   if (iconUrlsForColor.length) {
     const colorByUrl = await resolveIconColors(iconUrlsForColor);
