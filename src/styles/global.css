@@ -1176,18 +1176,37 @@ a.card-source:hover {
   gap: 12px;
   margin-bottom: 32px;
 }
+/* Desktop: one inline row — label on the left, chip strip flowing to
+   the right. The chip container wraps if needed.
+   Mobile (≤600px): label sits above its own row of chips, and only
+   the chip container is the horizontal-scroll axis — the label never
+   competes with the chips for the same scroll space. */
 .filter-row {
+  display: flex;
+  /* baseline (not center) so when the chips container wraps to a
+     second row, the label aligns with the FIRST chip row's text
+     baseline instead of vertically centring against the multi-row
+     block. */
+  align-items: baseline;
+  gap: 10px;
+}
+.filter-chips {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  flex: 1;
 }
 .filter-label {
   font-size: 0.78rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-right: 4px;
+  flex-shrink: 0;
+  /* Uniform label slot so chip strips on different rows start at the
+     same x on desktop, regardless of label text length. */
+  min-width: 65px;
 }
 .filter-chip {
   background: var(--card-bg);
@@ -1223,6 +1242,180 @@ a.card-source:hover {
   font-size: 0.72rem;
   color: var(--muted);
   font-feature-settings: 'tnum';
+}
+
+/* Mobile: the label sits above the chip strip on its own line, and
+   only the chip container scrolls horizontally. The label is OUTSIDE
+   the scroll axis entirely — no sticky, no z-index, no masks to fake
+   it. A right-edge mask on the chip strip itself hints at off-screen
+   chips without ever interacting with the label. */
+@media (max-width: 600px) {
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .filter-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filter-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .filter-chips > * {
+    flex-shrink: 0;
+  }
+  /* Directional scroll-fades. Each class adds one edge of fade; the
+     positioning script toggles them based on actual scrollLeft so the
+     fade only appears on the side that has off-screen content. When
+     content doesn't overflow at all, both classes drop and there's
+     no fade. Only the mask changes between states — no padding /
+     layout properties, so toggling the class never shifts the chip
+     strip horizontally (which previously made the first scroll look
+     like a jump). */
+  .filter-chips.show-right-fade {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      black 0,
+      black calc(100% - 28px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      black 0,
+      black calc(100% - 28px),
+      transparent 100%
+    );
+  }
+  .filter-chips.show-left-fade {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      black 28px,
+      black 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      black 28px,
+      black 100%
+    );
+  }
+  .filter-chips.show-left-fade.show-right-fade {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      black 28px,
+      black calc(100% - 28px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      black 28px,
+      black calc(100% - 28px),
+      transparent 100%
+    );
+  }
+}
+
+/* Section-head reset — sits between the rule and the count. Accent
+   colour + ↺ icon so it reads as an interactive action, not a label.
+   Hidden via visibility (not display:none) when filters are at
+   defaults so its slot is always reserved — the count never shifts. */
+.section-reset {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  cursor: pointer;
+  transition: color 0.15s, transform 0.15s;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.section-reset svg {
+  display: block;
+}
+.section-reset:hover,
+.section-reset:focus-visible {
+  outline: none;
+}
+.section-reset:hover svg,
+.section-reset:focus-visible svg {
+  transform: scale(1.2);
+  transition: transform 0.15s;
+}
+.section-reset[hidden] {
+  /* Override default `display: none` so the slot stays in the layout
+     and the count's x-position doesn't change between states. */
+  display: inline-flex;
+  visibility: hidden;
+}
+
+/* Bottom-of-gallery reset — text link with ↺ icon, centred under the
+   Show More button (or alone when all cards are visible). Tertiary
+   styling so it doesn't compete with Show More's pill button. */
+.gallery-reset {
+  text-align: center;
+  margin-top: 12px;
+}
+.gallery-reset[hidden] {
+  display: none;
+}
+/* Bottom reset-link: same rounded-rect pill as filter chips and the
+   Show more button (sits next to Show more), so it visually belongs
+   to the same UI vocabulary. Accent text + icon distinguish it as
+   the secondary action. */
+.reset-link {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 18px;
+  color: var(--accent);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.88rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.reset-link svg {
+  display: block;
+  transition: transform 0.3s;
+}
+.reset-link:hover,
+.reset-link:focus-visible {
+  border-color: var(--accent);
+  background: var(--card-bg);
+  outline: none;
+}
+.reset-link:hover svg,
+.reset-link:focus-visible svg {
+  transform: scale(1.2);
+}
+
+/* Empty-state recovery link — when filters reduce results to 0, the
+   empty message itself offers a way out. Inline text link. */
+.projects-empty-reset {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.projects-empty-reset:hover {
+  text-decoration: none;
 }
 
 /* Tag filter — legacy, kept for any other consumer */
@@ -1348,15 +1541,34 @@ a.card-source:hover {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--fg);
-  padding: 10px 24px;
+  padding: 10px 22px;
   border-radius: 999px;
   font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   transition: border-color 0.15s, color 0.15s;
 }
+.show-more svg {
+  display: block;
+  transition: transform 0.2s;
+}
 
-.show-more:hover {
+.show-more:hover,
+.show-more:focus-visible {
   border-color: var(--accent);
   color: var(--accent);
+  outline: none;
+}
+.show-more:hover svg,
+.show-more:focus-visible svg {
+  transform: translateY(2px);
+}
+.show-more[data-mode="less"]:hover svg,
+.show-more[data-mode="less"]:focus-visible svg {
+  transform: translateY(-2px);
 }
 
 .show-more[hidden] {

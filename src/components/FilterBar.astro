@@ -21,91 +21,129 @@ const hasTags = primaryTags.length > 0 || hasOverflow;
 <div class="filter-bar" role="group" aria-label="Filter and sort projects">
   <div class="filter-row" aria-label="Filter by source">
     <span class="filter-label">Source</span>
-    <button
-      type="button"
-      class="filter-chip"
-      data-filter-source=""
-      aria-pressed="true"
-    >
-      All <span class="filter-count">{totalCount}</span>
-    </button>
-    {sources.map(({ key, label, count }) => (
+    <div class="filter-chips">
       <button
         type="button"
         class="filter-chip"
-        data-filter-source={key}
-        aria-pressed="false"
+        data-filter-source=""
+        aria-pressed="true"
       >
-        {label} <span class="filter-count">{count}</span>
+        All <span class="filter-count">{totalCount}</span>
       </button>
-    ))}
+      {sources.map(({ key, label, count }) => (
+        <button
+          type="button"
+          class="filter-chip"
+          data-filter-source={key}
+          aria-pressed="false"
+        >
+          {label} <span class="filter-count">{count}</span>
+        </button>
+      ))}
+    </div>
   </div>
   {hasTags && (
     <div class="filter-row filter-row--tags" aria-label="Filter by tag">
       <span class="filter-label">Tag</span>
-      <button
-        type="button"
-        class="filter-chip"
-        data-filter-tag=""
-        aria-pressed="true"
-      >
-        All <span class="filter-count" data-tag-count-total>{totalCount}</span>
-      </button>
-      {primaryTags.map(({ name, count }) => (
+      <div class="filter-chips">
         <button
           type="button"
-          class="filter-chip filter-chip--tag"
-          data-filter-tag={name}
-          data-base-count={count}
-          aria-pressed="false"
+          class="filter-chip"
+          data-filter-tag=""
+          aria-pressed="true"
         >
-          {name} <span class="filter-count">{count}</span>
+          All <span class="filter-count" data-tag-count-total>{totalCount}</span>
         </button>
-      ))}
-      {overflowTags.map(({ name, count }) => (
-        <button
-          type="button"
-          class="filter-chip filter-chip--tag filter-chip--overflow"
-          data-filter-tag={name}
-          data-base-count={count}
-          aria-pressed="false"
-          hidden
-        >
-          {name} <span class="filter-count">{count}</span>
-        </button>
-      ))}
-      {hasOverflow && (
-        <button
-          type="button"
-          class="filter-chip filter-chip-toggle"
-          data-tag-toggle
-          aria-expanded="false"
-          data-overflow-count={overflowTags.length}
-        >
-          + {overflowTags.length} more
-        </button>
-      )}
+        {primaryTags.map(({ name, count }) => (
+          <button
+            type="button"
+            class="filter-chip filter-chip--tag"
+            data-filter-tag={name}
+            data-base-count={count}
+            aria-pressed="false"
+          >
+            {name} <span class="filter-count">{count}</span>
+          </button>
+        ))}
+        {overflowTags.map(({ name, count }) => (
+          <button
+            type="button"
+            class="filter-chip filter-chip--tag filter-chip--overflow"
+            data-filter-tag={name}
+            data-base-count={count}
+            aria-pressed="false"
+            hidden
+          >
+            {name} <span class="filter-count">{count}</span>
+          </button>
+        ))}
+        {hasOverflow && (
+          <button
+            type="button"
+            class="filter-chip filter-chip-toggle"
+            data-tag-toggle
+            aria-expanded="false"
+            data-overflow-count={overflowTags.length}
+          >
+            + {overflowTags.length} more
+          </button>
+        )}
+      </div>
     </div>
   )}
   <div class="filter-row filter-row--sort" aria-label="Sort">
     <span class="filter-label">Sort</span>
-    <button
-      type="button"
-      class="filter-chip"
-      data-filter-sort="featured"
-      aria-pressed="true"
-    >Featured</button>
-    <button
-      type="button"
-      class="filter-chip"
-      data-filter-sort="popularity"
-      aria-pressed="false"
-    >Popularity</button>
-    <button
-      type="button"
-      class="filter-chip"
-      data-filter-sort="year"
-      aria-pressed="false"
-    >Year</button>
+    <div class="filter-chips">
+      <button
+        type="button"
+        class="filter-chip"
+        data-filter-sort="featured"
+        aria-pressed="true"
+      >Featured</button>
+      <button
+        type="button"
+        class="filter-chip"
+        data-filter-sort="popularity"
+        aria-pressed="false"
+      >Popularity</button>
+      <button
+        type="button"
+        class="filter-chip"
+        data-filter-sort="year"
+        aria-pressed="false"
+      >Year</button>
+    </div>
   </div>
 </div>
+
+<script>
+  // Toggle the directional scroll-fade classes on each .filter-chips
+  // strip based on its actual scroll position. The CSS reads these
+  // classes to decide which edge gets a gradient — no fade when the
+  // edge has nothing scrollable behind it, no fade at all when the
+  // content fits within the visible width.
+  function updateScrollFades(el: HTMLElement) {
+    const tol = 1; // sub-pixel tolerance
+    const atStart = el.scrollLeft <= tol;
+    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - tol;
+    el.classList.toggle('show-left-fade', !atStart);
+    el.classList.toggle('show-right-fade', !atEnd);
+  }
+
+  function initScrollFades() {
+    const strips = document.querySelectorAll<HTMLElement>('.filter-chips');
+    strips.forEach((s) => {
+      updateScrollFades(s);
+      s.addEventListener('scroll', () => updateScrollFades(s), { passive: true });
+    });
+    // Re-check on resize: viewport change can flip a strip between
+    // "fits" and "overflows" states.
+    window.addEventListener('resize', () => strips.forEach(updateScrollFades));
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initScrollFades);
+  } else {
+    initScrollFades();
+  }
+</script>

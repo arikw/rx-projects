@@ -67,6 +67,18 @@ const overflowTags = sortedTags.slice(topN);
   <header class="section-head">
     <span class="section-label">Projects gallery</span>
     <span class="section-rule" aria-hidden="true"></span>
+    <button
+      type="button"
+      class="section-reset"
+      data-filter-reset
+      hidden
+    >
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+      <span>Reset filters</span>
+    </button>
     <span class="section-count">{String(projects.length).padStart(2, '0')}</span>
   </header>
 
@@ -91,10 +103,22 @@ const overflowTags = sortedTags.slice(topN);
     })}
   </div>
 
-  <p class="projects-empty" hidden>No projects match.</p>
+  <p class="projects-empty" hidden>
+    No projects match the current filters.
+    <button type="button" class="projects-empty-reset" data-filter-reset>Reset filters</button>
+  </p>
 
   <div class="projects-more">
     <button type="button" class="show-more">Show more</button>
+  </div>
+  <div class="gallery-reset" hidden>
+    <button type="button" class="reset-link" data-filter-reset>
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+      <span>Reset filters</span>
+    </button>
   </div>
 </section>
 
@@ -113,6 +137,7 @@ const overflowTags = sortedTags.slice(topN);
     const tagChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-tag]'));
     const tagToggle = root.querySelector<HTMLButtonElement>('[data-tag-toggle]');
     const totalCountEl = root.querySelector<HTMLElement>('[data-tag-count-total]');
+    const resetButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-reset]'));
     const cards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
 
     type Sort = 'featured' | 'popularity' | 'year';
@@ -201,8 +226,82 @@ const overflowTags = sortedTags.slice(topN);
       cards.filter((c) => !visibleSet.has(c)).forEach((c) => grid.appendChild(c));
 
       empty.hidden = matching.length > 0;
-      moreBtn.hidden = matching.length <= shown;
+      // Toggle the more/less button:
+      //   - more cards available than currently shown  → "Show more ⌄"
+      //   - all shown AND more than pageSize total     → "Show less ⌃"
+      //   - everything else (small set, nothing left to do) → hidden.
+      const canExpand = matching.length > shown;
+      const isExpanded = !canExpand && matching.length > pageSize;
+      const chevron = (dir: 'down' | 'up') => {
+        const points = dir === 'down' ? '6 9 12 15 18 9' : '18 15 12 9 6 15';
+        return `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="${points}"/></svg>`;
+      };
+      if (canExpand) {
+        moreBtn.innerHTML = `<span>Show more</span>${chevron('down')}`;
+        moreBtn.dataset.mode = 'more';
+        moreBtn.removeAttribute('hidden');
+      } else if (isExpanded) {
+        moreBtn.innerHTML = `<span>Show less</span>${chevron('up')}`;
+        moreBtn.dataset.mode = 'less';
+        moreBtn.removeAttribute('hidden');
+      } else {
+        moreBtn.setAttribute('hidden', '');
+      }
+      updateResetVisibility();
     }
+
+    /** Filters are at defaults when source / tag are unset and sort is
+     *  the implicit default ('featured'). show-all / tags-expanded are
+     *  not considered filters — they're view preferences, kept across
+     *  reset so the user doesn't lose their place. */
+    function isDefaultState() {
+      return !activeSource && activeSort === 'featured' && !activeTag;
+    }
+
+    const galleryResetWrap = root.querySelector<HTMLElement>('.gallery-reset');
+    function updateResetVisibility() {
+      const hide = isDefaultState();
+      resetButtons.forEach((b) => {
+        if (hide) b.setAttribute('hidden', '');
+        else b.removeAttribute('hidden');
+      });
+      // .gallery-reset is the wrapper around the bottom button; hide
+      // it as a block (display: none via [hidden]) so it doesn't
+      // leave a phantom centred row at the end of the gallery when
+      // filters are at defaults. The section-head version uses
+      // visibility:hidden via its own CSS so the count doesn't shift.
+      if (galleryResetWrap) {
+        if (hide) galleryResetWrap.setAttribute('hidden', '');
+        else galleryResetWrap.removeAttribute('hidden');
+      }
+    }
+
+    function resetFilters() {
+      activeSource = '';
+      activeSort = 'featured';
+      activeTag = '';
+      shown = pageSize;
+      sourceChips.forEach((c) => {
+        c.setAttribute('aria-pressed', String(!c.dataset.filterSource));
+      });
+      sortChips.forEach((c) => {
+        c.setAttribute('aria-pressed', String(c.dataset.filterSort === 'featured'));
+      });
+      tagChips.forEach((c) => {
+        c.setAttribute('aria-pressed', String(!c.dataset.filterTag));
+      });
+      refreshTagCounts();
+      writeHash();
+      applyFilter();
+      // After reset, the user is no longer in the same context (their
+      // active filter is gone, cards re-ordered to defaults). Scroll
+      // back to the top of the section so they see the first card of
+      // the now-unfiltered view instead of mid-page in a different
+      // ordering.
+      root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    resetButtons.forEach((b) => b.addEventListener('click', resetFilters));
 
     function setSource(source: string) {
       activeSource = source;
@@ -243,16 +342,27 @@ const overflowTags = sortedTags.slice(topN);
       applyFilter();
     }
 
+    // Click handlers toggle: pressing an already-active chip resets
+    // that axis to its default (the implicit "All" / "Featured"
+    // value) so the user doesn't have to hunt for the default chip
+    // to deselect.
     sourceChips.forEach((c) => {
-      c.addEventListener('click', () => setSource(c.dataset.filterSource ?? ''));
+      c.addEventListener('click', () => {
+        const val = c.dataset.filterSource ?? '';
+        setSource(val === activeSource ? '' : val);
+      });
     });
     sortChips.forEach((c) => {
-      c.addEventListener('click', () =>
-        setSort((c.dataset.filterSort as Sort) ?? 'featured'),
-      );
+      c.addEventListener('click', () => {
+        const val = (c.dataset.filterSort as Sort) ?? 'featured';
+        setSort(val === activeSort ? 'featured' : val);
+      });
     });
     tagChips.forEach((c) => {
-      c.addEventListener('click', () => setTag(c.dataset.filterTag ?? ''));
+      c.addEventListener('click', () => {
+        const val = c.dataset.filterTag ?? '';
+        setTag(val === activeTag ? '' : val);
+      });
     });
 
     if (tagToggle) {
@@ -269,9 +379,19 @@ const overflowTags = sortedTags.slice(topN);
     }
 
     moreBtn.addEventListener('click', () => {
-      shown = cards.length;
-      writeHash();
-      applyFilter();
+      if (moreBtn.dataset.mode === 'less') {
+        shown = pageSize;
+        writeHash();
+        applyFilter();
+        // Collapse jumps the user back to a position where the cards
+        // that were visible may no longer be — scroll to section top
+        // so they land on the first page of the collapsed view.
+        root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        shown = cards.length;
+        writeHash();
+        applyFilter();
+      }
     });
 
     /** Read filter state from the URL hash (`#sort=year&source=github&…`).
