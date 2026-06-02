@@ -225,13 +225,30 @@ button {
   background: var(--border);
   border: 1px solid var(--border);
   border-radius: 6px;
-  overflow: hidden;
+  /* No `overflow: hidden` — it would clip the (?) info tooltip when it
+     extends below a stat. The outer-corner rounding is handled by giving
+     each corner tile its own border-radius below; the inner tiles stay
+     square so the gap-based dividers still read as a single grid. */
 }
 
 .stat {
   flex: 1 1 200px;
   background: var(--card-bg);
   padding: 24px 22px;
+}
+/* Round only the outer corners of the row so the container's rounded
+   border isn't broken by square white tile-backgrounds bleeding into it.
+   first-child + last-child covers the common 1-row-of-N layout; when the
+   row wraps (e.g. 2×2 on narrow viewports), the wrapped tile inherits its
+   neighbours' square edges, which is fine — only the absolute first / last
+   in document order ever sit at the row corners. */
+.hero-stats > .stat:first-child {
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+.hero-stats > .stat:last-child {
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
 }
 
 .stat-value {
@@ -263,6 +280,95 @@ button {
   font-size: 0.8rem;
   color: var(--muted);
   line-height: 1.4;
+}
+
+/* Info-tooltip (?) — explains the metric in detail without lengthening the
+   sublabel. Shown on hover and on focus (so the keyboard reaches it). */
+.stat-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+}
+.stat-info-button {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, transform 0.15s;
+  border-radius: 999px;
+}
+.stat-info-button svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.stat-info-button:hover,
+.stat-info-button:focus-visible {
+  color: var(--accent);
+  outline: none;
+  transform: scale(1.08);
+}
+.stat-info-button:focus-visible {
+  /* Visible keyboard focus ring around the icon. */
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.stat-info-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  width: max-content;
+  max-width: min(260px, 70vw);
+  padding: 8px 12px;
+  background: var(--fg);
+  color: var(--bg);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  white-space: normal;
+  text-align: left;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 10;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  transform: translateX(-50%);
+}
+/* Speech-bubble arrow. */
+.stat-info-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background: var(--fg);
+  transform: translateX(-50%) rotate(45deg);
+}
+.stat-info:hover .stat-info-tooltip,
+.stat-info:focus-within .stat-info-tooltip {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* On narrow viewports, pin the tooltip to the right of the trigger so it
+   doesn't get clipped by the stat tile's edge. */
+@media (max-width: 600px) {
+  .stat-info-tooltip {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+  .stat-info-tooltip::before {
+    left: auto;
+    right: 6px;
+    transform: rotate(45deg);
+  }
 }
 
 /* Testimonial-style review carousel — one slide visible at a time, fading

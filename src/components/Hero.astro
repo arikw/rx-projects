@@ -1,6 +1,7 @@
 ---
 import Stat from './Stat.astro';
 import { formatStat, type HeroStats } from '../lib/aggregate-stats';
+import { sourceLabel } from '../lib/source-label';
 import config from '../lib/load-config';
 
 interface Props {
@@ -10,6 +11,30 @@ interface Props {
 const { stats } = Astro.props;
 const tagline = config.meta.siteTagline;
 const portfolioCount = Math.max(0, stats.totalProjects - stats.openSourceCount);
+
+/** Join a list of source-group keys into a presentable inline string.
+ *  Uses sourceLabel for friendly names ('npm', 'Docker', 'GitHub', …) and
+ *  an Oxford-style comma + " and " for the last item when there are ≥3. */
+function joinSources(keys: string[]): string {
+  const labels = keys.map((k) => sourceLabel(k));
+  if (labels.length === 0) return '';
+  if (labels.length === 1) return labels[0];
+  if (labels.length === 2) return `${labels[0]} and ${labels[1]}`;
+  return `${labels.slice(0, -1).join(', ')}, and ${labels.at(-1)}`;
+}
+
+// Generic sublabel under each tile; the (?) info-tooltip carries the
+// platform-specific detail so the line stays short on mobile.
+const downloadsInfo = stats.downloadSources.length
+  ? `Cumulative install events across ${joinSources(stats.downloadSources)}.`
+  : undefined;
+const usersInfo = stats.activeUsersSources.length
+  ? `Live installs reported by ${joinSources(stats.activeUsersSources)}.`
+  : undefined;
+const starsInfo =
+  'Stars on GitHub and Docker Hub combined with positive (≥4★) ratings counted as "likes".';
+const projectsCount = stats.totalProjects;
+const projectsInfo = `${stats.openSourceCount} open-source · ${portfolioCount} portfolio`;
 ---
 <section class="hero">
   {tagline && (
@@ -25,13 +50,15 @@ const portfolioCount = Math.max(0, stats.totalProjects - stats.openSourceCount);
       value={`${formatStat(stats.starsAndLikes)}+`}
       label="Stars & likes"
       sublabel={`across ${stats.openSourceCount} open-source ${stats.openSourceCount === 1 ? 'project' : 'projects'}`}
+      info={starsInfo}
     />
     {config.ui.hero.showDownloads && stats.downloadsAndPulls > 0 && (
       <Stat
         icon="download"
         value={`${formatStat(stats.downloadsAndPulls)}+`}
         label="Downloads & pulls"
-        sublabel="cumulative install events — npm, Docker, GNOME, Google Play"
+        sublabel="cumulative install events"
+        info={downloadsInfo}
       />
     )}
     {config.ui.hero.showUsers && stats.activeUsers > 0 && (
@@ -39,14 +66,15 @@ const portfolioCount = Math.max(0, stats.totalProjects - stats.openSourceCount);
         icon="users"
         value={`${formatStat(stats.activeUsers)}+`}
         label="Active users"
-        sublabel="current Chrome Web Store installs"
+        sublabel="current installs"
+        info={usersInfo}
       />
     )}
     <Stat
       icon="projects"
-      value={String(stats.totalProjects)}
+      value={String(projectsCount)}
       label="Projects shipped"
-      sublabel={`${stats.openSourceCount} open-source · ${portfolioCount} portfolio`}
+      sublabel={projectsInfo}
     />
   </div>
 </section>

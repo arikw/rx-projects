@@ -1,4 +1,4 @@
-import type { BrandMark, ConnectorManifest, UrlIdExtractor } from './_define';
+import type { BrandMark, ConnectorManifest, EmittedMetric, UrlIdExtractor } from './_define';
 
 /**
  * Connector registry — the single source of truth for which connectors exist,
@@ -100,6 +100,30 @@ export function getBrandMarks(): Record<string, BrandMark> {
     const bm = getBrandMark(m.key);
     if (bm) out[m.key] = bm;
   }
+  return out;
+}
+
+/** Source-groups whose connectors declare they emit the given canonical-
+ *  stats metric. Used by the hero sublabels to credit only the groups that
+ *  actually contribute a metric (e.g. a chrome+github project shouldn't
+ *  claim "GitHub installs" on the active-users tile). Unregistered source-
+ *  keys — typically custom `source` values on manual entries like 'firefox'
+ *  or 'math4mobile' — never appear in any manifest, so callers must treat
+ *  those as always-allowed (manual reps can carry any stat field). */
+export function getSourceGroupsEmitting(metric: EmittedMetric): Set<string> {
+  const out = new Set<string>();
+  for (const m of ALL) {
+    if (m.emits?.includes(metric)) out.add(getSourceGroup(m.key));
+  }
+  return out;
+}
+
+/** All source-groups that any registered connector belongs to — used by
+ *  the hero sublabels to distinguish registered groups (filter by
+ *  `emits`) from unregistered manual sources (always allowed). */
+export function getKnownSourceGroups(): Set<string> {
+  const out = new Set<string>();
+  for (const m of ALL) out.add(getSourceGroup(m.key));
   return out;
 }
 

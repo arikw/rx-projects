@@ -77,6 +77,7 @@ export const fetchDockerProjects: Connector = async (config, options) => {
 export default defineConnector({
   key: 'docker',
   label: 'Docker',
+  emits: ['stars', 'downloads'],
   brandMark: {
     svg: iconSvg,
     tint: '#061d35',

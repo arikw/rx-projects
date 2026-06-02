@@ -6,8 +6,13 @@ interface Props {
   /** Same keys as ProjectCard's stat-icon — keeps the hero stats and the
    *  card stats visually aligned so the hero acts as a legend. */
   icon?: 'star' | 'download' | 'users' | 'projects';
+  /** Free-form explanation surfaced via a tooltip when the user hovers /
+   *  focuses the small (?) button next to the label. Use this for details
+   *  too long for the sublabel (e.g. the list of source platforms that
+   *  contributed to the metric). */
+  info?: string;
 }
-const { value, label, sublabel, icon } = Astro.props;
+const { value, label, sublabel, icon, info } = Astro.props;
 ---
 <div class="stat">
   <div class="stat-value">{value}</div>
@@ -33,6 +38,29 @@ const { value, label, sublabel, icon } = Astro.props;
       </svg>
     )}
     <span>{label}</span>
+    {info && (
+      <span class="stat-info">
+        <button
+          type="button"
+          class="stat-info-button"
+          aria-label={`More about ${label}`}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.75" />
+            <path
+              d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <circle cx="12" cy="17" r="1" fill="currentColor" />
+          </svg>
+        </button>
+        <span class="stat-info-tooltip" role="tooltip">{info}</span>
+      </span>
+    )}
   </div>
   {sublabel && <div class="stat-sublabel">{sublabel}</div>}
 </div>

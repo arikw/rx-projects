@@ -160,6 +160,7 @@ export const fetchChromeProjects: Connector = async (config, options) => {
 export default defineConnector({
   key: 'chrome',
   label: 'Chrome',
+  emits: ['users', 'rating'],
   urlExtractors,
   defaultConfig: {
     enabled: true,

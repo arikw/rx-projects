@@ -108,6 +108,7 @@ export const fetchChromestatsProjects: Connector = async (config, options) => {
 export default defineConnector({
   key: 'chromestats',
   mirrorOf: 'chrome',
+  emits: ['users', 'rating'],
   // The mirror rep uses platform: 'chrome-stats' (the legacy hyphenated form).
   platformAliases: ['chrome-stats'],
   defaultConfig: { enabled: true },

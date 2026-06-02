@@ -37,6 +37,18 @@ export type BrandMark = {
   darkFg?: string;
 };
 
+/** A canonical-stats metric a connector can populate. Drives the hero
+ *  tile sublabels (only source-groups that emit a metric get credited
+ *  as contributors). */
+export type EmittedMetric =
+  | 'stars'
+  | 'forks'
+  | 'downloads'
+  | 'downloadsMonthly'
+  | 'installs'
+  | 'users'
+  | 'rating';
+
 /** What `export default defineConnector(…)` describes. */
 export type ConnectorManifest = {
   key: string;
@@ -52,6 +64,12 @@ export type ConnectorManifest = {
    *  `platform: 'chrome-stats'`. The registry's platform→source-group table
    *  uses these aliases to route legacy platform strings through the manifest. */
   platformAliases?: string[];
+  /** Which canonical-stats fields this connector populates. Lets the hero
+   *  tile sublabels list ONLY the source-groups that actually contribute a
+   *  given metric (so a chrome+github project doesn't claim "github
+   *  installs" in the active-users tile, etc.). Omit when the connector
+   *  produces no stats (e.g. data-only profile connectors). */
+  emits?: EmittedMetric[];
   defaultConfig?: unknown;
   fetch: (config: ProjectsConfig, opts: ConnectorFetchOpts) => Promise<ConnectorOutput>;
 };

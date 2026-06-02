@@ -115,6 +115,10 @@ export default defineConnector({
   key: 'playstore',
   label: 'Android app',
   sourceGroup: 'android',
+  // Canonical origin for Google Play — mirrors (appbrain/apkpure) inherit
+  // the source-group, and the android group is what gets credited for
+  // installs / rating in the hero sublabels.
+  emits: ['installs', 'rating'],
   // playstore reps use platform: 'google-play' (the canonical Play resource
   // identifier, also used in manual `origins` config). Alias it so the
   // platform→source-group lookup still resolves.

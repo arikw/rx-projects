@@ -18,6 +18,7 @@ export const urlExtractors: UrlIdExtractor[] = [
 export default defineConnector({
   key: 'github',
   label: 'GitHub',
+  emits: ['stars', 'forks'],
   brandMark: {
     svg: iconSvg,
     tint: '#0a0c12',

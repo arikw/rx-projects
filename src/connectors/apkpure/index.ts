@@ -257,6 +257,7 @@ export const fetchApkpureProjects: Connector = async (config, options) => {
 export default defineConnector({
   key: 'apkpure',
   mirrorOf: 'playstore',
+  emits: ['rating'],
   defaultConfig: { enabled: true },
   fetch: async (config, opts) => {
     const projects = await fetchApkpureProjects(config, opts);

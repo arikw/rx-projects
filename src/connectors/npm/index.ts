@@ -226,6 +226,7 @@ export const fetchNpmProjects: Connector = async (config, options) => {
 export default defineConnector({
   key: 'npm',
   label: 'npm',
+  emits: ['downloads', 'downloadsMonthly'],
   brandMark: {
     svg: iconSvg,
     tint: '#2d0707',

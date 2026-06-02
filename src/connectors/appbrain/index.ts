@@ -222,6 +222,7 @@ export const fetchAppbrainProjects: Connector = async (config, options) => {
 export default defineConnector({
   key: 'appbrain',
   mirrorOf: 'playstore',
+  emits: ['installs', 'rating'],
   defaultConfig: { enabled: true },
   fetch: async (config, opts) => {
     const projects = await fetchAppbrainProjects(config, opts);

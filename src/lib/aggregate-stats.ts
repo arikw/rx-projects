@@ -1,4 +1,9 @@
 import type { Project } from '../types/project';
+import {
+  getKnownSourceGroups,
+  getPlatformToSourceGroup,
+  getSourceGroupsEmitting,
+} from '../connectors/_registry';
 
 export type HeroStats = {
   /** Stars (GitHub + Docker, summed) + "likes" = positive (4–5★) app ratings. */
@@ -13,6 +18,13 @@ export type HeroStats = {
   activeUsers: number;
   totalProjects: number;
   openSourceCount: number;
+  /** Source-groups that actually contributed to `downloadsAndPulls` in this
+   *  build — used to populate the tile's sublabel dynamically instead of a
+   *  hardcoded "npm, Docker, GNOME, Google Play". Sorted alphabetically. */
+  downloadSources: string[];
+  /** Source-groups that contributed to `activeUsers` (typically just chrome;
+   *  expands when more connectors emit a `users` field). */
+  activeUsersSources: string[];
 };
 
 const num = (n: number | undefined): number => n ?? 0;
@@ -90,6 +102,35 @@ export function aggregateStats(projects: Project[]): HeroStats {
   let downloadsAndPulls = 0;
   let activeUsers = 0;
   let openSourceCount = 0;
+  const downloadSources = new Set<string>();
+  const activeUsersSources = new Set<string>();
+  // Used to translate a project's raw `sources` (origin/native platforms)
+  // into the user-facing source-group keys the filter chips already use.
+  const PLATFORM_TO_GROUP = getPlatformToSourceGroup();
+  const KNOWN_GROUPS = getKnownSourceGroups();
+  // Which registered source-groups produce each metric — used to filter
+  // out projects whose sources include a group that doesn't actually emit
+  // the metric (e.g. github lives alongside chrome on the same project,
+  // but only chrome contributes a `users` count). Manual sources
+  // (anything not in KNOWN_GROUPS) are always allowed.
+  const DOWNLOAD_EMITTERS = new Set([
+    ...getSourceGroupsEmitting('downloads'),
+    ...getSourceGroupsEmitting('downloadsMonthly'),
+    ...getSourceGroupsEmitting('installs'),
+  ]);
+  const USERS_EMITTERS = getSourceGroupsEmitting('users');
+  /** Credit `dest` with every source-group on `p` that's either a known
+   *  emitter of this metric OR an unregistered (manual / custom) source. */
+  const creditGroups = (
+    p: Project,
+    dest: Set<string>,
+    emitters: Set<string>,
+  ): void => {
+    for (const s of p.sources) {
+      const g = PLATFORM_TO_GROUP[s] ?? s;
+      if (!KNOWN_GROUPS.has(g) || emitters.has(g)) dest.add(g);
+    }
+  };
 
   for (const p of projects) {
     if (p.openSource) openSourceCount++;
@@ -97,7 +138,8 @@ export function aggregateStats(projects: Project[]): HeroStats {
     // "Likes" = genuinely positive ratings: only 4★ and 5★ count.
     starsAndLikes += num(p.stats.stars) + conservativePositiveCount(p.stats.rating);
 
-    downloadsAndPulls += num(p.stats.downloads) + num(p.stats.installs?.value);
+    const directDownloads = num(p.stats.downloads) + num(p.stats.installs?.value);
+    downloadsAndPulls += directDownloads;
 
     // Every `users` count represents people who installed at some point,
     // so when the project has no other install signal (`downloads` /
@@ -105,13 +147,23 @@ export function aggregateStats(projects: Project[]): HeroStats {
     // pulls" bucket. Skip when downloads / installs is already tracked —
     // those users would be a subset and double-count. Applies to active
     // and retired projects alike.
-    if (!num(p.stats.downloads) && !num(p.stats.installs?.value)) {
-      downloadsAndPulls += num(p.stats.users);
+    const promotedDownloads = !directDownloads ? num(p.stats.users) : 0;
+    downloadsAndPulls += promotedDownloads;
+
+    // Credit the contributing source-groups to the tile's sublabel —
+    // only groups whose connectors actually emit a downloads-bearing
+    // metric (or unregistered manual sources, which can carry any stat).
+    if (directDownloads > 0 || promotedDownloads > 0) {
+      creditGroups(p, downloadSources, DOWNLOAD_EMITTERS);
     }
 
     // Active users — current headcount; only valid for non-retired
     // projects (a retired project's `users` is a historical snapshot).
-    if (!p.retired) activeUsers += num(p.stats.users);
+    if (!p.retired) {
+      const u = num(p.stats.users);
+      activeUsers += u;
+      if (u > 0) creditGroups(p, activeUsersSources, USERS_EMITTERS);
+    }
   }
 
   return {
@@ -120,6 +172,8 @@ export function aggregateStats(projects: Project[]): HeroStats {
     activeUsers,
     totalProjects: projects.length,
     openSourceCount,
+    downloadSources: [...downloadSources].sort(),
+    activeUsersSources: [...activeUsersSources].sort(),
   };
 }
 
