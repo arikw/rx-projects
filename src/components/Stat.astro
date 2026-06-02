@@ -64,3 +64,106 @@ const { value, label, sublabel, icon, info } = Astro.props;
   </div>
   {sublabel && <div class="stat-sublabel">{sublabel}</div>}
 </div>
+
+<script>
+  // (?) tooltip: position near the trigger, clamp to viewport edges,
+  // flip vertically when there's no room below. Show/hide is driven by
+  // a `.show` class on the tooltip so scroll-dismiss and tap-outside
+  // can directly toggle visibility regardless of focus state (mobile
+  // browsers don't always focus buttons on tap, so a CSS :focus-within
+  // approach would fail to dismiss reliably).
+  function positionTooltip(group: Element) {
+    const button = group.querySelector<HTMLButtonElement>('.stat-info-button');
+    const tip = group.querySelector<HTMLElement>('.stat-info-tooltip');
+    if (!button || !tip) return;
+
+    const trigger = button.getBoundingClientRect();
+    const tipW = tip.offsetWidth;
+    const tipH = tip.offsetHeight;
+    const pad = 8;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // `scrollbar-gutter: stable both-edges` on <html> shifts the
+    // fixed-positioning containing block horizontally by the gutter
+    // width (~22px on desktop). Compensate by subtracting html's
+    // left from the inline `left` we set. The vertical axis is NOT
+    // affected — `position: fixed` is viewport-relative for `top`
+    // regardless of scroll position, so subtracting htmlRect.top
+    // would over-correct as the page scrolls (htmlRect.top goes
+    // negative as you scroll down).
+    const htmlLeft = document.documentElement.getBoundingClientRect().left;
+
+    const triggerCenterX = trigger.left + trigger.width / 2;
+
+    // Horizontal: centre on trigger, clamp to viewport edges (using
+    // viewport coords — clamp boundary doesn't care about html offset).
+    let leftV = triggerCenterX - tipW / 2;
+    leftV = Math.max(pad, Math.min(leftV, vw - tipW - pad));
+
+    // Vertical: below trigger by default; flip above if it would
+    // extend past the viewport bottom. The .flip-up class moves the
+    // arrow to the bottom edge so it still points at the trigger.
+    let topV = trigger.bottom + 8;
+    const flipUp = topV + tipH > vh - pad;
+    if (flipUp) topV = trigger.top - tipH - 8;
+    tip.classList.toggle('flip-up', flipUp);
+
+    tip.style.left = `${leftV - htmlLeft}px`;
+    tip.style.top = `${topV}px`;
+    // Arrow offset within the tooltip — tooltip-local coords, so the
+    // html offset doesn't enter the calculation.
+    tip.style.setProperty('--arrow-left', `${triggerCenterX - leftV}px`);
+  }
+
+  function hideAll() {
+    document.querySelectorAll('.stat-info-tooltip.show').forEach((t) => t.classList.remove('show'));
+  }
+
+  function showFor(group: Element) {
+    // Hide any other tooltip first, then position + show this one.
+    hideAll();
+    const tip = group.querySelector<HTMLElement>('.stat-info-tooltip');
+    if (!tip) return;
+    positionTooltip(group);
+    tip.classList.add('show');
+  }
+
+  function init() {
+    const groups = document.querySelectorAll('.stat-info');
+    groups.forEach((group) => {
+      const button = group.querySelector<HTMLButtonElement>('.stat-info-button');
+      if (!button) return;
+      button.addEventListener('mouseenter', () => showFor(group));
+      button.addEventListener('mouseleave', hideAll);
+      button.addEventListener('focus', () => showFor(group));
+      button.addEventListener('blur', hideAll);
+      // Touch: explicit handler so we don't depend on focus being set
+      // by the browser on tap. stopPropagation keeps the document-level
+      // touchstart (below) from immediately re-hiding.
+      button.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        showFor(group);
+      }, { passive: true });
+    });
+
+    // Dismiss on scroll — both kinds, covering desktop wheel/keyboard
+    // scroll and mobile touch-driven scroll.
+    window.addEventListener('scroll', hideAll, { passive: true });
+    window.addEventListener('touchmove', hideAll, { passive: true });
+    // Dismiss on tap-outside (mobile pattern).
+    document.addEventListener('touchstart', (e) => {
+      if (!(e.target instanceof Element) || !e.target.closest('.stat-info')) hideAll();
+    }, { passive: true });
+    // Reposition on viewport change while a tooltip is showing.
+    window.addEventListener('resize', () => {
+      const shown = document.querySelector('.stat-info-tooltip.show');
+      if (shown && shown.parentElement) positionTooltip(shown.parentElement);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>

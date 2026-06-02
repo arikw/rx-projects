@@ -34,7 +34,9 @@ const usersInfo = stats.activeUsersSources.length
 const starsInfo =
   'Stars on GitHub and Docker Hub combined with positive (≥4★) ratings counted as "likes".';
 const projectsCount = stats.totalProjects;
-const projectsInfo = `${stats.openSourceCount} open-source · ${portfolioCount} portfolio`;
+const projectsSublabel = `${stats.openSourceCount} open-source · ${portfolioCount} portfolio`;
+const projectsInfo =
+  'Open-source — projects with publicly available source code. Portfolio — closed-source or retired projects.';
 ---
 <section class="hero">
   {tagline && (
@@ -74,7 +76,8 @@ const projectsInfo = `${stats.openSourceCount} open-source · ${portfolioCount} 
       icon="projects"
       value={String(projectsCount)}
       label="Projects shipped"
-      sublabel={projectsInfo}
+      sublabel={projectsSublabel}
+      info={projectsInfo}
     />
   </div>
 </section>

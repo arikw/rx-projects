@@ -319,12 +319,19 @@ button {
   /* Visible keyboard focus ring around the icon. */
   box-shadow: 0 0 0 2px var(--accent-soft);
 }
+/* Tooltip is `position: fixed` so it's pinned to the viewport rather
+   than the .stat-info ancestor — this dodges the html/body
+   `overflow-x: clip` that was cutting tooltips off near the screen
+   edges on mobile. Actual top/left + the arrow's --arrow-left offset
+   are set inline by the positioning script in Stat.astro on each
+   hover / focus / touch, so the tooltip can stay near the trigger
+   while clamping to viewport edges. */
 .stat-info-tooltip {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
+  position: fixed;
+  top: 0;
+  left: 0;
   width: max-content;
-  max-width: min(260px, 70vw);
+  max-width: min(280px, calc(100vw - 24px));
   padding: 8px 12px;
   background: var(--fg);
   color: var(--bg);
@@ -334,41 +341,42 @@ button {
   white-space: normal;
   text-align: left;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
   transition: opacity 0.15s;
-  z-index: 10;
+  z-index: 100;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
-  transform: translateX(-50%);
 }
-/* Speech-bubble arrow. */
+/* Speech-bubble arrow. Its horizontal offset within the tooltip is set
+   by the positioning script via the --arrow-left CSS variable so the
+   arrow stays pointing at the trigger even when the tooltip is clamped
+   to a viewport edge. Fallback: centered. */
 .stat-info-tooltip::before {
   content: '';
   position: absolute;
   top: -4px;
-  left: 50%;
+  left: var(--arrow-left, 50%);
   width: 8px;
   height: 8px;
+  margin-left: -4px;
   background: var(--fg);
-  transform: translateX(-50%) rotate(45deg);
+  transform: rotate(45deg);
 }
-.stat-info:hover .stat-info-tooltip,
-.stat-info:focus-within .stat-info-tooltip {
+/* When the tooltip is flipped above the trigger (not enough room below),
+   move the arrow to the bottom edge so it still points at the trigger. */
+.stat-info-tooltip.flip-up::before {
+  top: auto;
+  bottom: -4px;
+}
+/* Show/hide is driven by the JS positioning script via the `.show`
+   class (instead of :hover / :focus-within) so the same code-path
+   handles scroll-dismiss, tap-outside, and touch-vs-mouse, and so
+   the visible state survives `document.activeElement` flake on
+   mobile browsers that don't focus buttons on tap. */
+.stat-info-tooltip.show {
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
-}
-/* On narrow viewports, pin the tooltip to the right of the trigger so it
-   doesn't get clipped by the stat tile's edge. */
-@media (max-width: 600px) {
-  .stat-info-tooltip {
-    left: auto;
-    right: 0;
-    transform: none;
-  }
-  .stat-info-tooltip::before {
-    left: auto;
-    right: 6px;
-    transform: rotate(45deg);
-  }
 }
 
 /* Testimonial-style review carousel — one slide visible at a time, fading
