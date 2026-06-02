@@ -35,6 +35,13 @@ const config: ProjectsConfig = {
     siteTagline: 'A field notebook for tools shipped',
     // Longer site intro, rendered between hero and featured row. Markdown supported.
     // siteAbout: 'A running log of things I\'ve built, packaged, or shipped...',
+
+    // Favicon source. Omit to auto-pick the first available profile avatar
+    // (github → stackoverflow → …); set to `false` for no favicon; to a
+    // connector key ('github' / 'stackoverflow' / …) to force that source;
+    // or to an absolute URL / `/`-prefixed path under `public/`.
+    // favicon: 'github',
+    // favicon: '/my-avatar.png',
   },
 
   user: {

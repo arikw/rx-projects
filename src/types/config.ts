@@ -189,6 +189,17 @@ export type ProjectsConfig = {
     siteTagline?: string;
     /** Longer site introduction rendered between hero and featured row. Markdown. */
     siteAbout?: string;
+    /** Browser tab favicon source.
+     *   - `undefined` (default): auto — first available profile avatar from a
+     *     profile connector (typically github → stackoverflow → …). Falls back
+     *     to the static `public/favicon.svg` "p" tile when no avatar is
+     *     reachable (e.g. a fresh template fork with no handles set yet).
+     *   - `false`: don't render a favicon link at all.
+     *   - a connector key (`'github'`, `'stackoverflow'`, …): use that
+     *     source's avatar.
+     *   - an absolute `http(s)://…` URL or a `/`-prefixed path under `public/`:
+     *     use it verbatim. */
+    favicon?: false | string;
   };
   user: {
     name: string;

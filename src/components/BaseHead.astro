@@ -1,5 +1,7 @@
 ---
 import config from '../lib/load-config';
+import { loadProjects, getProfiles } from '../lib/load-projects';
+import { resolveFavicon } from '../lib/resolve-favicon';
 
 interface Props {
   title: string;
@@ -11,7 +13,10 @@ interface Props {
 const { title, description, ogType = 'website', author = config.user.name } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
-const faviconURL = `${import.meta.env.BASE_URL}favicon.svg`;
+// Ensure the loader has run so `getProfiles()` is populated — loadProjects is
+// memoised, so this just hits the cached result on subsequent pages.
+await loadProjects();
+const faviconLinks = await resolveFavicon(getProfiles());
 ---
 
 <meta charset="utf-8" />
@@ -34,7 +39,9 @@ const faviconURL = `${import.meta.env.BASE_URL}favicon.svg`;
 </script>
 
 <link rel="canonical" href={canonicalURL} />
-<link rel="icon" type="image/svg+xml" href={faviconURL} />
+{faviconLinks.map((f) => (
+  <link rel={f.rel} type={f.type} sizes={f.sizes} href={f.href} />
+))}
 
 <title>{title}</title>
 <meta name="description" content={description} />
