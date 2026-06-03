@@ -14,7 +14,7 @@ The project is designed to double as a starter: a cloner edits a single `project
 
 - Astro 6 with `@astrojs/mdx`, `@astrojs/sitemap`. Node ≥ 22.
 - Single source of truth: **`projects.config.ts`** at the repo root. All user-tunable knobs live here.
-- Local override pattern: `projects.config.local.ts` (gitignored) shallow-merges over the base config so real handles can be tested locally without committing them.
+- Local override pattern: `projects.config.local.ts` shallow-merges over the base config so real handles can be tested locally without committing them. Excluded in the maintainer's clone via `.git/info/exclude` (not in the committed `.gitignore`, so cloners who want to commit their own personal config aren't fighting upstream `.gitignore` updates).
 - Connectors: `src/connectors/{github,npm,docker,chrome}.ts` — each fetches at build time and returns a normalized `Project[]`. Failures are non-fatal; an unavailable source just contributes nothing.
 - Loader: `src/lib/load-projects.ts` runs enabled connectors in parallel, merges with `config.manual[]`, dedupes by slug, applies the `featured` pin list.
 - Optional detail pages: `src/content/projects/<slug>.mdx` auto-generates `/projects/<slug>/` when the slug matches a project's id (GitHub repo name, npm name, docker image, chrome slug, or manual slug).

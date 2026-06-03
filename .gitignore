@@ -17,9 +17,6 @@ generated/
 .env.*
 !.env.example
 
-# Local override for projects.config (real handles, not committed)
-projects.config.local.ts
-
 # Private docs (deployment configs with real values, etc.) — never committed
 docs/private/
 

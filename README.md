@@ -106,7 +106,7 @@ export default {
 };
 ```
 
-The file is `.gitignored`. The loader shallow-merges it over `projects.config.ts` at build time when present, so you can override any subtree.
+The loader shallow-merges this file over `projects.config.ts` at build time when present, so you can override any subtree. Add `projects.config.local.ts` to your fork's `.gitignore` (or to `.git/info/exclude` for a per-clone ignore that won't conflict with upstream `.gitignore` updates) to keep it out of commits.
 
 Most cloners don't need this — editing `projects.config.ts` directly and committing is the normal path.
 
