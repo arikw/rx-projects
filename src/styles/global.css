@@ -1607,8 +1607,11 @@ a.card-source:hover {
 /* Site about: long-form intro between hero and featured row */
 .site-about {
   max-width: 64ch;
-  /* Standard 48px section gap below — same rhythm as every other section. */
-  margin: 0 auto 48px;
+  /* Section spacing is owned by the `.site-main` flex gap. A small
+     fluid bottom margin adds breathing room above the gallery
+     section-head on wider viewports, but stays close to 0 on
+     mobile so the intro reads tight to its surroundings. */
+  margin: 0 auto clamp(0px, 3vw, 24px);
   color: var(--muted);
   font-size: 1.02rem;
   line-height: 1.7;
