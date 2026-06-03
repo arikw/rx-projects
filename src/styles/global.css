@@ -692,24 +692,58 @@ hr.section-divider {
   white-space: nowrap;
 }
 
-/* Build timestamp — page metadata. Lives at the very bottom of the page so
-   it doesn't accidentally act as a divider between major content sections
-   (which is how it read when nested inside the hero). */
+/* Page footer — build timestamp + scaffold attribution. Lives at the
+   very bottom of the page so it doesn't accidentally act as a divider
+   between major content sections (which is how it read when nested
+   inside the hero). The attribution sits below the timestamp as a
+   second, slightly quieter line — the two are different kinds of
+   metadata (when this view was generated vs. what generated it). */
 .site-foot {
   /* Top gap owned by the `.site-main` flex gap. */
   margin: 0 auto 24px;
   text-align: center;
-  font-size: 0.78rem;
-  color: var(--muted);
   font-feature-settings: 'tnum';
   letter-spacing: 0.02em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .site-foot p {
   margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
 }
 .site-foot time {
   color: var(--fg);
   opacity: 0.7;
+}
+.site-foot-attribution {
+  font-size: 0.72rem;
+  opacity: 0.7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.site-foot-mark {
+  color: var(--accent);
+  font-size: 0.7rem;
+  /* Optical lift so the mark sits centred with the lowercase text. */
+  transform: translateY(-0.5px);
+}
+.site-foot-attribution a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+.site-foot-attribution a:hover,
+.site-foot-attribution a:focus-visible {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+  outline: none;
 }
 
 /* Profile presence strip — author-level cards beneath the hero linking out

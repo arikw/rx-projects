@@ -99,8 +99,17 @@ const carouselReviews = pickCarouselReviews(allProjects, 10);
   )}
   {config.user.bio && <AuthorBio name={config.user.name} bio={config.user.bio} avatar={profileImage} />}
   <footer class="site-foot">
-    <p>
+    <p class="site-foot-meta">
       Last updated <time datetime={lastUpdatedIso}>{lastUpdatedLabel}</time>
+    </p>
+    <p class="site-foot-attribution">
+      <span class="site-foot-mark" aria-hidden="true">✦</span>
+      Built with
+      <a
+        href="https://github.com/arikw/rx-dev-dashboard"
+        target="_blank"
+        rel="noopener"
+      >rx-dev-dashboard</a>
     </p>
   </footer>
 </BaseLayout>

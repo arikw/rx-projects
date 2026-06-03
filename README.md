@@ -1,7 +1,5 @@
 # rx-dev-dashboard
 
-Source available under the [PolyForm Noncommercial License 1.0.0](./LICENSE) — free for personal projects, learning, evaluation, and other noncommercial use. Clone it, modify it, deploy your own projects dashboard. **Commercial use** (selling it, hosted-service offerings, building paid products with it, internal use at a for-profit company) requires a separate commercial license — open an issue to discuss.
-
 Config-driven dev dashboard and project showcase. Built with [Astro](https://astro.build/), publishable to GitHub Pages or any other static host.
 
 Pulls public signals from **GitHub**, **npm**, **Docker Hub**, and **Chrome Web Store** at build time, merges them with manual entries you control, and renders an "impact dashboard" plus a project grid with tag filtering.
@@ -125,6 +123,23 @@ npm run dev               # local dev server
 npm run build             # → dist/  +  generated/snapshot.json
 npm run preview           # serve dist/ locally
 ```
+
+## License
+
+Source available under the [PolyForm Noncommercial License 1.0.0](./LICENSE).
+
+**Free** for personal projects, learning, evaluation, and any other noncommercial purpose. Clone it, modify it, deploy your own projects dashboard — go for it.
+
+**Commercial use** requires a separate commercial license. That includes (non-exhaustively):
+
+- Selling the software or a derivative product
+- Offering it as a hosted / managed service to third parties
+- Building paid products on top of it
+- Using it for internal tooling at a for-profit company
+
+Open an issue or [reach out](https://github.com/arikw) to discuss a commercial license.
+
+Forks remain bound by the same license — keep the `LICENSE` file and the `Required Notice: Copyright Arik W.` line intact. The "Built with rx-dev-dashboard" footer attribution in `src/pages/index.astro` is good practice but not strictly required by the license itself.
 
 ## Layout
 
