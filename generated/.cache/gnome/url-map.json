@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "_generated": "Auto-generated media URL map. Original upstream URL → local served path. Maintained by src/lib/media-cache.ts. Delete the file to refetch.",
+  "map": {
+    "https://extensions.gnome.org/static/images/plugin.png": "_cache/gnome/f132eb4d150bc978.png"
+  }
+}

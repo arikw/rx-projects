@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "_generated": "Auto-generated Stack Overflow profile snapshot. Refreshed when older than 7 days. PII (display_name, profile_image) is intentionally omitted.",
+  "user": {
+    "user_id": 1655245,
+    "reputation": 6577,
+    "badge_counts": {
+      "bronze": 43,
+      "silver": 38,
+      "gold": 2
+    },
+    "link": "https://stackoverflow.com/users/1655245/arik",
+    "profile_image": "https://i.sstatic.net/vZSPf.png?s=256"
+  },
+  "scrapedAt": "2026-06-03T23:05:54.920Z"
+}

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "_generated": "Auto-generated media URL map. Original upstream URL → local served path. Maintained by src/lib/media-cache.ts. Delete the file to refetch.",
+  "map": {
+    "https://web.archive.org/web/20150426111831im_/https://addons.cdn.mozilla.net/user-media/addon_icons/11/11636-64.png?modified=1421399580": "_cache/manual/7aaa478aa184624f.png",
+    "https://web.archive.org/web/20150426111831im_/https://addons.cdn.mozilla.net/user-media/previews/full/68/68064.png?modified=1352871665": "_cache/manual/76fe05fb9dbba32c.png",
+    "https://web.archive.org/web/20150426111831im_/https://addons.cdn.mozilla.net/user-media/previews/full/82/82304.png?modified=1352900469": "_cache/manual/7961469b0a3e7974.png",
+    "https://web.archive.org/web/20150426111831im_/https://addons.cdn.mozilla.net/user-media/previews/full/82/82306.png?modified=1352900469": "_cache/manual/028dd3bd86994b45.png",
+    "https://web.archive.org/web/20150426111831im_/https://addons.cdn.mozilla.net/user-media/previews/full/71/71777.png?modified=1352871665": "_cache/manual/4efcac0c6df7c113.png",
+    "https://web.archive.org/web/20160205165208im_/https://addons.cdn.mozilla.net/user-media/addon_icons/7/7206-64.png?modified=1281058539": "_cache/manual/e88293d643eafe46.png",
+    "https://web.archive.org/web/20170918010719im_/https://addons.cdn.mozilla.net/user-media/previews/full/22/22335.png?modified=1331218902": "_cache/manual/1d074e255b0a98f9.png",
+    "https://www.math4mobile.com/wp-content/images/Graph2Go-Screenshot.gif": "_cache/manual/02ce43044dbdee43.gif",
+    "https://www.math4mobile.com/wp-content/images/Solve2Go-Screenshot.gif": "_cache/manual/02b39e78686492bd.gif",
+    "https://www.math4mobile.com/wp-content/images/Quad2Go-Screenshot.gif": "_cache/manual/46391386b86b37a0.gif",
+    "https://www.math4mobile.com/wp-content/images/Sketch2Go-Screenshot.gif": "_cache/manual/e7afa4921409a15d.gif",
+    "https://www.math4mobile.com/wp-content/images/Fit2Go-Screenshot.gif": "_cache/manual/6d70e50625259da1.gif"
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "_generated": "Auto-generated GitHub Pages meta (favicon + <title>), fetched once per repo whose has_pages=true. Delete to refresh.",
+  "pages": {
+    "rx-projects": {
+      "pagesUrl": "https://arikw.github.io/rx-projects/",
+      "favicon": null,
+      "title": "My Projects"
+    },
+    "rx-dev-dashboard": {
+      "pagesUrl": "https://arikw.github.io/rx-dev-dashboard/",
+      "favicon": null,
+      "title": null
+    },
+    "script-shield-poc": {
+      "pagesUrl": "https://arikw.github.io/script-shield-poc/",
+      "favicon": null,
+      "title": "Protect me please"
+    },
+    "css-units-demo": {
+      "pagesUrl": "https://arikw.github.io/css-units-demo/",
+      "favicon": null,
+      "title": null
+    },
+    "rx-browser-bridge-mcp": {
+      "pagesUrl": "https://arikw.github.io/rx-browser-bridge-mcp/",
+      "favicon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%F0%9F%8C%90%3C/text%3E%3C/svg%3E",
+      "title": "RX Browser Bridge — drive any browser tab from your AI coding agent"
+    },
+    "rx-tech-blog": {
+      "pagesUrl": "https://arikw.github.io/rx-tech-blog/",
+      "favicon": "https://wzmn.net/blog/favicon.svg",
+      "title": "RX Tech Blog"
+    },
+    "claude-code-matrix-bridge": {
+      "pagesUrl": "https://arikw.github.io/claude-code-matrix-bridge/",
+      "favicon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%F0%9F%94%97%3C/text%3E%3C/svg%3E",
+      "title": "RX Claude Code Matrix Bridge — talk to your AI coding agent from anywhere"
+    },
+    "rx-kids-games-portal": {
+      "pagesUrl": "https://arikw.github.io/rx-kids-games-portal/",
+      "favicon": "https://kids.wzmn.net/favicon.svg",
+      "title": "Kids Games Portal"
+    },
+    "move-it-game": {
+      "pagesUrl": "https://arikw.github.io/move-it-game/",
+      "favicon": null,
+      "title": "Mouse Movement Game"
+    },
+    "kids-keyboard-game": {
+      "pagesUrl": "https://arikw.github.io/kids-keyboard-game/",
+      "favicon": "https://arikw.github.io/kids-keyboard-game/src/assets/icon.svg",
+      "title": "Kids Keyboard Game | Learn the Alphabet"
+    },
+    "multiplication-table-practice": {
+      "pagesUrl": "https://arikw.github.io/multiplication-table-practice/",
+      "favicon": "https://arikw.github.io/multiplication-table-practice/favicon.ico",
+      "title": "תרגול לוח הכפל"
+    },
+    "cs-haifa-website": {
+      "pagesUrl": "https://arikw.github.io/cs-haifa-website/",
+      "favicon": "https://cs-haifa.wzmn.net/favicon.ico",
+      "title": "אתר הסטודנטים - החוג למדעי המחשב, אוניברסיטת חיפה"
+    },
+    "android-permissions-explorer": {
+      "pagesUrl": "https://arikw.github.io/android-permissions-explorer/",
+      "favicon": "https://arikw.github.io/android-permissions-explorer/favicon.ico",
+      "title": "Android Permissions Explorer"
+    },
+    "contact-me": {
+      "pagesUrl": "https://arikw.github.io/contact-me/",
+      "favicon": null,
+      "title": null
+    }
+  }
+}

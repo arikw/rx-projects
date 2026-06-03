@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "_generated": "Auto-generated media URL map. Original upstream URL → local served path. Maintained by src/lib/media-cache.ts. Delete the file to refetch.",
+  "map": {
+    "https://wzmn.net/blog/favicon.svg": "_cache/github/733d7d31cc736d6b.svg",
+    "https://kids.wzmn.net/favicon.svg": "_cache/github/41331cd6dec61bb3.svg",
+    "https://arikw.github.io/kids-keyboard-game/src/assets/icon.svg": "_cache/github/daac786ca1ff373a.svg",
+    "https://arikw.github.io/multiplication-table-practice/favicon.ico": "_cache/github/e338f9727237e571.ico",
+    "https://cs-haifa.wzmn.net/favicon.ico": "_cache/github/860c33f0005472e4.ico",
+    "https://arikw.github.io/android-permissions-explorer/favicon.ico": "_cache/github/803b44a2b9e1ed09.ico",
+    "https://avatars.githubusercontent.com/u/7900646?v=4": "_cache/github/2d2b9f27a81ae541.png"
+  }
+}
