@@ -1,5 +1,7 @@
 # rx-dev-dashboard
 
+Source available under the [PolyForm Noncommercial License 1.0.0](./LICENSE) — free for personal projects, learning, evaluation, and other noncommercial use. Clone it, modify it, deploy your own projects dashboard. **Commercial use** (selling it, hosted-service offerings, building paid products with it, internal use at a for-profit company) requires a separate commercial license — open an issue to discuss.
+
 Config-driven dev dashboard and project showcase. Built with [Astro](https://astro.build/), publishable to GitHub Pages or any other static host.
 
 Pulls public signals from **GitHub**, **npm**, **Docker Hub**, and **Chrome Web Store** at build time, merges them with manual entries you control, and renders an "impact dashboard" plus a project grid with tag filtering.
