@@ -8,15 +8,25 @@ interface TagEntry {
   name: string;
   count: number;
 }
+interface LanguageEntry {
+  key: string;
+  label: string;
+  count: number;
+}
 interface Props {
   totalCount: number;
   sources: SourceEntry[];
   primaryTags: TagEntry[];
   overflowTags: TagEntry[];
+  /** Renders a Language filter row when this is non-empty. The caller
+   *  populates it only when at least one non-default-language project
+   *  exists; otherwise the row is hidden entirely. */
+  languages?: LanguageEntry[];
 }
-const { totalCount, sources, primaryTags, overflowTags } = Astro.props;
+const { totalCount, sources, primaryTags, overflowTags, languages = [] } = Astro.props;
 const hasOverflow = overflowTags.length > 0;
 const hasTags = primaryTags.length > 0 || hasOverflow;
+const hasLanguages = languages.length > 0;
 ---
 <div class="filter-bar" role="group" aria-label="Filter and sort projects">
   <div class="filter-row" aria-label="Filter by source">
@@ -88,6 +98,31 @@ const hasTags = primaryTags.length > 0 || hasOverflow;
             + {overflowTags.length} more
           </button>
         )}
+      </div>
+    </div>
+  )}
+  {hasLanguages && (
+    <div class="filter-row filter-row--language" aria-label="Filter by language">
+      <span class="filter-label">Language</span>
+      <div class="filter-chips">
+        <button
+          type="button"
+          class="filter-chip"
+          data-filter-language=""
+          aria-pressed="true"
+        >
+          All <span class="filter-count">{totalCount}</span>
+        </button>
+        {languages.map(({ key, label, count }) => (
+          <button
+            type="button"
+            class="filter-chip"
+            data-filter-language={key}
+            aria-pressed="false"
+          >
+            {label} <span class="filter-count">{count}</span>
+          </button>
+        ))}
       </div>
     </div>
   )}

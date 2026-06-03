@@ -56,6 +56,15 @@ const config: ProjectsConfig = {
     // a WebAPK and launch the installed app in standalone mode. iOS Safari
     // honours `display: standalone` without one. Set to false to skip:
     // serviceWorker: false,
+
+    // Default content-language filter chip pre-selected on page load.
+    // The Language filter row only appears when at least one project's
+    // content language has been identified as non-default by the
+    // heuristic in src/lib/content-language.ts. Accepts a language code
+    // ('en' / 'he' / …) — set to your dominant language so that visitors
+    // see your main projects by default and click "All" to see others.
+    // URL hash `lang=` overrides this when present. Default: "All".
+    // defaultLanguage: 'en',
   },
 
   user: {

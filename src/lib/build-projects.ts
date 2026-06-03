@@ -403,6 +403,7 @@ function buildProject(group: ConnectorResult[]): Project {
     tags,
     stats,
     language: firstField(ordered, (r) => r.language),
+    contentLanguage: firstField(ordered, (r) => r.contentLanguage),
     updatedAt: updatedAts.sort().at(-1),
     year: years.length ? Math.min(...years) : undefined,
     homepage: homepage ?? undefined,

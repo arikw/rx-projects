@@ -139,6 +139,10 @@ export type Representation = {
   tags?: string[];
   kind?: ProjectKind;
   language?: string;
+  /** Content language code (e.g. 'he'). Connectors only set this
+   *  when their heuristic explicitly identifies a non-default language;
+   *  leaving it undefined means "treat as English" at the UI layer. */
+  contentLanguage?: string;
   /** Whether this representation's project is open source. */
   openSource?: boolean;
   /** Source flagged as archived (e.g. GitHub repo archived). Any archived
@@ -193,6 +197,9 @@ export type Project = {
   /** Combined canonical metrics (reconciled + summed). */
   stats: CanonicalStats;
   language?: string;
+  /** Content language code (e.g. 'he'). Undefined when no
+   *  representation tagged one — the UI treats this as English. */
+  contentLanguage?: string;
   /** ISO date of the most recent update. */
   updatedAt?: string;
   /** First-publication / creation year (min across sources). */

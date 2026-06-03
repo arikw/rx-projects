@@ -4,6 +4,7 @@ import FilterBar from './FilterBar.astro';
 import type { Project } from '../types/project';
 import config from '../lib/load-config';
 import { getPlatformToSourceGroup, getOrigins, getSourceGroup } from '../connectors/_registry';
+import { contentLanguageLabel } from '../lib/content-language';
 
 interface Props {
   projects: Project[];
@@ -62,8 +63,36 @@ const sortedTags = Array.from(tagCounts.entries())
   .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 const primaryTags = sortedTags.slice(0, topN);
 const overflowTags = sortedTags.slice(topN);
+
+// Content-language filter — counts per detected language code. Undefined
+// content-language is treated as English ('en'). The row only renders
+// when at least one non-default language is present; otherwise every
+// project is English and the filter would be pointless. Chip order:
+// English first, then others by count desc, then code alphabetic.
+const languageCounts = new Map<string, number>();
+for (const p of projects) {
+  const code = p.contentLanguage || 'en';
+  languageCounts.set(code, (languageCounts.get(code) ?? 0) + 1);
+}
+const hasNonDefaultLanguage = [...languageCounts.keys()].some((c) => c !== 'en');
+const languageChips = hasNonDefaultLanguage
+  ? [
+      ...(languageCounts.has('en')
+        ? [{ key: 'en', label: contentLanguageLabel('en'), count: languageCounts.get('en')! }]
+        : []),
+      ...[...languageCounts.entries()]
+        .filter(([k]) => k !== 'en')
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([k, count]) => ({ key: k, label: contentLanguageLabel(k), count })),
+    ]
+  : [];
+const defaultLanguage = config.meta.defaultLanguage ?? '';
 ---
-<section class="projects" data-page-size={pageSize}>
+<section
+  class="projects"
+  data-page-size={pageSize}
+  data-default-language={defaultLanguage}
+>
   <header class="section-head">
     <span class="section-label">Projects gallery</span>
     <span class="section-rule" aria-hidden="true"></span>
@@ -87,6 +116,7 @@ const overflowTags = sortedTags.slice(topN);
     sources={sourceChips}
     primaryTags={primaryTags}
     overflowTags={overflowTags}
+    languages={languageChips}
   />
 
   <div class="projects-grid">
@@ -97,6 +127,7 @@ const overflowTags = sortedTags.slice(topN);
           project={p}
           sourceGroups={projectGroups(p).join(' ')}
           tagList={(p.tags ?? []).join(' ')}
+          contentLanguage={p.contentLanguage || 'en'}
           featuredRank={rank >= 0 ? rank : undefined}
         />
       );
@@ -135,15 +166,21 @@ const overflowTags = sortedTags.slice(topN);
     const sourceChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-source]'));
     const sortChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-sort]'));
     const tagChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-tag]'));
+    const languageChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-language]'));
     const tagToggle = root.querySelector<HTMLButtonElement>('[data-tag-toggle]');
     const totalCountEl = root.querySelector<HTMLElement>('[data-tag-count-total]');
     const resetButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-reset]'));
     const cards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
+    // Default Language chip pre-selected on first load. Hash param `lang=`
+    // overrides this; "" means "All". Read from a data attribute set by
+    // the Astro template so the script doesn't import config directly.
+    const defaultLanguage = root.dataset.defaultLanguage ?? '';
 
     type Sort = 'featured' | 'popularity' | 'year';
     let activeSource = '';
     let activeSort: Sort = 'featured';
     let activeTag = '';
+    let activeLanguage = defaultLanguage;
     let shown = pageSize;
     let overflowExpanded = false;
 
@@ -162,6 +199,9 @@ const overflowTags = sortedTags.slice(topN);
       (c.dataset.sourceGroups ?? '').split(' ').filter(Boolean).includes(activeSource);
     const matchesTag = (c: HTMLElement) =>
       !activeTag || tagsOf(c).includes(activeTag);
+    const matchesLanguage = (c: HTMLElement) =>
+      !activeLanguage ||
+      (c.dataset.contentLanguage || 'en') === activeLanguage;
 
     /** Recompute the tag chip counts to reflect the active source filter. Tags
      *  that don't appear under the current source get hidden; the "+N more"
@@ -230,7 +270,7 @@ const overflowTags = sortedTags.slice(topN);
     }
 
     function applyFilter() {
-      const matching = cards.filter((c) => matchesSource(c) && matchesTag(c));
+      const matching = cards.filter((c) => matchesSource(c) && matchesTag(c) && matchesLanguage(c));
 
       const sorted = matching.slice().sort((a, b) => {
         if (activeSort === 'year') return yearOf(b) - yearOf(a);
@@ -281,7 +321,12 @@ const overflowTags = sortedTags.slice(topN);
      *  not considered filters — they're view preferences, kept across
      *  reset so the user doesn't lose their place. */
     function isDefaultState() {
-      return !activeSource && activeSort === 'featured' && !activeTag;
+      return (
+        !activeSource &&
+        activeSort === 'featured' &&
+        !activeTag &&
+        activeLanguage === defaultLanguage
+      );
     }
 
     const galleryResetWrap = root.querySelector<HTMLElement>('.gallery-reset');
@@ -306,6 +351,7 @@ const overflowTags = sortedTags.slice(topN);
       activeSource = '';
       activeSort = 'featured';
       activeTag = '';
+      activeLanguage = defaultLanguage;
       shown = pageSize;
       sourceChips.forEach((c) => {
         c.setAttribute('aria-pressed', String(!c.dataset.filterSource));
@@ -315,6 +361,9 @@ const overflowTags = sortedTags.slice(topN);
       });
       tagChips.forEach((c) => {
         c.setAttribute('aria-pressed', String(!c.dataset.filterTag));
+      });
+      languageChips.forEach((c) => {
+        c.setAttribute('aria-pressed', String((c.dataset.filterLanguage ?? '') === activeLanguage));
       });
       refreshTagCounts();
       writeHash();
@@ -368,6 +417,16 @@ const overflowTags = sortedTags.slice(topN);
       applyFilter();
     }
 
+    function setLanguage(lang: string) {
+      activeLanguage = lang;
+      shown = pageSize;
+      languageChips.forEach((c) => {
+        c.setAttribute('aria-pressed', String((c.dataset.filterLanguage ?? '') === lang));
+      });
+      writeHash();
+      applyFilter();
+    }
+
     // Click handlers toggle: pressing an already-active chip resets
     // that axis to its default (the implicit "All" / "Featured"
     // value) so the user doesn't have to hunt for the default chip
@@ -388,6 +447,14 @@ const overflowTags = sortedTags.slice(topN);
       c.addEventListener('click', () => {
         const val = c.dataset.filterTag ?? '';
         setTag(val === activeTag ? '' : val);
+      });
+    });
+    languageChips.forEach((c) => {
+      c.addEventListener('click', () => {
+        const val = c.dataset.filterLanguage ?? '';
+        // Toggle: click an already-active chip → revert to the
+        // configured default. Click a different chip → switch to it.
+        setLanguage(val === activeLanguage ? defaultLanguage : val);
       });
     });
 
@@ -436,6 +503,15 @@ const overflowTags = sortedTags.slice(topN);
       if (activeSource) params.set('source', activeSource);
       if (activeSort !== 'featured') params.set('sort', activeSort);
       if (activeTag) params.set('tag', activeTag);
+      // Lang is omitted when the current value equals the configured
+      // default — that way the canonical "as configured" URL stays
+      // clean even when defaultLanguage is set to (e.g.) 'en'.
+      // The empty "all" sentinel is encoded as the explicit string
+      // 'all' in the URL so visitors don't end up with a bare `lang=`
+      // that reads as "no value".
+      if (activeLanguage !== defaultLanguage) {
+        params.set('lang', activeLanguage === '' ? 'all' : activeLanguage);
+      }
       if (shown >= cards.length && cards.length > pageSize) params.set('show-all', '1');
       if (overflowExpanded) params.set('tags-expanded', '1');
       const s = params.toString();
@@ -458,6 +534,18 @@ const overflowTags = sortedTags.slice(topN);
         c.setAttribute('aria-pressed', String(c.dataset.filterSort === activeSort));
       });
     }
+    // Language: hash value (if valid) wins over the configured default.
+    // Unknown/missing language codes silently fall back to the default.
+    // The explicit string 'all' in the URL maps to the empty "show all
+    // languages" sentinel — symmetric with writeHash() above.
+    const langKeys = new Set(languageChips.map((c) => c.dataset.filterLanguage ?? ''));
+    if (typeof initial.lang === 'string') {
+      const lang = initial.lang === 'all' ? '' : initial.lang;
+      if (langKeys.has(lang)) activeLanguage = lang;
+    }
+    languageChips.forEach((c) => {
+      c.setAttribute('aria-pressed', String((c.dataset.filterLanguage ?? '') === activeLanguage));
+    });
     if (initial['tags-expanded'] === '1' && tagToggle) {
       overflowExpanded = true;
       const overflowCount = parseInt(tagToggle.dataset.overflowCount ?? '0', 10);

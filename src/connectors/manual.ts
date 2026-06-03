@@ -1,5 +1,6 @@
 import type { ConnectorResult, ProjectKind } from '../types/project';
 import type { ProjectsConfig } from '../types/config';
+import { detectContentLanguage } from '../lib/content-language';
 
 const VALID_KINDS = new Set<ProjectKind>([
   'app',
@@ -38,6 +39,10 @@ export function manualToResults(config: ProjectsConfig): ConnectorResult[] {
       firstReleased: m.year,
       tags: m.tags ?? [],
       language: m.language,
+      // Trust an explicit contentLanguage when the entry provides one;
+      // otherwise run the heuristic on the title (defaults to null /
+      // English when nothing identifies as a non-default language).
+      contentLanguage: m.contentLanguage ?? detectContentLanguage(m.title) ?? undefined,
       kind: normalizeKind(m.kind),
       openSource: m.openSource ?? !!m.sourceUrl,
       archived: m.archived,

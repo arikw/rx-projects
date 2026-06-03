@@ -21,6 +21,10 @@ export type ManualProject = {
   year?: number;
   featured?: boolean;
   language?: string;
+  /** Content language code (e.g. 'he'). Sets the project's content
+   *  language explicitly; when omitted, the builder runs the heuristic
+   *  on the title and may detect one (or leave it undefined = English). */
+  contentLanguage?: string;
   /** Project type. Free-form but `app | library | package | cli | extension | mobile | image | other` are recognized. */
   kind?: string;
   /** True/false explicitly. When omitted, `sourceUrl` presence implies `true`. */
@@ -228,6 +232,12 @@ export type ProjectsConfig = {
      *  Screen" but Android Chrome will fall back to a plain bookmark
      *  shortcut (no standalone display) without an SW. */
     serviceWorker?: boolean;
+    /** Initial Language filter chip when the page loads (only relevant
+     *  when at least one project's `spokenLanguage` is set, which makes
+     *  the row appear at all). Accepts a language code ('en', 'he', …)
+     *  or `'all'` for no filter. Default `undefined` → "All". URL hash
+     *  `lang=` overrides this when present. */
+    defaultLanguage?: string;
   };
   user: {
     name: string;

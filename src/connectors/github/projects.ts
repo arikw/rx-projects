@@ -1,6 +1,7 @@
 import type { ConnectorResult, ProjectKind } from '../../types/project';
 import { loadFixture, isPlaceholderHandle } from '../../lib/fixtures';
 import { pagesUrlFor, fetchPagesMeta, readPagesCache, writePagesCache } from './pages';
+import { detectContentLanguage } from '../../lib/content-language';
 
 const MOBILE_TOPICS = new Set([
   'android',
@@ -154,6 +155,12 @@ export async function fetchGithubRepoProjects(input: GithubFetchInput): Promise<
         firstReleased: r.created_at ? new Date(r.created_at).getUTCFullYear() : undefined,
         tags: r.topics ?? [],
         language: r.language ?? undefined,
+        // Heuristic content-language tag from the Pages title (only
+        // when we have one — the title is the strongest single signal
+        // we get from GitHub). detectContentLanguage returns null when
+        // it can't identify a non-default language; the builder treats
+        // null as English.
+        contentLanguage: detectContentLanguage(pagesEntry?.title) ?? undefined,
         kind: deriveKind(r.topics ?? []),
         openSource: true,
         archived: r.archived,
