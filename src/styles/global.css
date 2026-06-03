@@ -110,6 +110,29 @@ button {
   margin-bottom: 56px;
 }
 
+/* Main column: a single flex `gap` owns the rhythm between every
+   top-level section / divider / component. Individual sections used
+   to carry their own `margin-bottom: 48px` which produced an
+   inconsistent grid (margin collapse, asymmetric divider hugs,
+   special-case overrides). One gap on the container replaces all of
+   that with a single source of truth. */
+.site-main {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(36px, 6vw, 48px);
+}
+
+/* A labelled divider + the section it labels are wrapped in
+   `.section-group` so a TIGHTER gap can hug the label to its
+   content, while the outer `.site-main` gap still separates this
+   group from its neighbours. Real flex gap on both axes — no
+   margins. */
+.section-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .site-header nav {
   display: flex;
   align-items: center;
@@ -181,19 +204,7 @@ button {
 
 /* Hero */
 .hero {
-  /* Default gap to whatever follows the hero (siteAbout, featured row, …)
-     on the standard 48px section rhythm. */
-  margin-bottom: 48px;
-}
-/* When the ProfilePresence strip *is* rendered immediately below, shrink the
-   gap — the strip's chips read as part of the same visual unit as the hero
-   numbers, so they shouldn't be visually divorced by a full section's space.
-   :has() narrows the override to exactly this case; if profiles is empty the
-   strip section isn't emitted at all, the selector doesn't match, and the
-   32px default holds — preserving the gap between hero and the description
-   text (or whatever sits beneath the hero). */
-.hero:has(+ .profile-presence) {
-  margin-bottom: 12px;
+  /* Rhythm is owned by the `.site-main` flex gap. No margin needed here. */
 }
 
 .eyebrow {
@@ -386,7 +397,7 @@ button {
    cross-fade in place with no layout shift. */
 .review-carousel {
   max-width: 720px;
-  margin: 0 auto 48px;
+  margin: 0 auto;
   position: relative;
 }
 .review-stage {
@@ -643,24 +654,50 @@ button {
   }
 }
 
-/* Thin centred rule placed between major sections (currently between the
-   project grid and the review carousel) — narrower than the page width so
-   it reads as a section break, not a hard page rule. */
+/* Thin centred rule between major sections (currently used between
+   hero ↔ profiles, profiles ↔ intro, and gallery ↔ reviews).
+   Spacing around it is provided by `.site-main`'s flex gap. */
 .section-divider {
   width: 100%;
   max-width: 480px;
+  margin: 0 auto;
+}
+/* Plain <hr class="section-divider"> — a 1px line. */
+hr.section-divider {
   height: 1px;
   border: 0;
   background: var(--border);
-  margin: 0 auto 48px;
+}
+/* Labeled variant (<div class="section-divider section-divider--labeled">
+   <span>…</span></div>): two flex-grown line segments either side of
+   a small uppercase muted label. The label reads as an intentional
+   section heading, not as decoration. */
+.section-divider--labeled {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.section-divider--labeled::before,
+.section-divider--labeled::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.section-divider--labeled > span {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 /* Build timestamp — page metadata. Lives at the very bottom of the page so
    it doesn't accidentally act as a divider between major content sections
    (which is how it read when nested inside the hero). */
 .site-foot {
-  /* Standard 48px section gap above. */
-  margin: 48px auto 24px;
+  /* Top gap owned by the `.site-main` flex gap. */
+  margin: 0 auto 24px;
   text-align: center;
   font-size: 0.78rem;
   color: var(--muted);
@@ -683,10 +720,7 @@ button {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
-  /* Same 48px section gap below as every other major section. The visual
-     pairing with the hero above is created via .hero:has(+ .profile-presence)
-     which shrinks the hero's bottom margin to 12px. */
-  margin: 0 0 48px;
+  /* Section spacing is owned by the `.site-main` flex gap. */
 }
 .profile-chip {
   display: flex;
@@ -804,13 +838,8 @@ button {
   font-feature-settings: 'tnum';
 }
 
-/* Section wrappers — each major content section owns the 48px gap below
-   itself so the page rhythm doesn't depend on margin-collapse between
-   neighbours. */
-.featured,
-.projects {
-  margin-bottom: 48px;
-}
+/* Section spacing for .featured and .projects is owned by the
+   `.site-main` flex gap. */
 
 /* Featured grid */
 .featured-grid {
@@ -1597,16 +1626,11 @@ a.card-source:hover {
   color: var(--accent);
 }
 
-/* Author bio: footer-style block under the project grid */
+/* Author bio: footer-style block under the project grid. Spacing
+   above is owned by the `.site-main` flex gap. */
 .author-bio {
   max-width: 64ch;
-  /* Sit well below the standard 48px section rhythm so the author bio
-     reads as a tail-piece after the content-heavy review carousel.
-     Vertical margins collapse against the carousel's `margin-bottom:
-     48px`, so this value IS the rendered gap (not additive). Fluid
-     from 48 px on narrow phones up to 144 px on full desktop —
-     scales with viewport width via `12vw` between the two clamps. */
-  margin: clamp(48px, 12vw, 144px) auto 0;
+  margin: 0 auto;
   padding: 24px 28px;
   border: 1px solid var(--border);
   border-radius: 10px;

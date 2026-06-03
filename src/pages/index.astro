@@ -71,13 +71,31 @@ const carouselReviews = pickCarouselReviews(allProjects, 10);
   description={config.meta.siteDescription}
 >
   <Hero stats={stats} />
-  <ProfilePresence profiles={profiles} />
-  {config.meta.siteAbout && <SiteAbout markdown={config.meta.siteAbout} />}
+  {profiles.length > 0 && (
+    <div class="section-group">
+      <div class="section-divider section-divider--labeled" role="separator">
+        <span>Profile Statistics</span>
+      </div>
+      <ProfilePresence profiles={profiles} />
+    </div>
+  )}
+  {config.meta.siteAbout && (
+    <div class="section-group">
+      <div class="section-divider section-divider--labeled" role="separator">
+        <span>Intro</span>
+      </div>
+      <SiteAbout markdown={config.meta.siteAbout} />
+    </div>
+  )}
   <ProjectGrid projects={sortedAll} pageSize={config.ui.pageSize} />
   {carouselReviews.length > 0 && (
-    <hr class="section-divider" aria-hidden="true" />
+    <div class="section-group">
+      <div class="section-divider section-divider--labeled" role="separator">
+        <span>Reviews</span>
+      </div>
+      <ReviewCarousel reviews={carouselReviews} />
+    </div>
   )}
-  <ReviewCarousel reviews={carouselReviews} />
   {config.user.bio && <AuthorBio name={config.user.name} bio={config.user.bio} avatar={profileImage} />}
   <footer class="site-foot">
     <p>

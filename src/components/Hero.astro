@@ -46,7 +46,11 @@ const projectsInfo =
     </p>
   )}
   <h1 class="hero-title">{config.meta.siteTitle}</h1>
-  <div class="hero-stats">
+  <div class="section-group">
+    <div class="section-divider section-divider--labeled" role="separator">
+      <span>Project Statistics</span>
+    </div>
+    <div class="hero-stats">
     <Stat
       icon="star"
       value={`${formatStat(stats.starsAndLikes)}+`}
@@ -79,5 +83,6 @@ const projectsInfo =
       sublabel={projectsSublabel}
       info={projectsInfo}
     />
+    </div>
   </div>
 </section>
