@@ -165,7 +165,15 @@ const overflowTags = sortedTags.slice(topN);
 
     /** Recompute the tag chip counts to reflect the active source filter. Tags
      *  that don't appear under the current source get hidden; the "+N more"
-     *  toggle's label updates with the remaining overflow count. */
+     *  toggle's label updates with the remaining overflow count.
+     *  When primary tags hide because the source filter zeroed their counts,
+     *  overflow tags WITH non-zero counts are promoted into the freed slots
+     *  so the tag row stays dense — otherwise the user sees "All" + "+N more"
+     *  with empty space where the primary chips used to be. */
+    const primarySlotCount = tagChips.filter(
+      (c) => c.dataset.filterTag && !c.classList.contains('filter-chip--overflow'),
+    ).length;
+
     function refreshTagCounts() {
       const sourceMatching = cards.filter(matchesSource);
       const counts = new Map<string, number>();
@@ -174,30 +182,48 @@ const overflowTags = sortedTags.slice(topN);
       }
       if (totalCountEl) totalCountEl.textContent = String(sourceMatching.length);
 
-      let overflowAvailable = 0;
+      // Pass 1: write the live counts, partition the chips with non-zero
+      // counts into "primary" (initially-primary, naturally visible) and
+      // "available overflow" (currently overflow but eligible to promote).
+      const visiblePrimaries: HTMLButtonElement[] = [];
+      const availableOverflow: HTMLButtonElement[] = [];
       tagChips.forEach((chip) => {
         const tag = chip.dataset.filterTag ?? '';
-        if (!tag) return; // "All" chip handled by totalCountEl above
+        if (!tag) return; // "All" chip handled via totalCountEl
         const count = counts.get(tag) ?? 0;
         const valueEl = chip.querySelector<HTMLElement>('.filter-count');
         if (valueEl) valueEl.textContent = String(count);
-        const isOverflow = chip.classList.contains('filter-chip--overflow');
-        const shouldShow = count > 0;
-        if (shouldShow) {
-          if (!isOverflow || overflowExpanded) chip.removeAttribute('hidden');
-          if (isOverflow && !overflowExpanded) chip.setAttribute('hidden', '');
-          if (isOverflow) overflowAvailable += 1;
-        } else {
+        if (count === 0) {
           chip.setAttribute('hidden', '');
+          return;
+        }
+        if (chip.classList.contains('filter-chip--overflow')) {
+          availableOverflow.push(chip);
+        } else {
+          visiblePrimaries.push(chip);
         }
       });
+
+      // Pass 2: show every visible primary; fill any freed primary slots
+      // with available overflow chips; the rest of the overflow waits
+      // behind the "+N more" toggle (or shows now if user expanded it).
+      visiblePrimaries.forEach((c) => c.removeAttribute('hidden'));
+      const freeSlots = Math.max(0, primarySlotCount - visiblePrimaries.length);
+      const promoted = availableOverflow.slice(0, freeSlots);
+      const stillHidden = availableOverflow.slice(freeSlots);
+      promoted.forEach((c) => c.removeAttribute('hidden'));
+      stillHidden.forEach((c) => {
+        if (overflowExpanded) c.removeAttribute('hidden');
+        else c.setAttribute('hidden', '');
+      });
+
       if (tagToggle) {
-        if (overflowAvailable === 0) {
+        if (stillHidden.length === 0) {
           tagToggle.setAttribute('hidden', '');
         } else {
           tagToggle.removeAttribute('hidden');
           if (!overflowExpanded) {
-            tagToggle.textContent = `+ ${overflowAvailable} more`;
+            tagToggle.textContent = `+ ${stillHidden.length} more`;
           }
         }
       }
