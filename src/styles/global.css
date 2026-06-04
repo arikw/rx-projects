@@ -246,6 +246,48 @@ button {
   flex: 1 1 200px;
   background: var(--card-bg);
   padding: 24px 22px;
+  /* Anchor for the absolutely-positioned .stat-delta chip in the
+     top-right corner. */
+  position: relative;
+}
+
+/* Delta chip — "▲ +12" / "▼ -5" — shown when the dashboard has a
+   meaningful change since the visitor's last seen build. Populated
+   client-side (either by the demo controller via ?demo=… or by the
+   real last-visit comparison once that ships). The element is empty
+   and `hidden` until a delta is injected. */
+.stat-delta {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-feature-settings: 'tnum';
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  cursor: help;
+}
+.stat-delta.is-negative {
+  background: color-mix(in srgb, var(--muted) 18%, transparent);
+  color: var(--muted);
+}
+.stat-delta-arrow {
+  font-size: 0.85em;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .stat-delta {
+    animation: stat-delta-in 220ms ease-out;
+  }
+  @keyframes stat-delta-in {
+    from { opacity: 0; transform: translateY(-3px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 }
 /* Round only the outer corners of the row so the container's rounded
    border isn't broken by square white tile-backgrounds bleeding into it.
@@ -927,11 +969,42 @@ hr.section-divider {
   flex-direction: column;
   gap: 10px;
   overflow: hidden;
+  /* Anchor for the absolutely-positioned .card-new-ribbon (and any
+     future card-corner badges). */
+  position: relative;
   /* Subtle persistent shadow so the cards feel grounded on the page, then
      lift on hover. */
   box-shadow: 0 1px 2px rgba(15, 17, 21, 0.04),
               0 4px 12px rgba(15, 17, 21, 0.04);
   transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
+}
+
+/* NEW ribbon — top-left corner badge marking projects that didn't
+   exist on the visitor's previous visit. Populated client-side; the
+   element is `hidden` by default. */
+.card-new-ribbon {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
+  background: var(--accent);
+  color: var(--card-bg);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .card-new-ribbon {
+    animation: ribbon-in 250ms ease-out;
+  }
+  @keyframes ribbon-in {
+    from { opacity: 0; transform: scale(0.85); }
+    to   { opacity: 1; transform: scale(1); }
+  }
 }
 .card:hover {
   border-color: var(--accent);

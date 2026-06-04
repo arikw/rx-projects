@@ -113,3 +113,10 @@ const carouselReviews = pickCarouselReviews(allProjects, 10);
     </p>
   </footer>
 </BaseLayout>
+
+<script>
+  // Demo controller for the "what's changed since last visit" feature.
+  // Active only when the URL carries ?demo=growth / ?demo=mixed / ?demo=quiet.
+  // No-op otherwise — slot elements stay hidden.
+  import '../scripts/demo-deltas';
+</script>
