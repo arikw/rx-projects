@@ -16,7 +16,7 @@ function position(trigger: Element): void {
   const tipW = tip.offsetWidth;
   const tipH = tip.offsetHeight;
   const pad = 8;
-  const vw = window.innerWidth;
+  const vw = document.documentElement.clientWidth;
   const vh = window.innerHeight;
   const htmlLeft = document.documentElement.getBoundingClientRect().left;
   const triggerCenterX = rect.left + rect.width / 2;

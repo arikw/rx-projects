@@ -118,6 +118,7 @@ button {
   top: 0;
   z-index: 50;
   background: var(--bg);
+  box-shadow: 0 4px 14px rgba(15, 17, 21, 0.05);
 }
 
 /* Main column: a single flex `gap` owns the rhythm between every
