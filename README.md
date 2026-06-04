@@ -96,7 +96,7 @@ Example output when something needs your attention:
     1. npm run build                                # populate caches from your residential IP
     2. git add -f generated/.cache/ public/_cache/  # both are gitignored locally
     3. git commit -m 'Seed caches' && git push      # push alone is path-ignored — won't auto-deploy
-    4. gh workflow run deploy.yml                   # dispatch the deploy
+    4. gh workflow run deploy.yml                   # dispatch the deploy (or GitHub UI: Actions → Deploy → Run workflow)
     5. Re-run npm run status to verify.
 ```
 
