@@ -103,12 +103,17 @@ Example output when something needs your attention:
         no friendly title — connector enrichment data missing
 
   Fix  (typically: a Cloudflare-gated source the runner can't reach):
-    1. npm run build                                # populate caches from your residential IP
-    2. git add -f generated/.cache/ public/_cache/  # both are gitignored locally
-    3. git commit -m 'Seed caches' && git push      # push alone is path-ignored — won't auto-deploy
-    4. gh workflow run deploy.yml                   # dispatch the deploy (or GitHub UI: Actions → Deploy → Run workflow)
-    5. Re-run npm run status to verify.
+    Run npm run seed — builds locally to fill the caches, commits the
+    refresh, pushes, and dispatches the deploy. Re-run npm run status after.
 ```
+
+When something needs attention, the single command:
+
+```bash
+npm run seed
+```
+
+…builds locally (residential IPs aren't blocked by Cloudflare like Azure-hosted runners are), commits the refreshed `generated/` + `public/_cache/`, pushes, and dispatches the deploy. Falls back to printed instructions for the GitHub web UI when `gh` isn't installed/authenticated.
 
 The script reads `/status.json`, which sits under your configured `deployment.base`. Pass a URL explicitly to override auto-detection:
 
