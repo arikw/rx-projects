@@ -53,27 +53,58 @@ async function runConnector(
   now: string,
 ): Promise<ConnectorRunResult> {
   const key = manifest.key as ConnectorKey;
+  const cached = snapshot.connectors[key];
   if (!enabled) {
-    const cached = snapshot.connectors[key];
     if (cached) await maybeCache(key, collectMediaUrls(cached.results));
     return cached ? { status: 'cached', results: cached.results } : { status: 'empty' };
   }
-  try {
-    const out = await manifest.fetch(config, { fixtureMode: FIXTURE_MODE });
-    const results = out.projects ?? [];
-    snapshot.connectors[key] = { lastScrapedAt: now, results };
-    await maybeCache(key, collectMediaUrls(results, out.profile));
-    return { status: 'fresh', results, profile: out.profile };
-  } catch (err) {
-    console.warn(`[loader] connector "${key}" failed:`, err);
-    const cached = snapshot.connectors[key];
-    if (cached) {
-      console.warn(`[loader] falling back to cached "${key}" data from ${cached.lastScrapedAt}`);
-      await maybeCache(key, collectMediaUrls(cached.results));
-      return { status: 'cached', results: cached.results };
-    }
+  // Two failure paths converge: the connector throws OR it explicitly
+  // signals { ok: false }. In both cases we preserve the previous successful
+  // `results` and `lastScrapedAt` so a transient block doesn't blank out
+  // the source — only `attemptedAt`, `ok`, and `error` get refreshed.
+  const recordFailure = (error: string): ConnectorRunResult => {
+    snapshot.connectors[key] = {
+      lastScrapedAt: cached?.lastScrapedAt ?? now,
+      results: cached?.results ?? [],
+      ok: false,
+      attemptedAt: now,
+      error,
+    };
+    if (cached) return { status: 'cached', results: cached.results };
     return { status: 'empty' };
+  };
+  let out;
+  try {
+    out = await manifest.fetch(config, { fixtureMode: FIXTURE_MODE });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[loader] connector "${key}" threw:`, err);
+    const result = recordFailure(msg);
+    if (result.status === 'cached') {
+      console.warn(`[loader] falling back to cached "${key}" data from ${cached!.lastScrapedAt}`);
+      await maybeCache(key, collectMediaUrls(cached!.results));
+    }
+    return result;
   }
+  if (out.ok === false) {
+    const msg = out.error ?? 'connector reported ok:false';
+    console.warn(`[loader] connector "${key}" reported failure: ${msg}`);
+    const result = recordFailure(msg);
+    if (result.status === 'cached') {
+      console.warn(`[loader] falling back to cached "${key}" data from ${cached!.lastScrapedAt}`);
+      await maybeCache(key, collectMediaUrls(cached!.results));
+    }
+    return result;
+  }
+  const results = out.projects ?? [];
+  snapshot.connectors[key] = {
+    lastScrapedAt: now,
+    results,
+    ok: true,
+    attemptedAt: now,
+  };
+  await maybeCache(key, collectMediaUrls(results, out.profile));
+  return { status: 'fresh', results, profile: out.profile };
 }
 
 /** Manual authoritative origin facts from config.origins (e.g. Play Console totals). */

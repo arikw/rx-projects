@@ -1,7 +1,8 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import type { Connector } from '../types';
 import type { ConnectorResult, Review } from '../../types/project';
+import type { ProjectsConfig } from '../../types/config';
+import type { ConnectorFetchOpts, ConnectorOutput } from '../_define';
 import { defineConnector } from '../_define';
 import { loadFixture } from '../../lib/fixtures';
 import { readJsonCache, writeJsonCache } from '../../lib/json-cache';
@@ -166,25 +167,34 @@ async function scrapeApp(pkg: string): Promise<AppbrainApp | null> {
   };
 }
 
-export const fetchAppbrainProjects: Connector = async (config, options) => {
+export const fetchAppbrainProjects = async (
+  config: ProjectsConfig,
+  options?: ConnectorFetchOpts,
+): Promise<ConnectorOutput> => {
   const packages = config.sources.gplay.packages;
-  if (!packages.length) return [];
+  if (!packages.length) return { projects: [] };
 
-  if (options?.fixtureMode) return loadFixture('appbrain');
+  if (options?.fixtureMode) return { projects: await loadFixture('appbrain') };
 
   const cache = readJsonCache<AppbrainCache>(CACHE_PATH, emptyCache());
   if (cache.version !== 1 || !cache.apps) Object.assign(cache, emptyCache());
   cache._generated = NOTE;
 
+  // Track fresh-fetch attempts vs failures so we can signal ok:false when
+  // Cloudflare blocks every request — same pattern as the apkpure connector.
+  let attempted = 0;
+  let failed = 0;
   for (const pkg of packages) {
     if (cache.apps[pkg]) continue; // frozen — removed-app stats never change
+    attempted++;
     const app = await scrapeApp(pkg);
     if (app) cache.apps[pkg] = app;
+    else failed++;
     await sleep(300);
   }
   writeJsonCache(CACHE_PATH, cache);
 
-  return packages
+  const projects = packages
     .map((p) => cache.apps[p])
     .filter((a): a is AppbrainApp => !!a)
     .map<ConnectorResult>((a) => ({
@@ -214,6 +224,15 @@ export const fetchAppbrainProjects: Connector = async (config, options) => {
         },
       },
     }));
+
+  if (attempted > 0 && projects.length === 0) {
+    return {
+      projects,
+      ok: false,
+      error: `appbrain: ${failed}/${attempted} fresh scrapes failed (likely Cloudflare block)`,
+    };
+  }
+  return { projects };
 };
 
 /** Manifest — picked up by `_registry.ts` via auto-discovery.
@@ -224,8 +243,5 @@ export default defineConnector({
   mirrorOf: 'playstore',
   emits: ['installs', 'rating'],
   defaultConfig: { enabled: true },
-  fetch: async (config, opts) => {
-    const projects = await fetchAppbrainProjects(config, opts);
-    return { projects };
-  },
+  fetch: fetchAppbrainProjects,
 });
