@@ -31,14 +31,13 @@ const home = import.meta.env.BASE_URL;
         }
       }, true);
     </script>
-    <div class="page">
-      <header class="site-header">
-        <nav>
-          <a href={home} class="brand">
-            <span class="brand-dot" aria-hidden="true"></span>
-            <span>{config.meta.siteTitle}</span>
-          </a>
-          <div class="nav-actions">
+    <header class="site-header">
+      <nav>
+        <a href={home} class="brand">
+          <span class="brand-dot" aria-hidden="true"></span>
+          <span>{config.meta.siteTitle}</span>
+        </a>
+        <div class="nav-actions">
             <button
               type="button"
               class="delta-toggle"
@@ -56,9 +55,10 @@ const home = import.meta.env.BASE_URL;
               <span class="delta-toggle-dot" aria-hidden="true"></span>
             </button>
             <ThemeToggle />
-          </div>
-        </nav>
-      </header>
+        </div>
+      </nav>
+    </header>
+    <div class="page">
       <main class="site-main">
         <slot />
       </main>
