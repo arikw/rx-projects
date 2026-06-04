@@ -20,11 +20,13 @@ function renderValue(v: number | string): string {
       return (
         <a
           class="profile-chip"
+          data-profile-source={p.source}
           href={p.url}
           target="_blank"
           rel="noopener"
           style={mark ? `--brand-tint: light-dark(${mark.tint}, ${mark.darkTint ?? mark.tint}); --brand-fg: light-dark(${mark.fg}, ${mark.darkFg ?? mark.fg})` : undefined}
         >
+          <span class="stat-delta" hidden></span>
           {mark && (
             <span class="profile-chip-mark" set:html={mark.svg} aria-hidden="true" />
           )}
