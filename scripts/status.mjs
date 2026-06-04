@@ -114,7 +114,7 @@ console.log(`  ${bold}Fix${reset}  (typically: a Cloudflare-gated source the run
 console.log(`    1. ${bold}npm run build${reset}                                # populate caches from your residential IP`);
 console.log(`    2. ${bold}git add -f generated/.cache/ public/_cache/${reset}  # both are gitignored locally`);
 console.log(`    3. ${bold}git commit -m 'Seed caches' && git push${reset}      # push alone is path-ignored — won't auto-deploy`);
-console.log(`    4. ${bold}gh workflow run deploy.yml${reset}                   # dispatch the deploy`);
+console.log(`    4. ${bold}gh workflow run deploy.yml${reset}                   # dispatch the deploy (or GitHub UI: Actions → Deploy → Run workflow)`);
 console.log(`    5. Re-run ${bold}npm run status${reset} to verify.`);
 
 process.exit(1);
