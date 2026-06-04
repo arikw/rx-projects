@@ -68,7 +68,9 @@ Each connector's snapshot includes a `lastScrapedAt` timestamp. If a source fail
 
 ## Checking dashboard health
 
-Hit **`/status.json`** to see whether the last build succeeded and whether any projects got dropped because a connector couldn't enrich them. The `?bust=…` query string is important — GitHub Pages caches the response for 10 minutes behind a CDN, and without a unique URL you may be reading a stale copy from before your most recent fix:
+Hit **`/status.json`** to see whether the last build succeeded and whether any projects got dropped because a connector couldn't enrich them. The endpoint sits under your configured `deployment.base`, so the full URL is `<deployment.site><deployment.base>/status.json` — for example `https://yoursite.example/status.json` if you're serving at the root, or `https://yoursite.example/projects/status.json` if `base` is `/projects`.
+
+The `?bust=…` query string is important — GitHub Pages caches the response for 10 minutes behind a CDN, and without a unique URL you may be reading a stale copy from before your most recent fix:
 
 ```bash
 curl -s "https://yoursite.example/status.json?bust=$(date +%s)" | jq .
