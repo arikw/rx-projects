@@ -9,8 +9,8 @@
     },
     "rx-dev-dashboard": {
       "pagesUrl": "https://arikw.github.io/rx-dev-dashboard/",
-      "favicon": null,
-      "title": null
+      "favicon": "https://wzmn.net/projects/_cache/favicon/75904bcdcb67134e-32.png",
+      "title": "My Projects"
     },
     "script-shield-poc": {
       "pagesUrl": "https://arikw.github.io/script-shield-poc/",
