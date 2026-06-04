@@ -1,9 +1,12 @@
 type Direction = 'up' | 'down' | 'none';
 type StatKey = 'star' | 'download' | 'users' | 'projects';
+type Delta = { value: number; direction: Direction };
 type Scenario = {
   relativeTime: string;
-  heroDeltas: Record<StatKey, { value: number; direction: Direction }>;
+  heroDeltas: Record<StatKey, Delta>;
+  profileDeltas: Record<string, Delta>;
   newProjectCount: number;
+  removedProjectCount: number;
 };
 
 const SCENARIOS: Record<string, Scenario> = {
@@ -15,7 +18,12 @@ const SCENARIOS: Record<string, Scenario> = {
       users:    { value: 8,    direction: 'up' },
       projects: { value: 2,    direction: 'up' },
     },
+    profileDeltas: {
+      github:        { value: 4,   direction: 'up' },
+      stackoverflow: { value: 320, direction: 'up' },
+    },
     newProjectCount: 2,
+    removedProjectCount: 0,
   },
   mixed: {
     relativeTime: 'since 12 days ago',
@@ -25,7 +33,12 @@ const SCENARIOS: Record<string, Scenario> = {
       users:    { value: 0,   direction: 'none' },
       projects: { value: 2,   direction: 'down' },
     },
+    profileDeltas: {
+      github:        { value: 1,  direction: 'up' },
+      stackoverflow: { value: 50, direction: 'down' },
+    },
     newProjectCount: 1,
+    removedProjectCount: 3,
   },
   quiet: {
     relativeTime: '',
@@ -35,7 +48,9 @@ const SCENARIOS: Record<string, Scenario> = {
       users:    { value: 0, direction: 'none' },
       projects: { value: 0, direction: 'none' },
     },
+    profileDeltas: {},
     newProjectCount: 0,
+    removedProjectCount: 0,
   },
 };
 
@@ -47,20 +62,32 @@ function formatNumber(n: number): string {
   return String(n);
 }
 
-function injectHeroDelta(
-  tile: Element,
-  delta: { value: number; direction: Direction },
-  relativeTime: string,
-): void {
+function injectDelta(slot: HTMLElement, delta: Delta, relativeTime: string): void {
   if (delta.direction === 'none' || delta.value === 0) return;
-  const slot = tile.querySelector<HTMLElement>('.stat-delta');
-  if (!slot) return;
   const arrow = delta.direction === 'up' ? '▲' : '▼';
   const sign = delta.direction === 'up' ? '+' : '−';
   slot.classList.toggle('is-negative', delta.direction === 'down');
   slot.innerHTML = `<span class="stat-delta-arrow" aria-hidden="true">${arrow}</span>${sign}${formatNumber(delta.value)}`;
   if (relativeTime) slot.title = relativeTime;
   slot.removeAttribute('hidden');
+}
+
+function populateVisitSummary(scenario: Scenario): void {
+  const el = document.querySelector<HTMLElement>('.visit-summary');
+  if (!el) return;
+  const parts: string[] = [];
+  if (scenario.newProjectCount > 0) {
+    const label = scenario.newProjectCount === 1 ? 'new project' : 'new projects';
+    parts.push(`<span class="visit-summary-new">${scenario.newProjectCount} ${label}</span>`);
+  }
+  if (scenario.removedProjectCount > 0) {
+    const label = scenario.removedProjectCount === 1 ? 'removed' : 'removed';
+    parts.push(`<span class="visit-summary-removed">${scenario.removedProjectCount} ${label}</span>`);
+  }
+  if (!parts.length) return;
+  const time = scenario.relativeTime ? ` ${scenario.relativeTime}` : '';
+  el.innerHTML = parts.join('<span class="visit-summary-sep">·</span>') + time;
+  el.removeAttribute('hidden');
 }
 
 function activate(): void {
@@ -72,7 +99,14 @@ function activate(): void {
 
   for (const [key, delta] of Object.entries(scenario.heroDeltas)) {
     const tile = document.querySelector(`.stat[data-stat-key="${key}"]`);
-    if (tile) injectHeroDelta(tile, delta, scenario.relativeTime);
+    const slot = tile?.querySelector<HTMLElement>('.stat-delta');
+    if (slot) injectDelta(slot, delta, scenario.relativeTime);
+  }
+
+  for (const [source, delta] of Object.entries(scenario.profileDeltas)) {
+    const chip = document.querySelector(`.profile-chip[data-profile-source="${source}"]`);
+    const slot = chip?.querySelector<HTMLElement>('.stat-delta');
+    if (slot) injectDelta(slot, delta, scenario.relativeTime);
   }
 
   if (scenario.newProjectCount > 0) {
@@ -82,6 +116,8 @@ function activate(): void {
       if (ribbon) ribbon.removeAttribute('hidden');
     }
   }
+
+  populateVisitSummary(scenario);
 }
 
 if (document.readyState === 'loading') {

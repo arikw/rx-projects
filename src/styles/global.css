@@ -63,6 +63,8 @@ button {
   --accent-soft: #e5edf4;
   --card-bg: #ffffff;
   --card-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.04);
+  --delta-positive: #2f6b3e;
+  --delta-positive-bg: rgba(74, 138, 93, 0.16);
 }
 
 /* Dark tokens — applied when:
@@ -80,6 +82,8 @@ button {
     --accent-soft: #243246;
     --card-bg: #1e2024;
     --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 8px 24px rgba(0, 0, 0, 0.45);
+    --delta-positive: #8fcf99;
+    --delta-positive-bg: rgba(143, 207, 153, 0.20);
   }
 }
 :root[data-theme='dark'] {
@@ -92,6 +96,8 @@ button {
   --accent-soft: #243246;
   --card-bg: #1e2024;
   --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 8px 24px rgba(0, 0, 0, 0.45);
+  --delta-positive: #8fcf99;
+  --delta-positive-bg: rgba(143, 207, 153, 0.20);
 }
 :root[data-theme='light'] {
   color-scheme: light;
@@ -262,9 +268,13 @@ button {
   padding: 3px 9px;
   border-radius: 999px;
   white-space: nowrap;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--accent);
+  background: var(--delta-positive-bg);
+  color: var(--delta-positive);
   cursor: help;
+}
+.stat-delta.is-negative {
+  background: color-mix(in srgb, var(--muted) 18%, transparent);
+  color: var(--muted);
 }
 /* Restore [hidden]'s display:none — overridden by display:inline-flex above. */
 .stat-delta[hidden] {
@@ -273,12 +283,29 @@ button {
 .card-new-ribbon[hidden] {
   display: none;
 }
-.stat-delta.is-negative {
-  background: color-mix(in srgb, var(--muted) 18%, transparent);
-  color: var(--muted);
-}
 .stat-delta-arrow {
   font-size: 0.85em;
+}
+.visit-summary {
+  text-align: center;
+  margin: 0 0 16px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.visit-summary[hidden] {
+  display: none;
+}
+.visit-summary-new {
+  color: var(--delta-positive);
+  font-weight: 600;
+}
+.visit-summary-removed {
+  color: var(--muted);
+  font-weight: 600;
+}
+.visit-summary-sep {
+  margin: 0 8px;
+  opacity: 0.5;
 }
 @media (prefers-reduced-motion: no-preference) {
   .stat-delta {
@@ -812,6 +839,7 @@ hr.section-divider {
   color: var(--fg);
   text-decoration: none;
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  position: relative;
 }
 .profile-chip:hover {
   transform: translateY(-2px);
