@@ -115,9 +115,6 @@ const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
   data-featured-score={featured}
   data-featured-rank={featuredRank ?? ''}
 >
-  {/* NEW ribbon slot — hidden by default. The demo controller (?demo=…)
-      or the real last-visit script flips this on for projects that
-      didn't exist on the visitor's previous build. */}
   <span class="card-new-ribbon" hidden>NEW</span>
   <ProjectThumb project={p} />
   <header class="card-head">

@@ -1,14 +1,3 @@
-// Demo controller for the "what's changed since last visit" feature.
-//
-// When the URL carries `?demo=<name>`, this script injects mock delta chips
-// onto the hero tiles and NEW ribbons onto the first N project cards, so the
-// design can be reviewed before the real localStorage-driven implementation
-// lands. Pure DOM manipulation — no real comparisons, no persistence.
-//
-// Removing the query param (or hitting an unknown demo name) leaves the page
-// in its baseline state. The slot elements (`.stat-delta`, `.card-new-ribbon`)
-// stay `hidden`.
-
 type Direction = 'up' | 'down' | 'none';
 type StatKey = 'star' | 'download' | 'users' | 'projects';
 type Scenario = {
@@ -81,14 +70,11 @@ function activate(): void {
   const scenario = SCENARIOS[name];
   if (!scenario) return;
 
-  // Hero tile deltas — keyed by the icon slot which matches StatKey.
   for (const [key, delta] of Object.entries(scenario.heroDeltas)) {
     const tile = document.querySelector(`.stat[data-stat-key="${key}"]`);
     if (tile) injectHeroDelta(tile, delta, scenario.relativeTime);
   }
 
-  // NEW ribbons — flip on the first N project cards. Pick from the
-  // post-sort DOM order so the demo always lands on visible cards.
   if (scenario.newProjectCount > 0) {
     const cards = document.querySelectorAll<HTMLElement>('.card');
     for (let i = 0; i < Math.min(scenario.newProjectCount, cards.length); i++) {
