@@ -32,41 +32,22 @@ GitHub disables Actions on forks by default. Turn them on:
 - **Web UI:** go to your fork's **Actions** tab → click **I understand my workflows, go ahead and enable them**.
 - **CLI:** `gh api -X PUT repos/<your-user>/<your-fork>/actions/permissions -F enabled=true`
 
-### 3. Add `projects.config.local.ts` with your dashboard config
+### 3. Scaffold `projects.config.local.ts` with `npm run init`
 
-Create `projects.config.local.ts` next to `projects.config.ts`. The loader shallow-merges your local file over the base config at build time, so anything you don't override falls through to the defaults:
-
-```ts
-import baseConfig from './projects.config';
-
-export default {
-  ...baseConfig,
-  deployment: {
-    ...baseConfig.deployment,
-    site: 'https://yourname.dev',   // the public origin where your site lives
-    base: '/',                      // path prefix — '/' for root, '/projects' for a sub-path
-  },
-  user: {
-    ...baseConfig.user,
-    github: 'your-github-handle',
-    // npm: 'your-npm-handle',      // optional — defaults to github
-    // docker: 'your-docker-id',    // optional — defaults to github
-  },
-  sources: {
-    ...baseConfig.sources,
-    chrome: {
-      ...baseConfig.sources.chrome,
-      extensionIds: ['<32-char-id>', /* … */],   // from chromewebstore.google.com/detail/<id>
-    },
-  },
-  featured: ['slug-to-pin-at-the-top'],
-  manual: [
-    // projects without an online source (closed-source, retired, etc.)
-  ],
-};
+```bash
+npm install
+npm run init
 ```
 
-Any source you leave empty or disable just contributes nothing — connectors degrade gracefully. Override only what you need; the base config keeps cloners from fighting upstream `projects.config.ts` updates when they pull bug fixes.
+The init script reads `git remote get-url origin`, extracts the GitHub user + repo, and writes `projects.config.local.ts` pre-filled with:
+
+- `deployment.site: 'https://<user>.github.io'`
+- `deployment.base: '/<repo>'`
+- `user.github: '<user>'`
+
+Plus commented stubs for `sources.chrome.extensionIds`, `featured`, and `manual` that you can fill in if relevant. The loader shallow-merges this local file over `projects.config.ts` at build time — anything you don't override falls through to the defaults. That keeps your fork from fighting upstream `projects.config.ts` updates when you pull bug fixes.
+
+If your real deployment lives somewhere other than GitHub Pages (a custom domain, a sub-path on an existing site, etc.), edit `deployment.site` and `deployment.base` to match.
 
 If you'd rather keep your handles out of git, add `projects.config.local.ts` to your fork's `.gitignore` or to `.git/info/exclude`. (Editing `projects.config.ts` directly works too, but you'll have merge conflicts on every upstream pull.)
 
