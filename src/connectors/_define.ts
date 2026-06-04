@@ -9,10 +9,19 @@ export type ConnectorFetchOpts = {
 };
 
 /** A connector's output. Project-emitters set `projects`, profile sources
- *  set `profile`, GitHub sets both. */
+ *  set `profile`, GitHub sets both.
+ *
+ *  Observability: connectors that hit an upstream they can't reach (CDN
+ *  block, network error, parse exhaustion) can signal that the result is
+ *  unreliable by setting `ok: false` with a human-readable `error`. The
+ *  loader then preserves the snapshot's previous SUCCESSFUL `results`
+ *  instead of overwriting them with the failed-run partial, and surfaces
+ *  the failure in /data.json. Defaults to ok:true when omitted. */
 export type ConnectorOutput = {
   projects?: ConnectorResult[];
   profile?: ProfileFact;
+  ok?: boolean;
+  error?: string;
 };
 
 /** Maps a hostname's URL back to an (origin platform, id). */
