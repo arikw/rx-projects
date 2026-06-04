@@ -246,16 +246,9 @@ button {
   flex: 1 1 200px;
   background: var(--card-bg);
   padding: 24px 22px;
-  /* Anchor for the absolutely-positioned .stat-delta chip in the
-     top-right corner. */
   position: relative;
 }
 
-/* Delta chip — "▲ +12" / "▼ -5" — shown when the dashboard has a
-   meaningful change since the visitor's last seen build. Populated
-   client-side (either by the demo controller via ?demo=… or by the
-   real last-visit comparison once that ships). The element is empty
-   and `hidden` until a delta is injected. */
 .stat-delta {
   position: absolute;
   top: 14px;
@@ -272,6 +265,13 @@ button {
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   color: var(--accent);
   cursor: help;
+}
+/* Restore [hidden]'s display:none — overridden by display:inline-flex above. */
+.stat-delta[hidden] {
+  display: none;
+}
+.card-new-ribbon[hidden] {
+  display: none;
 }
 .stat-delta.is-negative {
   background: color-mix(in srgb, var(--muted) 18%, transparent);
@@ -969,8 +969,6 @@ hr.section-divider {
   flex-direction: column;
   gap: 10px;
   overflow: hidden;
-  /* Anchor for the absolutely-positioned .card-new-ribbon (and any
-     future card-corner badges). */
   position: relative;
   /* Subtle persistent shadow so the cards feel grounded on the page, then
      lift on hover. */
@@ -979,9 +977,6 @@ hr.section-divider {
   transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
 }
 
-/* NEW ribbon — top-left corner badge marking projects that didn't
-   exist on the visitor's previous visit. Populated client-side; the
-   element is `hidden` by default. */
 .card-new-ribbon {
   position: absolute;
   top: 10px;

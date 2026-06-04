@@ -15,10 +15,6 @@ interface Props {
 const { value, label, sublabel, icon, info } = Astro.props;
 ---
 <div class="stat" data-stat-key={icon ?? ''}>
-  {/* Delta chip slot — empty + hidden by default. The demo controller
-      (?demo=…) or the real last-visit script will populate and unhide
-      it when there's a meaningful change since the visitor's prior
-      build. */}
   <span class="stat-delta" hidden></span>
   <div class="stat-value">{value}</div>
   <div class="stat-label">
