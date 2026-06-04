@@ -1,5 +1,50 @@
 {
   "version": 1,
   "_generated": "Auto-generated AppBrain cache (GetIntelligenceDataRequest + Play tier). Frozen removed apps — fetched once.",
-  "apps": {}
+  "apps": {
+    "net.wzmn.games.brokencalc": {
+      "packageName": "net.wzmn.games.brokencalc",
+      "title": "The Broken Calculator Game",
+      "url": "https://www.appbrain.com/app/net.wzmn.games.brokencalc",
+      "description": "Help \"Calci\" the calculator to solve math problems without his broken keys!",
+      "rating": 3.75,
+      "ratingCount": 65,
+      "ratingHistogram": [
+        15,
+        1,
+        5,
+        8,
+        36
+      ],
+      "installs": 10000,
+      "year": 2011,
+      "iconUrl": "https://lh3.googleusercontent.com/e9bognlbvbvYjahkAG42PLribd7T44Es054UMpfocV2UwZh6dONpoGT1E-X--tIjVxaWYoVEBtjzfhLA_tMtvpZr",
+      "positiveQuotes": [
+        "Great game\tIts a great way to work the brain. I'm using it to help my oldest with learning math."
+      ]
+    },
+    "net.wzmn.games.lightsprank": {
+      "packageName": "net.wzmn.games.lightsprank",
+      "title": "Lights Out Prank",
+      "url": "https://www.appbrain.com/app/net.wzmn.games.lightsprank",
+      "description": "Lights Out Prank detects when the lights go out and plays a scary sound.",
+      "rating": 2.12,
+      "ratingCount": 60,
+      "ratingHistogram": [
+        40,
+        3,
+        2,
+        0,
+        15
+      ],
+      "installs": 10000,
+      "year": 2010,
+      "iconUrl": "https://lh3.googleusercontent.com/fR5roD4zggv7h7-L0OoTUyma5Gp_TAuu4jIrqIibdd_CXDuZalqqjYdUBpXrgy4VqnXG9V1cy1zBtA7UtaehtA",
+      "positiveQuotes": [
+        "Scared myself by leaving it on. Lol. Calibrate before using!",
+        "Works perfectly on HTC Desire",
+        "Needs more good sounds,but this is a funny app"
+      ]
+    }
+  }
 }

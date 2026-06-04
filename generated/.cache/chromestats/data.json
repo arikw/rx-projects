@@ -1,5 +1,108 @@
 {
   "version": 1,
   "_generated": "Auto-generated chrome-stats.com cache. Fetched once per extension id; delete the file to refresh. PII (email, authorId) is intentionally omitted.",
-  "apps": {}
+  "apps": {
+    "jmjbmlfmmendpkpiggcfpjcpbbpedhha": {
+      "id": "jmjbmlfmmendpkpiggcfpjcpbbpedhha",
+      "url": "https://chrome-stats.com/d/jmjbmlfmmendpkpiggcfpjcpbbpedhha",
+      "name": "Popper Stopper Pro",
+      "description": "No more annoying popups and popunders. Period.",
+      "version": "1.1.4",
+      "userCount": 8000,
+      "rating": {
+        "value": 4.486725663716814,
+        "count": 113
+      },
+      "category": "productivity/workflow",
+      "itemCategory": "extension",
+      "supportedLanguages": [
+        "en"
+      ],
+      "smallBanner": "https://lh3.googleusercontent.com/-Lf2WPZwzOitUurPHbOlAb_B2sJD1t62VujfR5lZ5ZFbOryjVBqFhl56SjwP7WReWrfYnxuns8ByKQyMT1-iRS7jBg",
+      "marqueeBanner": "https://lh3.googleusercontent.com/S2tr-gualujIit55TQFipEQZc78gBqedQYZClrvf72MfSECcube6uMaNKAs5eTJ6YUYwUBXogIRSCeZOXUhI5glFCg",
+      "logo": "https://lh3.googleusercontent.com/f2SC0vCGC78-_hktgt8jcsv2UVGts9CYOEKdWaN8GKzguWScTwtq1ELWmUMcjBYis4sBX6Yk9jBvfqWMqb-AFPwfxA",
+      "size": 81838,
+      "creationDate": "2020-04-07",
+      "lastUpdate": "2021-02-11",
+      "riskImpact": 1,
+      "riskLikelihood": 1,
+      "permissions": [
+        {
+          "key": "permission-content-scripts",
+          "risk": 15
+        }
+      ],
+      "isDeleted": false
+    },
+    "gleiglfcmildnecmodgoeijleblhobjk": {
+      "id": "gleiglfcmildnecmodgoeijleblhobjk",
+      "url": "https://chrome-stats.com/d/gleiglfcmildnecmodgoeijleblhobjk",
+      "name": "WriteRight",
+      "description": "Detects the written language and sets the writing direction to RTL/LTR",
+      "version": "1.1",
+      "userCount": 1000,
+      "rating": {
+        "value": 4.6875,
+        "count": 16
+      },
+      "category": "productivity/workflow",
+      "itemCategory": "extension",
+      "supportedLanguages": [
+        "en"
+      ],
+      "smallBanner": "https://lh3.googleusercontent.com/nASzohPhNsirSWovqLeFYYLyx7rGgBtERIDKSOuG3ujEcCJ6wlyosbvTu4_rEEjMxhz2YHnGQrsPG4lfgOqq1spJvw",
+      "marqueeBanner": "https://lh3.googleusercontent.com/pLLJ9_cR_Ie8RM53tJr_12NyOoRwg7AwPdS4zKsYgrzO7DZdC9mcjlNr7NHE5amumMCUsWYQbuoTD1_HAh8Ye6vpCCA",
+      "logo": "https://lh3.googleusercontent.com/pl_X_v5glx6qNyeVKZTFnlFtCdbMaDjKwwtj0QKRN05HV6FY8Of1Gps7OFRm74tuOdm6iSO7lj2TS24gWO-odaqjiw",
+      "size": 18381,
+      "helpUrl": "https://github.com/arikw/write-right-extension/issues",
+      "creationDate": "2023-04-21",
+      "lastUpdate": "2023-04-29",
+      "isFeatured": true,
+      "riskImpact": 2,
+      "riskLikelihood": 0,
+      "permissions": [
+        {
+          "key": "permission-all-sites",
+          "risk": 25
+        },
+        {
+          "key": "permission-content-scripts",
+          "risk": 15
+        }
+      ],
+      "isDeleted": false,
+      "reviews": [
+        {
+          "rating": 5,
+          "body": "Awesome, works well for Jira comments",
+          "ts": "2025-04-22",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "جربت واجد اضافات هذي الوحيدة الي اتشغلت معي",
+          "ts": "2025-02-11",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "it works, ChatGPT forsed me to write Arabic from left to right, This was very annoying especially when you try to mix it with English words, This extension is a life saver.",
+          "ts": "2024-09-19",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "This extension is great, thank you very much to its creator",
+          "ts": "2024-01-03",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 4,
+          "body": "The WriteRight extension currently works only on Google.com. If you could add support for chat.bing.com, it would be more useful.",
+          "ts": "2023-04-30",
+          "source": "chrome-stats"
+        }
+      ]
+    }
+  }
 }

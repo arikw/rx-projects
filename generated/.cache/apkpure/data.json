@@ -1,5 +1,35 @@
 {
   "version": 1,
   "_generated": "Auto-generated APKPure cache. Removed apps have frozen stats — fetched once, never refetched.",
-  "apps": {}
+  "apps": {
+    "net.wzmn.games.brokencalc": {
+      "packageName": "net.wzmn.games.brokencalc",
+      "title": "The Broken Calculator Game",
+      "url": "https://apkpure.com/the-broken-calculator-game/net.wzmn.games.brokencalc",
+      "description": "Help \"Calci\" the calculator to solve math problems without his broken keys!",
+      "icon": "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMuYnJva2VuY2FsY19zY3JlZW5zaG90c18wXzIyYzg5YzZj/screen-0.jpg?fakeurl=1&amp;type=.jpg",
+      "year": 2016,
+      "screenshots": [
+        "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMuYnJva2VuY2FsY19zY3JlZW5zaG90c18wXzIyYzg5YzZj/screen-0.jpg?fakeurl=1&type=.jpg",
+        "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMuYnJva2VuY2FsY19zY3JlZW5zaG90c18xXzJjNmYyOWIw/screen-1.jpg?fakeurl=1&type=.jpg",
+        "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMuYnJva2VuY2FsY19zY3JlZW5zaG90c18yXzNlMTc0Y2E1/screen-2.jpg?fakeurl=1&type=.jpg",
+        "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMuYnJva2VuY2FsY19zY3JlZW5zaG90c18zX2Q0MzRiMjRj/screen-3.jpg?fakeurl=1&type=.jpg"
+      ],
+      "videos": [
+        "https://www.youtube.com/embed/w9882-wWfjA?ps=play&vq=large&rel=0&autohide=1&showinfo=0"
+      ]
+    },
+    "net.wzmn.games.lightsprank": {
+      "packageName": "net.wzmn.games.lightsprank",
+      "title": "Lights Out Prank",
+      "url": "https://apkpure.com/lights-out-prank/net.wzmn.games.lightsprank",
+      "description": "Lights Out Prank detects when the lights go out and plays a scary sound.",
+      "icon": "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMubGlnaHRzcHJhbmtfc2NyZWVuc2hvdHNfMF9hMzM4NWMwMQ/screen-0.jpg?fakeurl=1&amp;type=.jpg",
+      "year": 2016,
+      "screenshots": [
+        "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMubGlnaHRzcHJhbmtfc2NyZWVuc2hvdHNfMF9hMzM4NWMwMQ/screen-0.jpg?fakeurl=1&type=.jpg",
+        "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMubGlnaHRzcHJhbmtfc2NyZWVuc2hvdHNfMV9hNDUwYTQzYg/screen-1.jpg?fakeurl=1&type=.jpg"
+      ]
+    }
+  }
 }

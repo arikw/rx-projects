@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "_generated": "Auto-generated media URL map. Original upstream URL → local served path. Maintained by src/lib/media-cache.ts. Delete the file to refetch.",
+  "map": {
+    "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMuYnJva2VuY2FsY19zY3JlZW5zaG90c18wXzIyYzg5YzZj/screen-0.jpg?fakeurl=1&amp;type=.jpg": "_cache/apkpure/40505230e56dc9a3.jpg",
+    "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMuYnJva2VuY2FsY19zY3JlZW5zaG90c18wXzIyYzg5YzZj/screen-0.jpg?fakeurl=1&type=.jpg": "_cache/apkpure/7ed24023eac43427.jpg",
+    "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMuYnJva2VuY2FsY19zY3JlZW5zaG90c18xXzJjNmYyOWIw/screen-1.jpg?fakeurl=1&type=.jpg": "_cache/apkpure/4796f6c3b050dc28.jpg",
+    "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMuYnJva2VuY2FsY19zY3JlZW5zaG90c18yXzNlMTc0Y2E1/screen-2.jpg?fakeurl=1&type=.jpg": "_cache/apkpure/12824cf708776201.jpg",
+    "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMuYnJva2VuY2FsY19zY3JlZW5zaG90c18zX2Q0MzRiMjRj/screen-3.jpg?fakeurl=1&type=.jpg": "_cache/apkpure/c737ccbe7ed1569a.jpg",
+    "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMubGlnaHRzcHJhbmtfc2NyZWVuc2hvdHNfMF9hMzM4NWMwMQ/screen-0.jpg?fakeurl=1&amp;type=.jpg": "_cache/apkpure/ac69e62f4dafd94f.jpg",
+    "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMubGlnaHRzcHJhbmtfc2NyZWVuc2hvdHNfMF9hMzM4NWMwMQ/screen-0.jpg?fakeurl=1&type=.jpg": "_cache/apkpure/cc51e0743cd7de76.jpg",
+    "https://image-eo.winudf.com/v2/image/bmV0Lnd6bW4uZ2FtZXMubGlnaHRzcHJhbmtfc2NyZWVuc2hvdHNfMV9hNDUwYTQzYg/screen-1.jpg?fakeurl=1&type=.jpg": "_cache/apkpure/8cf762e9bf84d228.jpg"
+  }
+}

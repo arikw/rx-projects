@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "_generated": "Auto-generated media URL map. Original upstream URL → local served path. Maintained by src/lib/media-cache.ts. Delete the file to refetch.",
+  "map": {
+    "https://lh3.googleusercontent.com/S2tr-gualujIit55TQFipEQZc78gBqedQYZClrvf72MfSECcube6uMaNKAs5eTJ6YUYwUBXogIRSCeZOXUhI5glFCg": "_cache/chromestats/d659674688bae69a.png",
+    "https://lh3.googleusercontent.com/f2SC0vCGC78-_hktgt8jcsv2UVGts9CYOEKdWaN8GKzguWScTwtq1ELWmUMcjBYis4sBX6Yk9jBvfqWMqb-AFPwfxA": "_cache/chromestats/31775b9c5e2c9d3f.png",
+    "https://lh3.googleusercontent.com/pLLJ9_cR_Ie8RM53tJr_12NyOoRwg7AwPdS4zKsYgrzO7DZdC9mcjlNr7NHE5amumMCUsWYQbuoTD1_HAh8Ye6vpCCA": "_cache/chromestats/28ea679f4c2fc0b3.png",
+    "https://lh3.googleusercontent.com/pl_X_v5glx6qNyeVKZTFnlFtCdbMaDjKwwtj0QKRN05HV6FY8Of1Gps7OFRm74tuOdm6iSO7lj2TS24gWO-odaqjiw": "_cache/chromestats/ff0978f74bdd975c.png"
+  }
+}
