@@ -20,6 +20,7 @@ const config: ProjectsConfig = {
     siteDescription: "RX (Arik's) Projects — My dev projects, packages, and tooling",
     siteTagline: "Things I've built — with the live numbers",
     siteAbout: `Most things here started as a tool I needed but couldn't find. A few started as a tool that almost existed but had a sharp edge worth filing down. The dashboard pulls live numbers on each one from the public web at build time — open-source repos, packages, extensions, mobile games — so the stats above stay honest. Code's open; if something here scratches an itch you have too, feedback's welcome.`,
+    defaultLanguage: 'en',
   },
   user: {
     ...baseConfig.user,

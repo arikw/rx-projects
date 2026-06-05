@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "_generated": "Auto-generated extpose.com cache. Fetched once per extension id; delete the file to refresh.",
+  "apps": {
+    "fimgfedafeadlieiabdeeaodndnlbhid": {
+      "id": "fimgfedafeadlieiabdeeaodndnlbhid",
+      "url": "https://extpose.com/ext/fimgfedafeadlieiabdeeaodndnlbhid",
+      "name": "Extensions Reloader",
+      "description": "Reload all unpacked extensions using the extension's toolbar button or by browsing to \"http://reload.extensions\"",
+      "userCount": 20000,
+      "rating": {
+        "value": 4.36,
+        "count": 140
+      },
+      "version": "2.0",
+      "lastUpdate": "2025-03-10",
+      "isDeleted": false
+    },
+    "jmjbmlfmmendpkpiggcfpjcpbbpedhha": {
+      "id": "jmjbmlfmmendpkpiggcfpjcpbbpedhha",
+      "url": "https://extpose.com/ext/jmjbmlfmmendpkpiggcfpjcpbbpedhha",
+      "name": "Popper Stopper Pro",
+      "description": "No more annoying popups and popunders. Period.",
+      "userCount": 8000,
+      "rating": {
+        "value": 4.49,
+        "count": 113
+      },
+      "version": "1.1.4",
+      "lastUpdate": "2021-02-11",
+      "isDeleted": false
+    },
+    "agpmfmfpldoabkmhjanenelnnplfcidm": {
+      "id": "agpmfmfpldoabkmhjanenelnnplfcidm",
+      "url": "https://extpose.com/ext/agpmfmfpldoabkmhjanenelnnplfcidm",
+      "name": "Fullscreen Magic",
+      "description": "Automagically finds a video, game, frame, or other embedded content in a webpage and makes it full screen with a single click",
+      "userCount": 1000,
+      "rating": {
+        "value": 5,
+        "count": 7
+      },
+      "version": "1.0.0",
+      "lastUpdate": "2023-04-22",
+      "isDeleted": false
+    },
+    "gleiglfcmildnecmodgoeijleblhobjk": {
+      "id": "gleiglfcmildnecmodgoeijleblhobjk",
+      "url": "https://extpose.com/ext/gleiglfcmildnecmodgoeijleblhobjk",
+      "name": "WriteRight",
+      "description": "Detects the written language and sets the writing direction to RTL/LTR",
+      "userCount": 1000,
+      "rating": {
+        "value": 4.69,
+        "count": 16
+      },
+      "version": "1.1",
+      "lastUpdate": "2023-04-29",
+      "isDeleted": false
+    },
+    "jdmiahadpnljimfcnfaebjggbfkjkgan": {
+      "id": "jdmiahadpnljimfcnfaebjggbfkjkgan",
+      "url": "https://extpose.com/ext/jdmiahadpnljimfcnfaebjggbfkjkgan",
+      "name": "Feed Cleaner",
+      "description": "Clean your social network news feed from suggested posts and ads",
+      "userCount": 68,
+      "rating": {
+        "value": 5,
+        "count": 2
+      },
+      "version": "1.0.1",
+      "lastUpdate": "2017-05-08",
+      "isDeleted": true
+    },
+    "mcdpnidfhfjfbafmpppcplcejgepadbo": {
+      "id": "mcdpnidfhfjfbafmpppcplcejgepadbo",
+      "url": "https://extpose.com/ext/mcdpnidfhfjfbafmpppcplcejgepadbo",
+      "name": "Auto Replay for YouTube™",
+      "description": "Enables automatic replay of a YouTube™ video or a part of it...",
+      "userCount": 20000,
+      "rating": {
+        "value": 4,
+        "count": 429
+      },
+      "version": "3.4",
+      "lastUpdate": "2018-01-31",
+      "isDeleted": true
+    }
+  }
+}
