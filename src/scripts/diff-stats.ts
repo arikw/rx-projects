@@ -191,9 +191,14 @@ function injectDeltas(base: DashboardState, current: DashboardState, diffBaseSet
     if (baseIds.has(id)) continue;
     newIds.add(id);
     newProjectNames.push(titleFor(id));
-    const card = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
-    const ribbon = card?.querySelector<HTMLElement>('.card-new-ribbon');
+    const card = document.querySelector<HTMLElement>(`.card[data-id="${CSS.escape(id)}"]`);
+    if (!card) continue;
+    const ribbon = card.querySelector<HTMLElement>('.card-new-ribbon');
     if (ribbon) ribbon.removeAttribute('hidden');
+    // A new project IS a change since last visit — fold it into the
+    // Updated status filter pool so a user filtering by "Updated"
+    // sees the NEW projects alongside the ones with stat moves.
+    card.dataset.updated = '1';
   }
   const removedProjectNames: string[] = [];
   for (const id of baseIds) {
