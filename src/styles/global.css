@@ -375,6 +375,38 @@ body.changes-hidden .visit-summary {
 .card-new-ribbon[hidden] {
   display: none;
 }
+/* Per-card "updated" chip — same slot as the NEW ribbon (mutually
+   exclusive: a brand-new project doesn't need an "updated" chip). Sits
+   on top of the thumbnail's top-right corner, mirroring the layout of
+   the hero stat-delta pill. */
+.card-updated-chip {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-feature-settings: 'tnum';
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: var(--delta-positive-bg);
+  color: var(--delta-positive);
+  cursor: help;
+}
+.card-updated-chip.is-negative {
+  background: color-mix(in srgb, var(--muted) 18%, transparent);
+  color: var(--muted);
+}
+.card-updated-chip[hidden] {
+  display: none;
+}
+body.changes-hidden .card-updated-chip {
+  display: none !important;
+}
 .stat-delta-arrow {
   font-size: 0.85em;
 }
@@ -395,6 +427,7 @@ body.changes-hidden .visit-summary {
   margin: 0 0 16px;
   font-size: 0.85rem;
   color: var(--muted);
+  cursor: default;
 }
 .visit-summary[hidden] {
   display: none;
@@ -402,14 +435,21 @@ body.changes-hidden .visit-summary {
 .visit-summary-new {
   color: var(--delta-positive);
   font-weight: 600;
+  cursor: help;
 }
 .visit-summary-removed {
   color: var(--muted);
   font-weight: 600;
+  cursor: help;
 }
 .visit-summary-sep {
   margin: 0 8px;
   opacity: 0.5;
+}
+/* Non-link source / homepage chips on the card still default to arrow.
+   The <a> variant gets its native pointer back. */
+span.card-source {
+  cursor: default;
 }
 @media (prefers-reduced-motion: no-preference) {
   .stat-delta {
@@ -1496,8 +1536,12 @@ a.card-source:hover {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  cursor: pointer;
+  /* Default arrow — only <a> chips that lead somewhere swap to pointer. */
+  cursor: default;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+a.filter-chip {
+  cursor: pointer;
 }
 .filter-chip[hidden] {
   /* Plain [hidden] is normally `display: none`, but `.filter-chip`'s

@@ -80,6 +80,7 @@ export const fetchChromestatsProjects = async (
         asOf: a.lastUpdate,
         title: a.name,
         description: a.description,
+        retired: a.isDeleted,
         firstReleased: a.creationDate ? new Date(a.creationDate).getUTCFullYear() : undefined,
         tags: [
           'chrome-extension',

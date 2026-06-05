@@ -80,6 +80,57 @@ function saveStored(state: StoredState): void {
   }
 }
 
+const CARD_STAT_MAP: Array<{ key: keyof ProjectStats; label: string }> = [
+  { key: 'stars', label: 'Stars' },
+  { key: 'downloads', label: 'Downloads' },
+  { key: 'downloadsMonthly', label: 'Monthly downloads' },
+  { key: 'installs', label: 'Installs' },
+  { key: 'users', label: 'Users' },
+];
+
+function formatCompact(n: number): string {
+  if (Math.abs(n) >= 1000) {
+    const k = n / 1000;
+    return `${k.toFixed(Math.abs(k) < 10 ? 1 : 0).replace(/\.0$/, '')}k`;
+  }
+  return String(n);
+}
+
+/** Find each card whose stats moved since `base`, decide a single
+ *  headline metric (the largest absolute delta), and render an "updated"
+ *  chip into the card's slot. The chip's hover tooltip lists every
+ *  metric that moved. Skips cards that are themselves newly added,
+ *  since the NEW ribbon already conveys the change. */
+function injectCardUpdates(base: DashboardState, current: DashboardState, newIds: Set<string>): void {
+  for (const [id, currStats] of Object.entries(current.projects)) {
+    if (newIds.has(id)) continue;
+    const baseStats = base.projects[id];
+    if (!baseStats) continue;
+    const deltas: Array<{ key: keyof ProjectStats; label: string; value: number }> = [];
+    for (const { key, label } of CARD_STAT_MAP) {
+      const delta = (currStats[key] ?? 0) - (baseStats[key] ?? 0);
+      if (delta !== 0) deltas.push({ key, label, value: delta });
+    }
+    if (!deltas.length) continue;
+    const headline = deltas.reduce((best, d) =>
+      Math.abs(d.value) > Math.abs(best.value) ? d : best,
+    );
+    const card = document.querySelector<HTMLElement>(`.card[data-id="${CSS.escape(id)}"]`);
+    const slot = card?.querySelector<HTMLElement>('.card-updated-chip');
+    if (!slot) continue;
+    const direction: 'up' | 'down' = headline.value > 0 ? 'up' : 'down';
+    const arrow = direction === 'up' ? '▲' : '▼';
+    const sign = direction === 'up' ? '+' : '−';
+    slot.classList.toggle('is-negative', direction === 'down');
+    slot.innerHTML = `<span class="stat-delta-arrow" aria-hidden="true">${arrow}</span>${sign}${formatCompact(Math.abs(headline.value))}`;
+    const tooltip = deltas
+      .map((d) => `${d.label} ${d.value > 0 ? '+' : '−'}${formatCompact(Math.abs(d.value))}`)
+      .join(' · ');
+    slot.dataset.tooltip = tooltip;
+    slot.removeAttribute('hidden');
+  }
+}
+
 const HERO_MAP = [
   { key: 'starsAndLikes',     stat: 'star',     label: 'stars & likes' },
   { key: 'downloadsAndPulls', stat: 'download', label: 'downloads' },
@@ -130,8 +181,10 @@ function injectDeltas(base: DashboardState, current: DashboardState, diffBaseSet
   const titleFor = (id: string): string =>
     current.projectTitles?.[id] ?? base.projectTitles?.[id] ?? id;
   const newProjectNames: string[] = [];
+  const newIds = new Set<string>();
   for (const id of currentIds) {
     if (baseIds.has(id)) continue;
+    newIds.add(id);
     newProjectNames.push(titleFor(id));
     const card = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
     const ribbon = card?.querySelector<HTMLElement>('.card-new-ribbon');
@@ -141,6 +194,7 @@ function injectDeltas(base: DashboardState, current: DashboardState, diffBaseSet
   for (const id of baseIds) {
     if (!currentIds.has(id)) removedProjectNames.push(titleFor(id));
   }
+  injectCardUpdates(base, current, newIds);
   if (newProjectNames.length > 0 || removedProjectNames.length > 0) {
     populateVisitSummary({
       newProjectCount: newProjectNames.length,
