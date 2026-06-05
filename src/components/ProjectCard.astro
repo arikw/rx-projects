@@ -115,6 +115,7 @@ const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
   data-popularity={popularity}
   data-featured-score={featured}
   data-featured-rank={featuredRank ?? ''}
+  data-status={p.retired ? 'retired' : 'live'}
 >
   <span class="card-new-ribbon" hidden>NEW</span>
   <ProjectThumb project={p} />

@@ -7,6 +7,7 @@ export type ProjectSource =
   | 'appbrain'
   | 'apkpure'
   | 'chromestats'
+  | 'extpose'
   | 'playstore'
   | 'stackoverflow'
   | 'manual';
