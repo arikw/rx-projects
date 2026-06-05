@@ -2,6 +2,7 @@ import type { Connector } from '../types';
 import type { ConnectorResult, ProjectKind } from '../../types/project';
 import { defineConnector, type UrlIdExtractor } from '../_define';
 import { loadFixture } from '../../lib/fixtures';
+import { detectContentLanguage } from '../../lib/content-language';
 
 export const urlExtractors: UrlIdExtractor[] = [
   {
@@ -92,6 +93,7 @@ async function scrapeOne(pkg: string): Promise<ConnectorResult | null> {
       tags: ['android', ...(category ? [category.toLowerCase().replace(/_/g, '-')] : [])],
       kind: 'mobile' as ProjectKind,
       openSource: false,
+      contentLanguage: detectContentLanguage(title) ?? undefined,
       // Play Store's og:image is the 512×512 app icon, not a banner.
       icon: image,
       stats: {

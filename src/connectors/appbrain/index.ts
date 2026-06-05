@@ -6,6 +6,7 @@ import type { ConnectorFetchOpts, ConnectorOutput } from '../_define';
 import { defineConnector } from '../_define';
 import { loadFixture } from '../../lib/fixtures';
 import { readJsonCache, writeJsonCache } from '../../lib/json-cache';
+import { detectContentLanguage } from '../../lib/content-language';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const run = promisify(execFile);
@@ -211,6 +212,7 @@ export const fetchAppbrainProjects = async (
         title: a.title,
         description: a.description ?? '',
         firstReleased: a.year,
+        contentLanguage: detectContentLanguage(a.title) ?? undefined,
         tags: ['android'],
         kind: 'mobile',
         // AppBrain's iconUrl is the Google-hosted square app icon.

@@ -160,10 +160,12 @@ function activate(): void {
 
   const cards = Array.from(document.querySelectorAll<HTMLElement>('.card'));
   // Step 1 — mark the first N cards as "NEW" so they look like newly
-  // added projects in the demo.
+  // added projects in the demo. NEW cards count as updated too so the
+  // status filter's "Updated" chip surfaces them.
   for (let i = 0; i < Math.min(scenario.newProjectCount, cards.length); i++) {
     const ribbon = cards[i].querySelector<HTMLElement>('.card-new-ribbon');
     if (ribbon) ribbon.removeAttribute('hidden');
+    cards[i].dataset.updated = '1';
   }
   // Step 2 — apply per-card update chips to the NEXT cards, skipping
   // any that already display the NEW ribbon (the two are mutually
