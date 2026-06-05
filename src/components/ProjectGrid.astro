@@ -87,6 +87,17 @@ const languageChips = hasNonDefaultLanguage
     ]
   : [];
 const defaultLanguage = config.meta.defaultLanguage ?? '';
+
+// Status filter — only renders when at least one retired project exists.
+const liveCount = projects.filter((p) => !p.retired).length;
+const retiredCount = projects.length - liveCount;
+const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
+  retiredCount > 0
+    ? [
+        { key: 'live', label: 'Live', count: liveCount },
+        { key: 'retired', label: 'Retired', count: retiredCount },
+      ]
+    : [];
 ---
 <section
   class="projects"
@@ -117,6 +128,7 @@ const defaultLanguage = config.meta.defaultLanguage ?? '';
     primaryTags={primaryTags}
     overflowTags={overflowTags}
     languages={languageChips}
+    statuses={statusChips}
   />
 
   <div class="projects-grid">
@@ -167,6 +179,7 @@ const defaultLanguage = config.meta.defaultLanguage ?? '';
     const sortChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-sort]'));
     const tagChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-tag]'));
     const languageChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-language]'));
+    const statusChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-status]'));
     const tagToggle = root.querySelector<HTMLButtonElement>('[data-tag-toggle]');
     const totalCountEl = root.querySelector<HTMLElement>('[data-tag-count-total]');
     const resetButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-reset]'));
@@ -177,10 +190,12 @@ const defaultLanguage = config.meta.defaultLanguage ?? '';
     const defaultLanguage = root.dataset.defaultLanguage ?? '';
 
     type Sort = 'featured' | 'popularity' | 'year';
+    type Status = '' | 'live' | 'retired';
     let activeSource = '';
     let activeSort: Sort = 'featured';
     let activeTag = '';
     let activeLanguage = defaultLanguage;
+    let activeStatus: Status = '';
     let shown = pageSize;
     let overflowExpanded = false;
 
@@ -203,6 +218,8 @@ const defaultLanguage = config.meta.defaultLanguage ?? '';
     const matchesLanguage = (c: HTMLElement) =>
       !activeLanguage ||
       (c.dataset.contentLanguage || 'en') === activeLanguage;
+    const matchesStatus = (c: HTMLElement) =>
+      !activeStatus || (c.dataset.status ?? 'live') === activeStatus;
 
     /** Recompute the tag chip counts to reflect the active source filter. Tags
      *  that don't appear under the current source get hidden; the "+N more"
@@ -271,7 +288,9 @@ const defaultLanguage = config.meta.defaultLanguage ?? '';
     }
 
     function applyFilter() {
-      const matching = cards.filter((c) => matchesSource(c) && matchesTag(c) && matchesLanguage(c));
+      const matching = cards.filter(
+        (c) => matchesSource(c) && matchesTag(c) && matchesLanguage(c) && matchesStatus(c),
+      );
 
       const sorted = matching.slice().sort((a, b) => {
         if (activeSort === 'year') return yearOf(b) - yearOf(a);
@@ -334,7 +353,8 @@ const defaultLanguage = config.meta.defaultLanguage ?? '';
         !activeSource &&
         activeSort === 'featured' &&
         !activeTag &&
-        activeLanguage === defaultLanguage
+        activeLanguage === defaultLanguage &&
+        !activeStatus
       );
     }
 
@@ -361,6 +381,7 @@ const defaultLanguage = config.meta.defaultLanguage ?? '';
       activeSort = 'featured';
       activeTag = '';
       activeLanguage = defaultLanguage;
+      activeStatus = '';
       shown = pageSize;
       sourceChips.forEach((c) => {
         c.setAttribute('aria-pressed', String(!c.dataset.filterSource));
@@ -373,6 +394,9 @@ const defaultLanguage = config.meta.defaultLanguage ?? '';
       });
       languageChips.forEach((c) => {
         c.setAttribute('aria-pressed', String((c.dataset.filterLanguage ?? '') === activeLanguage));
+      });
+      statusChips.forEach((c) => {
+        c.setAttribute('aria-pressed', String((c.dataset.filterStatus ?? '') === activeStatus));
       });
       refreshTagCounts();
       writeHash();
@@ -436,6 +460,16 @@ const defaultLanguage = config.meta.defaultLanguage ?? '';
       applyFilter();
     }
 
+    function setStatus(status: Status) {
+      activeStatus = status;
+      shown = pageSize;
+      statusChips.forEach((c) => {
+        c.setAttribute('aria-pressed', String((c.dataset.filterStatus ?? '') === status));
+      });
+      writeHash();
+      applyFilter();
+    }
+
     // Click handlers toggle: pressing an already-active chip resets
     // that axis to its default (the implicit "All" / "Featured"
     // value) so the user doesn't have to hunt for the default chip
@@ -464,6 +498,12 @@ const defaultLanguage = config.meta.defaultLanguage ?? '';
         // Toggle: click an already-active chip → revert to the
         // configured default. Click a different chip → switch to it.
         setLanguage(val === activeLanguage ? defaultLanguage : val);
+      });
+    });
+    statusChips.forEach((c) => {
+      c.addEventListener('click', () => {
+        const val = (c.dataset.filterStatus ?? '') as Status;
+        setStatus(val === activeStatus ? '' : val);
       });
     });
 
@@ -521,6 +561,7 @@ const defaultLanguage = config.meta.defaultLanguage ?? '';
       if (activeLanguage !== defaultLanguage) {
         params.set('lang', activeLanguage === '' ? 'all' : activeLanguage);
       }
+      if (activeStatus) params.set('status', activeStatus);
       if (shown >= cards.length && cards.length > pageSize) params.set('show-all', '1');
       if (overflowExpanded) params.set('tags-expanded', '1');
       const s = params.toString();
@@ -554,6 +595,13 @@ const defaultLanguage = config.meta.defaultLanguage ?? '';
     }
     languageChips.forEach((c) => {
       c.setAttribute('aria-pressed', String((c.dataset.filterLanguage ?? '') === activeLanguage));
+    });
+    if (initial.status === 'live' || initial.status === 'retired') {
+      const chip = statusChips.find((c) => c.dataset.filterStatus === initial.status);
+      if (chip) activeStatus = initial.status as Status;
+    }
+    statusChips.forEach((c) => {
+      c.setAttribute('aria-pressed', String((c.dataset.filterStatus ?? '') === activeStatus));
     });
     if (initial['tags-expanded'] === '1' && tagToggle) {
       overflowExpanded = true;

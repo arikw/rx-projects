@@ -13,6 +13,11 @@ interface LanguageEntry {
   label: string;
   count: number;
 }
+interface StatusEntry {
+  key: 'live' | 'retired';
+  label: string;
+  count: number;
+}
 interface Props {
   totalCount: number;
   sources: SourceEntry[];
@@ -22,11 +27,15 @@ interface Props {
    *  populates it only when at least one non-default-language project
    *  exists; otherwise the row is hidden entirely. */
   languages?: LanguageEntry[];
+  /** Renders a Status filter row when this is non-empty. The caller
+   *  populates it only when at least one retired project exists. */
+  statuses?: StatusEntry[];
 }
-const { totalCount, sources, primaryTags, overflowTags, languages = [] } = Astro.props;
+const { totalCount, sources, primaryTags, overflowTags, languages = [], statuses = [] } = Astro.props;
 const hasOverflow = overflowTags.length > 0;
 const hasTags = primaryTags.length > 0 || hasOverflow;
 const hasLanguages = languages.length > 0;
+const hasStatuses = statuses.length > 0;
 ---
 <div class="filter-bar" role="group" aria-label="Filter and sort projects">
   <div class="filter-row" aria-label="Filter by source">
@@ -118,6 +127,31 @@ const hasLanguages = languages.length > 0;
             type="button"
             class="filter-chip"
             data-filter-language={key}
+            aria-pressed="false"
+          >
+            {label} <span class="filter-count">{count}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )}
+  {hasStatuses && (
+    <div class="filter-row filter-row--status" aria-label="Filter by status">
+      <span class="filter-label">Status</span>
+      <div class="filter-chips">
+        <button
+          type="button"
+          class="filter-chip"
+          data-filter-status=""
+          aria-pressed="true"
+        >
+          All <span class="filter-count">{totalCount}</span>
+        </button>
+        {statuses.map(({ key, label, count }) => (
+          <button
+            type="button"
+            class="filter-chip"
+            data-filter-status={key}
             aria-pressed="false"
           >
             {label} <span class="filter-count">{count}</span>
