@@ -4,8 +4,6 @@ import type { Review } from '../../types/project';
 
 const run = promisify(execFile);
 
-const UA = 'Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0';
-
 // What we whitelist from the chrome-stats SSR data. We deliberately DROP
 // developer email and authorId (PII) per the project's anonymity rules.
 export type ChromeStatsApp = {
@@ -52,31 +50,48 @@ export type ChromeStatsApp = {
   videos?: string[];
 };
 
-// chrome-stats sits behind Cloudflare. Plain curl's TLS handshake is now
-// fingerprinted and 403'd regardless of UA — Cloudflare gates by JA3/JA4,
-// not Mozilla string. Set CURL_IMPERSONATE_BIN to a curl-impersonate
-// browser-impersonating binary (e.g. /path/to/curl_chrome136) and the
-// scraper uses it instead; otherwise falls back to the vanilla curl call
-// the previously-cached scrapes still came through. Keeps cloners with
-// no special setup working in cache+commit mode, while the maintainer's
-// local seed can refresh the cache with a single env-var.
+// chrome-stats sits behind Cloudflare, which gates by TLS fingerprint
+// (JA3/JA4), not User-Agent. A vanilla curl call with a plausible UA
+// gets a 403 "Just a moment..." challenge no matter how realistic the
+// headers look. Forcing curl's TLS ClientHello to mirror Chrome 136
+// (cipher order, TLS 1.3 ciphers, supported curves, HTTP/2, compressed
+// response) is what actually passes the fingerprint check.
+//
+// CURL_IMPERSONATE_BIN remains as a documented escape hatch when even
+// these flags ever stop being enough — point it at a curl-impersonate
+// browser-mimicking binary and the scraper shells out to that instead.
+const CHROME_UA =
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
+const CHROME_TLS_FLAGS = [
+  '--compressed',
+  '--tlsv1.3',
+  '--http2',
+  '--tls13-ciphers',
+  'TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256',
+  '--ciphers',
+  'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384',
+  '--curves',
+  'X25519:secp256r1:secp384r1',
+];
+const CHROME_HEADERS = [
+  '-A', CHROME_UA,
+  '-H', 'sec-ch-ua: "Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"',
+  '-H', 'sec-ch-ua-mobile: ?0',
+  '-H', 'sec-ch-ua-platform: "Linux"',
+  '-H', 'sec-fetch-dest: document',
+  '-H', 'sec-fetch-mode: navigate',
+  '-H', 'sec-fetch-site: none',
+  '-H', 'sec-fetch-user: ?1',
+  '-H', 'upgrade-insecure-requests: 1',
+  '-H', 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  '-H', 'Accept-Language: en-US,en;q=0.9',
+];
 const IMPERSONATE_BIN = process.env.CURL_IMPERSONATE_BIN;
 async function fetchHtml(url: string): Promise<string | null> {
   try {
     const args = IMPERSONATE_BIN
       ? ['-sL', '--max-time', '25', url]
-      : [
-          '-sL',
-          '--max-time',
-          '25',
-          '-A',
-          UA,
-          '-H',
-          'Accept-Language: en-US,en;q=0.9',
-          '-H',
-          'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          url,
-        ];
+      : ['-sL', '--max-time', '25', ...CHROME_TLS_FLAGS, ...CHROME_HEADERS, url];
     const { stdout } = await run(IMPERSONATE_BIN ?? 'curl', args, {
       maxBuffer: 16 * 1024 * 1024,
     });
