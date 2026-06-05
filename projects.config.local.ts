@@ -73,10 +73,12 @@ const config: ProjectsConfig = {
     'google-play:net.wzmn.games.brokencalc': {
       asOf: '2018-07-16',
       stats: { installs: { value: 11185, exact: true } },
+      retired: true,
     },
     'google-play:net.wzmn.games.lightsprank': {
       asOf: '2018-07-16',
       stats: { installs: { value: 16522, exact: true } },
+      retired: true,
     },
     // Authoritative first-release years from the Chrome Web Store Developer
     // dashboard — chrome-stats's `creationDate` is when it indexed the
