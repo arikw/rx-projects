@@ -4,6 +4,7 @@ function countChanges(): number {
   let n = 0;
   n += document.querySelectorAll('.stat-delta:not([hidden])').length;
   n += document.querySelectorAll('.card-new-ribbon:not([hidden])').length;
+  n += document.querySelectorAll('.card-updated-chip:not([hidden])').length;
   return n;
 }
 

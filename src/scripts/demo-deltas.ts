@@ -1,11 +1,25 @@
 import { injectDelta, populateVisitSummary, readHashParam, type DeltaInfo } from './delta-injection';
 
+type CardUpdate = {
+  /** Headline number rendered inside the chip. */
+  headline: { value: number; direction: 'up' | 'down' };
+  /** Full breakdown rendered into the hover tooltip. */
+  breakdown: Array<{ label: string; value: number }>;
+};
+
 type Scenario = {
   relativeTime: string;
   heroDeltas: Record<'star' | 'download' | 'users' | 'projects', DeltaInfo & { direction: 'up' | 'down' | 'none' }>;
   profileDeltas: Record<string, Record<string, DeltaInfo & { direction: 'up' | 'down' | 'none' }>>;
   newProjectCount: number;
   removedProjectCount: number;
+  /** Names rendered into the visit-summary hover tooltip. Demo fakes a
+   *  representative list — production data flows through diff-stats. */
+  newProjectNames: string[];
+  removedProjectNames: string[];
+  /** Sample per-card updated chips — applied to the first N visible
+   *  cards (skipping any that already show the NEW ribbon). */
+  cardUpdates: CardUpdate[];
 };
 
 const SCENARIOS: Record<string, Scenario> = {
@@ -30,6 +44,22 @@ const SCENARIOS: Record<string, Scenario> = {
     },
     newProjectCount: 2,
     removedProjectCount: 0,
+    newProjectNames: ['Sketch2Go', 'Fit2Go'],
+    removedProjectNames: [],
+    cardUpdates: [
+      {
+        headline: { value: 1240, direction: 'up' },
+        breakdown: [{ label: 'Downloads', value: 1240 }, { label: 'Stars', value: 4 }],
+      },
+      {
+        headline: { value: 8, direction: 'up' },
+        breakdown: [{ label: 'Users', value: 8 }, { label: 'Stars', value: 2 }],
+      },
+      {
+        headline: { value: 2, direction: 'up' },
+        breakdown: [{ label: 'Stars', value: 2 }],
+      },
+    ],
   },
   mixed: {
     relativeTime: 'since 12 days ago',
@@ -51,6 +81,18 @@ const SCENARIOS: Record<string, Scenario> = {
     },
     newProjectCount: 1,
     removedProjectCount: 3,
+    newProjectNames: ['Graph2Go'],
+    removedProjectNames: ['Old CLI', 'Throwaway Test', 'Legacy Bot'],
+    cardUpdates: [
+      {
+        headline: { value: 230, direction: 'up' },
+        breakdown: [{ label: 'Downloads', value: 230 }],
+      },
+      {
+        headline: { value: 12, direction: 'down' },
+        breakdown: [{ label: 'Users', value: -12 }, { label: 'Stars', value: 1 }],
+      },
+    ],
   },
   quiet: {
     relativeTime: '',
@@ -63,8 +105,34 @@ const SCENARIOS: Record<string, Scenario> = {
     profileDeltas: {},
     newProjectCount: 0,
     removedProjectCount: 0,
+    newProjectNames: [],
+    removedProjectNames: [],
+    cardUpdates: [],
   },
 };
+
+function formatCompact(n: number): string {
+  if (Math.abs(n) >= 1000) {
+    const k = n / 1000;
+    return `${k.toFixed(Math.abs(k) < 10 ? 1 : 0).replace(/\.0$/, '')}k`;
+  }
+  return String(n);
+}
+
+function injectCardUpdateDemo(card: HTMLElement, update: CardUpdate): void {
+  const slot = card.querySelector<HTMLElement>('.card-updated-chip');
+  if (!slot) return;
+  const { direction, value } = update.headline;
+  const arrow = direction === 'up' ? '▲' : '▼';
+  const sign = direction === 'up' ? '+' : '−';
+  slot.classList.toggle('is-negative', direction === 'down');
+  slot.innerHTML = `<span class="stat-delta-arrow" aria-hidden="true">${arrow}</span>${sign}${formatCompact(value)}`;
+  const tooltip = update.breakdown
+    .map((d) => `${d.label} ${d.value >= 0 ? '+' : '−'}${formatCompact(Math.abs(d.value))}`)
+    .join(' · ');
+  slot.dataset.tooltip = tooltip;
+  slot.removeAttribute('hidden');
+}
 
 function activate(): void {
   const name = readHashParam('stats-demo');
@@ -89,18 +157,28 @@ function activate(): void {
     }
   }
 
-  if (scenario.newProjectCount > 0) {
-    const cards = document.querySelectorAll<HTMLElement>('.card');
-    for (let i = 0; i < Math.min(scenario.newProjectCount, cards.length); i++) {
-      const ribbon = cards[i].querySelector<HTMLElement>('.card-new-ribbon');
-      if (ribbon) ribbon.removeAttribute('hidden');
-    }
+  const cards = Array.from(document.querySelectorAll<HTMLElement>('.card'));
+  // Step 1 — mark the first N cards as "NEW" so they look like newly
+  // added projects in the demo.
+  for (let i = 0; i < Math.min(scenario.newProjectCount, cards.length); i++) {
+    const ribbon = cards[i].querySelector<HTMLElement>('.card-new-ribbon');
+    if (ribbon) ribbon.removeAttribute('hidden');
+  }
+  // Step 2 — apply per-card update chips to the NEXT cards, skipping
+  // any that already display the NEW ribbon (the two are mutually
+  // exclusive: a NEW card doesn't also need an "updated" chip).
+  let updateIdx = 0;
+  for (let i = scenario.newProjectCount; i < cards.length && updateIdx < scenario.cardUpdates.length; i++) {
+    injectCardUpdateDemo(cards[i], scenario.cardUpdates[updateIdx]);
+    updateIdx++;
   }
 
   populateVisitSummary({
     newProjectCount: scenario.newProjectCount,
     removedProjectCount: scenario.removedProjectCount,
     relativeTime: scenario.relativeTime,
+    newProjectNames: scenario.newProjectNames,
+    removedProjectNames: scenario.removedProjectNames,
   });
 }
 

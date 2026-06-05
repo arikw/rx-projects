@@ -63,6 +63,7 @@ export const fetchExtposeProjects = async (
         kind: 'extension',
         icon: a.icon,
         banner: a.banner,
+        retired: a.isDeleted,
         stats: {
           // Match chromestats's behavior: drop the user count once the
           // listing is delisted — a stale snapshot isn't a current count.

@@ -39,6 +39,14 @@ async function scrapeOne(pkg: string): Promise<ConnectorResult | null> {
         'Accept-Language': 'en-US,en;q=0.9',
       },
     });
+    // 404 = the listing has been removed from the store. Surface a minimal
+    // origin rep with `retired: true` so the dashboard's reconciler picks
+    // it up (Project.retired = allReps.some(r => r.retired)). Mirrors
+    // still contribute their cached pre-removal stats; the URL is omitted
+    // because the live page no longer exists.
+    if (res.status === 404) {
+      return { origin: { platform: 'google-play', id: pkg, retired: true } };
+    }
     if (!res.ok) return null;
     doc = await res.text();
   } catch {
@@ -94,13 +102,21 @@ async function scrapeOne(pkg: string): Promise<ConnectorResult | null> {
 }
 
 export const fetchPlaystoreProjects: Connector = async (config, options) => {
-  const cfg = config.sources.playstore;
-  if (!cfg.packages.length) return [];
+  // The canonical Android-package list lives on `sources.gplay.packages`
+  // (shared with the appbrain + apkpure mirrors). Union with the
+  // legacy `sources.playstore.packages` for back-compat.
+  const packages = Array.from(
+    new Set([
+      ...(config.sources.playstore?.packages ?? []),
+      ...(config.sources.gplay?.packages ?? []),
+    ]),
+  );
+  if (!packages.length) return [];
 
   if (options?.fixtureMode) return loadFixture('playstore');
 
   const out: ConnectorResult[] = [];
-  for (const pkg of cfg.packages) {
+  for (const pkg of packages) {
     const r = await scrapeOne(pkg);
     if (r) out.push(r);
   }

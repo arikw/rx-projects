@@ -49,6 +49,23 @@ export default defineConnector({
       }),
       fetchGithubProfile(handle, token),
     ]);
+    // Surface total stars across all listed repos on the profile card. The
+    // sum is derived from the same `projects` array the dashboard already
+    // builds — no extra API call. Excluded / forked repos that weren't
+    // returned by fetchGithubRepoProjects also don't count, which matches
+    // the dashboard's own "stars & likes" hero figure.
+    if (profile) {
+      const totalStars = projects.reduce(
+        (acc, r) => acc + (r.origin?.stats?.stars ?? 0),
+        0,
+      );
+      if (totalStars > 0) {
+        profile.details = [
+          { label: 'total stars', value: totalStars },
+          ...(profile.details ?? []),
+        ];
+      }
+    }
     return { projects, profile: profile ?? undefined };
   },
 });
