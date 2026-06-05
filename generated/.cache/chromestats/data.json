@@ -2,6 +2,87 @@
   "version": 1,
   "_generated": "Auto-generated chrome-stats.com cache. Fetched once per extension id; delete the file to refresh. PII (email, authorId) is intentionally omitted.",
   "apps": {
+    "fimgfedafeadlieiabdeeaodndnlbhid": {
+      "id": "fimgfedafeadlieiabdeeaodndnlbhid",
+      "url": "https://chrome-stats.com/d/fimgfedafeadlieiabdeeaodndnlbhid",
+      "name": "Extensions Reloader",
+      "description": "Reload all unpacked extensions using the extension's toolbar button or by browsing to \"http://reload.extensions\"",
+      "version": "2.0",
+      "userCount": 20000,
+      "rating": {
+        "value": 4.364285714285714,
+        "count": 140
+      },
+      "ratingHistogram": [
+        7,
+        4,
+        8,
+        8,
+        59
+      ],
+      "category": "productivity/developer",
+      "itemCategory": "extension",
+      "supportedLanguages": [
+        "en"
+      ],
+      "smallBanner": "https://lh3.googleusercontent.com/VGXzvdPxjSPMU_VEBD4M0YroHGLwdLtZv2mUzquoY0hHXprAnZiU2iNlWYzAWIvwWDWRc2rS67bezJ_KMRs9VnU4Li4",
+      "marqueeBanner": "https://lh3.googleusercontent.com/Wlvs2X89Nf5tsXR8Kd8yArgrllFXy8h6tU6ZQ2PVFVC4XHiEJP-qgBVTm2au0_csXDrEHNheJ45DSupX1aIRjFj4a4k",
+      "logo": "https://lh3.googleusercontent.com/kLAad_XbhoAEIn7sURHpYUZI0wVMYdQLjbXSKi0kOuXKuVyDBd1tS9JpbCBJRpUn46z2fgYDT41OcfvcOp5J--RE0w",
+      "size": 16579,
+      "helpUrl": "https://github.com/arikw/chrome-extensions-reloader",
+      "creationDate": "2016-02-29",
+      "lastUpdate": "2025-03-10",
+      "isFeatured": true,
+      "riskImpact": 3,
+      "riskLikelihood": 1,
+      "permissions": [
+        {
+          "key": "permission-tabs",
+          "risk": 25
+        },
+        {
+          "key": "permission-web-request",
+          "risk": 20
+        },
+        {
+          "key": "permission-management",
+          "risk": 5
+        }
+      ],
+      "isDeleted": false,
+      "reviews": [
+        {
+          "rating": 5,
+          "body": "Perfect!!!",
+          "ts": "2025-09-22",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "Wow it works!\nThe keyboard shortcut works fine, having two separate shortcuts -one with refresh the current tab another without refresh- would be super helpful.",
+          "ts": "2025-03-22",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "você clica na extensão e ela recarrega as suas extensões e a página.",
+          "ts": "2024-11-24",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "Thank you",
+          "ts": "2024-07-20",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "Quick, minimalistic and reliable.\n\n\"does NOT work when you edit your `manifest.json` file\"? I just tried that and it works like a charm.",
+          "ts": "2024-01-19",
+          "source": "chrome-stats"
+        }
+      ]
+    },
     "jmjbmlfmmendpkpiggcfpjcpbbpedhha": {
       "id": "jmjbmlfmmendpkpiggcfpjcpbbpedhha",
       "url": "https://chrome-stats.com/d/jmjbmlfmmendpkpiggcfpjcpbbpedhha",
@@ -13,6 +94,13 @@
         "value": 4.486725663716814,
         "count": 113
       },
+      "ratingHistogram": [
+        5,
+        3,
+        5,
+        3,
+        53
+      ],
       "category": "productivity/workflow",
       "itemCategory": "extension",
       "supportedLanguages": [
@@ -32,7 +120,39 @@
           "risk": 15
         }
       ],
-      "isDeleted": false
+      "isDeleted": false,
+      "reviews": [
+        {
+          "rating": 1,
+          "body": "It doesn't block any pop-ups from Yahoo Finance.",
+          "ts": "2023-07-11",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 1,
+          "body": "Doesn't work",
+          "ts": "2022-11-02",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 1,
+          "body": "Useless",
+          "ts": "2021-08-06",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 2,
+          "body": "Doesn't block all Pop ups, almost useless.",
+          "ts": "2021-04-11",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 4,
+          "body": "This extension needs some updating, I think some of it's blocking abilities have been circumvented recently.",
+          "ts": "2020-12-24",
+          "source": "chrome-stats"
+        }
+      ]
     },
     "gleiglfcmildnecmodgoeijleblhobjk": {
       "id": "gleiglfcmildnecmodgoeijleblhobjk",
@@ -100,6 +220,182 @@
           "rating": 4,
           "body": "The WriteRight extension currently works only on Google.com. If you could add support for chat.bing.com, it would be more useful.",
           "ts": "2023-04-30",
+          "source": "chrome-stats"
+        }
+      ]
+    },
+    "jdmiahadpnljimfcnfaebjggbfkjkgan": {
+      "id": "jdmiahadpnljimfcnfaebjggbfkjkgan",
+      "url": "https://chrome-stats.com/d/jdmiahadpnljimfcnfaebjggbfkjkgan",
+      "name": "Feed Cleaner",
+      "description": "Clean your social network news feed from suggested posts and ads",
+      "version": "1.0.1",
+      "userCount": 68,
+      "rating": {
+        "value": 5,
+        "count": 2
+      },
+      "category": "1_communication",
+      "itemCategory": "extension",
+      "supportedLanguages": [
+        "en"
+      ],
+      "smallBanner": "https://lh3.googleusercontent.com/vvsAx0pNkzCXfA7_qozGF749rohl4lB4ICU4-yqvnStSfbNqtbZW3HT5d-f-Dmn64Y5CgC3T2Ri1bn2K1LDu7J4pLw=w220-h140-e365-rj-sc0x00ffffff",
+      "marqueeBanner": "https://lh3.googleusercontent.com/Rv4MF-ee--al0FWRGG5MO7Swylpi7G6ibW9P6NwumKbld9u-VdHbQtGRh3FVYIhc54JyWHD3eGEmrLeKOoCO4rQt=w700-h280-e365-rj-sc0x00ffffff",
+      "logo": "https://lh3.googleusercontent.com/7ity1pufw2Iuii-mlgNmNVUdpP3woUgk-2WOjMBMFbt6d0DgjsHQV9PtqCDcDrU8OAdok8P7WdAh8IuFEOsL5j8OMQ=w128-h128-e365-rj-sc0x00ffffff",
+      "size": 84173,
+      "creationDate": "2017-05-08",
+      "lastUpdate": "2017-05-08",
+      "riskImpact": 2,
+      "riskLikelihood": 0,
+      "permissions": [
+        {
+          "key": "permission-content-scripts",
+          "risk": 15
+        }
+      ],
+      "isDeleted": true
+    },
+    "mcdpnidfhfjfbafmpppcplcejgepadbo": {
+      "id": "mcdpnidfhfjfbafmpppcplcejgepadbo",
+      "url": "https://chrome-stats.com/d/mcdpnidfhfjfbafmpppcplcejgepadbo",
+      "name": "Auto Replay for YouTube™",
+      "description": "Enables automatic replay of a YouTube™ video or a part of it...",
+      "version": "3.4",
+      "userCount": 20000,
+      "rating": {
+        "value": 3.9443155452436196,
+        "count": 431
+      },
+      "ratingHistogram": [
+        37,
+        9,
+        10,
+        11,
+        64
+      ],
+      "category": "14_fun",
+      "itemCategory": "extension",
+      "supportedLanguages": [
+        "en"
+      ],
+      "smallBanner": "https://lh3.googleusercontent.com/cmWf0VJIUdWVol5cCo08AIq6fkceoCgSDA4vTMNzqg9OBGyNzD3FStIXoEOnKIl5swzXecpjrUeFujKmvDFP6Xx3erg=w220-h140-e365-rj-sc0x00ffffff",
+      "marqueeBanner": "https://lh3.googleusercontent.com/CUN3gqknYbBpIii60JC9ss7AOD4KIhQFHsh-OFjb-KWmdg6dfbiCbRm6ea4NxWY3xlYS8dFLoCQgCijRS0zNh4EyEA=w700-h280-e365-rj-sc0x00ffffff",
+      "logo": "https://lh3.googleusercontent.com/pL7rJS6i3IRRovDdbD-gaetiQs7bVSngzXQKQ5u83kVU5XFybMsJtyIFcTd2uIOzT2wSmHAQYgR94di2kWsaZ3ZYiYY=w128-h128-e365-rj-sc0x00ffffff",
+      "size": 61512,
+      "creationDate": "2018-01-31",
+      "lastUpdate": "2018-01-31",
+      "riskImpact": 2,
+      "riskLikelihood": 0,
+      "permissions": [
+        {
+          "key": "permission-content-scripts",
+          "risk": 15
+        }
+      ],
+      "isDeleted": true,
+      "videos": [
+        "https://www.youtube.com/embed/LGAN_OqjgeY?rel=0&wmode=opaque&enablejsapi=1"
+      ],
+      "reviews": [
+        {
+          "rating": 2,
+          "body": "Does not work if you have YT premium.",
+          "ts": "2022-09-26",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 1,
+          "body": "No longer works. The author abandoned the extension",
+          "ts": "2022-07-18",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 1,
+          "body": "This extension used to work, but as of 4/4/2022, it no longer does.",
+          "ts": "2022-04-04",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 1,
+          "body": "It doesn't work",
+          "ts": "2021-10-21",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 3,
+          "body": "When I used to use it years ago it worked perfectly, as of September 2021, it doesn't work anymore",
+          "ts": "2021-09-29",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 1,
+          "body": "沒用",
+          "ts": "2021-09-28",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 1,
+          "body": "doesn't work",
+          "ts": "2021-06-14",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 1,
+          "body": "doesn't work, app not updated since 2018",
+          "ts": "2021-06-09",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "I really like it, but it's not working right now.",
+          "ts": "2021-05-24",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 1,
+          "body": "Doesn't work. either update, provide instructions for proper use, or get it off the google webstore, and stop wasting peoples time.",
+          "ts": "2021-03-28",
+          "source": "chrome-stats"
+        }
+      ]
+    },
+    "agpmfmfpldoabkmhjanenelnnplfcidm": {
+      "id": "agpmfmfpldoabkmhjanenelnnplfcidm",
+      "url": "https://chrome-stats.com/d/agpmfmfpldoabkmhjanenelnnplfcidm",
+      "name": "Fullscreen Magic",
+      "description": "Automagically finds a video, game, frame, or other embedded content in a webpage and makes it full screen with a single click",
+      "version": "1.0.0",
+      "userCount": 1000,
+      "rating": {
+        "value": 5,
+        "count": 7
+      },
+      "category": "productivity/workflow",
+      "itemCategory": "extension",
+      "supportedLanguages": [
+        "en"
+      ],
+      "logo": "https://lh3.googleusercontent.com/uvt-bBQ-VDZZZRZRCo7VL02ueZS1YrhcK3-1GxJMmgB3k1yklngrSeSpwqiOwElCCiu7Rk689aNZOG2xhrL501fkEg",
+      "size": 100270,
+      "helpUrl": "https://github.com/arikw/fullscreen-magic-extension/issues",
+      "creationDate": "2023-04-18",
+      "lastUpdate": "2023-04-22",
+      "isFeatured": true,
+      "riskImpact": 0,
+      "riskLikelihood": 0,
+      "isDeleted": false,
+      "reviews": [
+        {
+          "rating": 5,
+          "body": "並非一般的F11鍵調用，只針對像是有播放框的內容，按下擴展按鈕以全螢幕顯示，但會最大畫面\n\n經測試的網站：Yahoo留言區、IG（FB）限動/或有影片播放處",
+          "ts": "2024-08-27",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "no se como funciona.",
+          "ts": "2024-07-31",
           "source": "chrome-stats"
         }
       ]
