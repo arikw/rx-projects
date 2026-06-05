@@ -179,7 +179,7 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     const sortChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-sort]'));
     const tagChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-tag]'));
     const languageChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-language]'));
-    const statusChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-status]'));
+    let statusChips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-status]'));
     const tagToggle = root.querySelector<HTMLButtonElement>('[data-tag-toggle]');
     const totalCountEl = root.querySelector<HTMLElement>('[data-tag-count-total]');
     const resetButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-reset]'));
@@ -190,7 +190,7 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     const defaultLanguage = root.dataset.defaultLanguage ?? '';
 
     type Sort = 'featured' | 'popularity' | 'year';
-    type Status = '' | 'live' | 'retired';
+    type Status = '' | 'live' | 'retired' | 'updated';
     let activeSource = '';
     let activeSort: Sort = 'featured';
     let activeTag = '';
@@ -218,8 +218,11 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     const matchesLanguage = (c: HTMLElement) =>
       !activeLanguage ||
       (c.dataset.contentLanguage || 'en') === activeLanguage;
-    const matchesStatus = (c: HTMLElement) =>
-      !activeStatus || (c.dataset.status ?? 'live') === activeStatus;
+    const matchesStatus = (c: HTMLElement) => {
+      if (!activeStatus) return true;
+      if (activeStatus === 'updated') return c.dataset.updated === '1';
+      return (c.dataset.status ?? 'live') === activeStatus;
+    };
 
     /** Recompute the tag chip counts to reflect the active source filter. Tags
      *  that don't appear under the current source get hidden; the "+N more"
@@ -596,9 +599,9 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     languageChips.forEach((c) => {
       c.setAttribute('aria-pressed', String((c.dataset.filterLanguage ?? '') === activeLanguage));
     });
-    if (initial.status === 'live' || initial.status === 'retired') {
-      const chip = statusChips.find((c) => c.dataset.filterStatus === initial.status);
-      if (chip) activeStatus = initial.status as Status;
+    const VALID_STATUSES: Status[] = ['live', 'retired', 'updated'];
+    if (typeof initial.status === 'string' && (VALID_STATUSES as string[]).includes(initial.status)) {
+      activeStatus = initial.status as Status;
     }
     statusChips.forEach((c) => {
       c.setAttribute('aria-pressed', String((c.dataset.filterStatus ?? '') === activeStatus));
@@ -626,5 +629,84 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     if (initial['show-all'] === '1') shown = cards.length;
 
     applyFilter();
+
+    /** Bind a click handler to a Status chip in the additive style of
+     *  the rest of the filter rows. Used both for SSR-rendered chips
+     *  during init and dynamically-injected chips (e.g. "Updated"). */
+    function bindStatusChip(chip: HTMLButtonElement) {
+      chip.addEventListener('click', () => {
+        const val = (chip.dataset.filterStatus ?? '') as Status;
+        setStatus(val === activeStatus ? '' : val);
+      });
+    }
+
+    /** Build the Status row from scratch when SSR didn't render one
+     *  (no retired projects), so the dynamically-discovered "Updated"
+     *  chip has somewhere to live. Mirrors the markup the Astro
+     *  template emits when the row is server-rendered. */
+    function ensureStatusRow(): HTMLElement {
+      let row = root!.querySelector<HTMLElement>('.filter-row--status');
+      if (row) return row;
+      row = document.createElement('div');
+      row.className = 'filter-row filter-row--status';
+      row.setAttribute('aria-label', 'Filter by status');
+      const total = cards.length;
+      row.innerHTML = `
+        <span class="filter-label">Status</span>
+        <div class="filter-chips">
+          <button type="button" class="filter-chip" data-filter-status="" aria-pressed="true">All <span class="filter-count">${total}</span></button>
+        </div>
+      `;
+      // Slot the new row immediately before the Sort row so the layout
+      // matches the SSR-rendered case.
+      const sortRow = root!.querySelector('.filter-row--sort');
+      sortRow?.parentNode?.insertBefore(row, sortRow);
+      const allChip = row.querySelector<HTMLButtonElement>('[data-filter-status=""]')!;
+      bindStatusChip(allChip);
+      return row;
+    }
+
+    /** Ensure an "Updated" chip exists in the Status row, with the
+     *  current count of updated cards. Called whenever the diff
+     *  machinery (real or demo) finishes injecting card chips. */
+    function refreshUpdatedChip(): void {
+      const updatedCount = cards.filter((c) => c.dataset.updated === '1').length;
+      const existing = root!.querySelector<HTMLButtonElement>('[data-filter-status="updated"]');
+      if (updatedCount === 0) {
+        // No updates → drop the chip (and reset filter if it was active).
+        if (existing) existing.remove();
+        statusChips = Array.from(root!.querySelectorAll<HTMLButtonElement>('[data-filter-status]'));
+        if (activeStatus === 'updated') setStatus('');
+        return;
+      }
+      const row = ensureStatusRow();
+      if (existing) {
+        const countEl = existing.querySelector<HTMLElement>('.filter-count');
+        if (countEl) countEl.textContent = String(updatedCount);
+      } else {
+        const strip = row.querySelector<HTMLElement>('.filter-chips');
+        if (strip) {
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'filter-chip';
+          chip.dataset.filterStatus = 'updated';
+          chip.setAttribute('aria-pressed', String(activeStatus === 'updated'));
+          chip.innerHTML = `Updated <span class="filter-count">${updatedCount}</span>`;
+          strip.appendChild(chip);
+          bindStatusChip(chip);
+        }
+      }
+      statusChips = Array.from(root!.querySelectorAll<HTMLButtonElement>('[data-filter-status]'));
+      if (initial.status === 'updated' && activeStatus !== 'updated') {
+        setStatus('updated');
+      } else {
+        applyFilter();
+      }
+    }
+
+    document.addEventListener('dashboard:updates-applied', refreshUpdatedChip);
+    // Demo / real diff-stats may have run BEFORE this script registered
+    // its listener (script order isn't guaranteed). Check once at init.
+    refreshUpdatedChip();
   });
 </script>

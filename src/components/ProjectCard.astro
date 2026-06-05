@@ -133,8 +133,10 @@ const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
   data-status={p.retired ? 'retired' : 'live'}
 >
   <span class="card-new-ribbon" hidden>NEW</span>
-  <span class="card-updated-chip" hidden></span>
-  <ProjectThumb project={p} />
+  <div class="card-thumb-frame">
+    <ProjectThumb project={p} />
+    <span class="card-updated-chip" hidden></span>
+  </div>
   <header class="card-head">
     <a class="card-title" href={titleHref} rel="noopener" target="_blank">
       <h3>{p.title}</h3>

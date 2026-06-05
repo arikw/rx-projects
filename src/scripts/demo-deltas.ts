@@ -132,6 +132,7 @@ function injectCardUpdateDemo(card: HTMLElement, update: CardUpdate): void {
     .join(' · ');
   slot.dataset.tooltip = tooltip;
   slot.removeAttribute('hidden');
+  card.dataset.updated = '1';
 }
 
 function activate(): void {
@@ -180,6 +181,8 @@ function activate(): void {
     newProjectNames: scenario.newProjectNames,
     removedProjectNames: scenario.removedProjectNames,
   });
+
+  document.dispatchEvent(new CustomEvent('dashboard:updates-applied'));
 }
 
 if (document.readyState === 'loading') {
