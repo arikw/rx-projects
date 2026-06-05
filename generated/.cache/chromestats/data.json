@@ -154,6 +154,46 @@
         }
       ]
     },
+    "agpmfmfpldoabkmhjanenelnnplfcidm": {
+      "id": "agpmfmfpldoabkmhjanenelnnplfcidm",
+      "url": "https://chrome-stats.com/d/agpmfmfpldoabkmhjanenelnnplfcidm",
+      "name": "Fullscreen Magic",
+      "description": "Automagically finds a video, game, frame, or other embedded content in a webpage and makes it full screen with a single click",
+      "version": "1.0.0",
+      "userCount": 1000,
+      "rating": {
+        "value": 5,
+        "count": 7
+      },
+      "category": "productivity/workflow",
+      "itemCategory": "extension",
+      "supportedLanguages": [
+        "en"
+      ],
+      "logo": "https://lh3.googleusercontent.com/uvt-bBQ-VDZZZRZRCo7VL02ueZS1YrhcK3-1GxJMmgB3k1yklngrSeSpwqiOwElCCiu7Rk689aNZOG2xhrL501fkEg",
+      "size": 100270,
+      "helpUrl": "https://github.com/arikw/fullscreen-magic-extension/issues",
+      "creationDate": "2023-04-18",
+      "lastUpdate": "2023-04-22",
+      "isFeatured": true,
+      "riskImpact": 0,
+      "riskLikelihood": 0,
+      "isDeleted": false,
+      "reviews": [
+        {
+          "rating": 5,
+          "body": "並非一般的F11鍵調用，只針對像是有播放框的內容，按下擴展按鈕以全螢幕顯示，但會最大畫面\n\n經測試的網站：Yahoo留言區、IG（FB）限動/或有影片播放處",
+          "ts": "2024-08-27",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "no se como funciona.",
+          "ts": "2024-07-31",
+          "source": "chrome-stats"
+        }
+      ]
+    },
     "gleiglfcmildnecmodgoeijleblhobjk": {
       "id": "gleiglfcmildnecmodgoeijleblhobjk",
       "url": "https://chrome-stats.com/d/gleiglfcmildnecmodgoeijleblhobjk",
@@ -356,46 +396,6 @@
           "rating": 1,
           "body": "Doesn't work. either update, provide instructions for proper use, or get it off the google webstore, and stop wasting peoples time.",
           "ts": "2021-03-28",
-          "source": "chrome-stats"
-        }
-      ]
-    },
-    "agpmfmfpldoabkmhjanenelnnplfcidm": {
-      "id": "agpmfmfpldoabkmhjanenelnnplfcidm",
-      "url": "https://chrome-stats.com/d/agpmfmfpldoabkmhjanenelnnplfcidm",
-      "name": "Fullscreen Magic",
-      "description": "Automagically finds a video, game, frame, or other embedded content in a webpage and makes it full screen with a single click",
-      "version": "1.0.0",
-      "userCount": 1000,
-      "rating": {
-        "value": 5,
-        "count": 7
-      },
-      "category": "productivity/workflow",
-      "itemCategory": "extension",
-      "supportedLanguages": [
-        "en"
-      ],
-      "logo": "https://lh3.googleusercontent.com/uvt-bBQ-VDZZZRZRCo7VL02ueZS1YrhcK3-1GxJMmgB3k1yklngrSeSpwqiOwElCCiu7Rk689aNZOG2xhrL501fkEg",
-      "size": 100270,
-      "helpUrl": "https://github.com/arikw/fullscreen-magic-extension/issues",
-      "creationDate": "2023-04-18",
-      "lastUpdate": "2023-04-22",
-      "isFeatured": true,
-      "riskImpact": 0,
-      "riskLikelihood": 0,
-      "isDeleted": false,
-      "reviews": [
-        {
-          "rating": 5,
-          "body": "並非一般的F11鍵調用，只針對像是有播放框的內容，按下擴展按鈕以全螢幕顯示，但會最大畫面\n\n經測試的網站：Yahoo留言區、IG（FB）限動/或有影片播放處",
-          "ts": "2024-08-27",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 5,
-          "body": "no se como funciona.",
-          "ts": "2024-07-31",
           "source": "chrome-stats"
         }
       ]
