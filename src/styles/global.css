@@ -394,14 +394,18 @@ body.changes-hidden .visit-summary {
   padding: 3px 9px;
   border-radius: 999px;
   white-space: nowrap;
-  background: var(--delta-positive-bg);
+  /* Fully opaque pastel pill — sits over whatever thumb art / colour is
+     behind it, so a translucent fill becomes unreadable. The mix folds
+     the accent green into the card surface, so the result still reads
+     as a delta in light & dark mode. */
+  background: color-mix(in srgb, var(--delta-positive) 22%, var(--card-bg));
   color: var(--delta-positive);
   border: 1px solid var(--card-bg);
   box-shadow: 0 1px 4px rgba(15, 17, 21, 0.12);
   cursor: help;
 }
 .card-updated-chip.is-negative {
-  background: color-mix(in srgb, var(--muted) 18%, transparent);
+  background: color-mix(in srgb, var(--muted) 22%, var(--card-bg));
   color: var(--muted);
 }
 .card-updated-chip[hidden] {
@@ -1296,12 +1300,12 @@ hr.section-divider {
     0 0 80px 10px rgba(0, 0, 0, 0.7);
 }
 
-.card > :not(.thumb) {
+.card > :not(.thumb):not(.card-thumb-frame) {
   padding-left: 18px;
   padding-right: 18px;
 }
 
-.card--featured > :not(.thumb) {
+.card--featured > :not(.thumb):not(.card-thumb-frame) {
   padding-left: 22px;
   padding-right: 22px;
 }
