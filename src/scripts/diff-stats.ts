@@ -117,7 +117,7 @@ function injectCardUpdates(base: DashboardState, current: DashboardState, newIds
     );
     const card = document.querySelector<HTMLElement>(`.card[data-id="${CSS.escape(id)}"]`);
     const slot = card?.querySelector<HTMLElement>('.card-updated-chip');
-    if (!slot) continue;
+    if (!slot || !card) continue;
     const direction: 'up' | 'down' = headline.value > 0 ? 'up' : 'down';
     const arrow = direction === 'up' ? '▲' : '▼';
     const sign = direction === 'up' ? '+' : '−';
@@ -128,7 +128,12 @@ function injectCardUpdates(base: DashboardState, current: DashboardState, newIds
       .join(' · ');
     slot.dataset.tooltip = tooltip;
     slot.removeAttribute('hidden');
+    // Flag the card so the gallery's "Updated" status filter can pick it up.
+    card.dataset.updated = '1';
   }
+  // Tell the gallery a new pool of "updated" cards exists. ProjectGrid
+  // listens to this and may surface an "Updated" chip on the Status row.
+  document.dispatchEvent(new CustomEvent('dashboard:updates-applied'));
 }
 
 const HERO_MAP = [

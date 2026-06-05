@@ -375,26 +375,29 @@ body.changes-hidden .visit-summary {
 .card-new-ribbon[hidden] {
   display: none;
 }
-/* Per-card "updated" chip — same slot as the NEW ribbon (mutually
-   exclusive: a brand-new project doesn't need an "updated" chip). Sits
-   on top of the thumbnail's top-right corner, mirroring the layout of
-   the hero stat-delta pill. */
+/* Per-card "updated" chip — sits at the bottom-right of the thumbnail,
+   straddling the boundary between the thumb image and the card content.
+   Mutually exclusive with the NEW ribbon (a brand-new project doesn't
+   also need an "updated" chip). */
 .card-updated-chip {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
+  right: 12px;
+  bottom: 0;
+  transform: translateY(50%);
+  z-index: 3;
   display: inline-flex;
   align-items: baseline;
   gap: 3px;
   font-size: 0.72rem;
   font-weight: 600;
   font-feature-settings: 'tnum';
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 999px;
   white-space: nowrap;
   background: var(--delta-positive-bg);
   color: var(--delta-positive);
+  border: 1px solid var(--card-bg);
+  box-shadow: 0 1px 4px rgba(15, 17, 21, 0.12);
   cursor: help;
 }
 .card-updated-chip.is-negative {
@@ -1423,6 +1426,12 @@ a.card-source:hover {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Positioning context so .card-updated-chip can sit at the bottom-right
+   corner of the thumb, straddling the thumb/content boundary. */
+.card-thumb-frame {
+  position: relative;
 }
 
 .card-stats {
