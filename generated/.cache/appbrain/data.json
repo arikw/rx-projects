@@ -45,6 +45,74 @@
         "Works perfectly on HTC Desire",
         "Needs more good sounds,but this is a funny app"
       ]
+    },
+    "com.arik.games.cardflipper": {
+      "packageName": "com.arik.games.cardflipper",
+      "title": "BabyTV - Memory Game",
+      "url": "https://www.appbrain.com/app/com.arik.games.cardflipper",
+      "rating": 4.34,
+      "ratingCount": 140,
+      "ratingHistogram": [
+        8,
+        2,
+        9,
+        36,
+        85
+      ],
+      "installs": 50000,
+      "year": 2010,
+      "iconUrl": "https://lh3.ggpht.com/Hv-Xzymd7MXDBSiUWX0booG1_bybLy638B4SzrDTEiyGyaZ3tI_CYrUys7GI31jEtNFOPP1Obv7Y7Q92cCDZEw0",
+      "positiveQuotes": [
+        "Too slow\tThe cards turn over way to slow. My son lost interest.",
+        "Excellent\tGreat for kids my 2 year old loves this game",
+        "Very nice app\tIt is educated,has cute graphic, simple pairing that very easy to understand by a child, and cute voices too. My 2 and 4 years children like it"
+      ]
+    },
+    "net.wzmn.redalert": {
+      "packageName": "net.wzmn.redalert",
+      "title": "צבע אדום - אזעקות בזמן אמת",
+      "url": "https://www.appbrain.com/app/net.wzmn.redalert",
+      "description": "Display alerts \"red color\" Instant According to information is updated in real time directly from the Home Front Command",
+      "rating": 4.62,
+      "ratingCount": 4219,
+      "ratingHistogram": [
+        157,
+        33,
+        157,
+        506,
+        3341
+      ],
+      "installs": 100000,
+      "year": 2014,
+      "iconUrl": "https://lh3.googleusercontent.com/WO91aY0i3ZpcHojLSyCvGdleHTf-M8ihIQV_bHdOCJNlBwrfbcaI4fOVPBikimuoEFYu1-mQ0FiUwE7SQuiU9DM",
+      "positiveQuotes": [
+        "Simple and efficient. Works perfectly well, doing exactly what it says that it does.",
+        "Best UX! Please add location based alerts.",
+        "Warning app, plain and simple. Works through mute and DND"
+      ]
+    },
+    "net.wzmn.mivzakon": {
+      "packageName": "net.wzmn.mivzakon",
+      "title": "מבזקון - מבזקי חדשות בזמן אמת",
+      "url": "https://www.appbrain.com/app/net.wzmn.mivzakon",
+      "description": "Breaking from news sites directly to the display screen, from the creator of the app \"Color Red\"",
+      "rating": 4.42,
+      "ratingCount": 6764,
+      "ratingHistogram": [
+        390,
+        325,
+        260,
+        780,
+        4942
+      ],
+      "installs": 100000,
+      "year": 2014,
+      "iconUrl": "https://lh3.googleusercontent.com/KFJbe3vhaS4X9y6mbX2ENl3ipb8-54Hwvqx78cHKvDWhtJCRsZSdsO_gfOSk-luHCU2LD82RehYn6VA05ewG3xk",
+      "positiveQuotes": [
+        "All the news at one place. Very comfortable and useful.",
+        "App is user-friendly and constantly updated.....terrific as a newsfeed.",
+        "Great for keeping up to date with on the spot information"
+      ]
     }
   }
 }

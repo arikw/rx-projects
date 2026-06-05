@@ -55,6 +55,9 @@ const config: ProjectsConfig = {
       packages: [
         'net.wzmn.games.brokencalc',  // The Broken Calculator Game
         'net.wzmn.games.lightsprank', // Lights Out Prank
+        'com.arik.games.cardflipper', // BabyTV - Memory Game
+        'net.wzmn.redalert',          // צבע אדום — real-time Israeli rocket alerts
+        'net.wzmn.mivzakon',          // מבזקון — real-time Hebrew news flashes
       ],
     },
     // appbrain + apkpure inherit enabled:true from the base config and both
