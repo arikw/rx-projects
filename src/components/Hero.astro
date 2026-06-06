@@ -29,7 +29,7 @@ const downloadsInfo = stats.downloadSources.length
   ? `Cumulative install events across ${joinSources(stats.downloadSources)}.`
   : undefined;
 const usersInfo = stats.activeUsersSources.length
-  ? `Live installs reported by ${joinSources(stats.activeUsersSources)}.`
+  ? `Weekly active users reported by ${joinSources(stats.activeUsersSources)}.`
   : undefined;
 const starsInfo =
   'Stars on GitHub and Docker Hub combined with positive (≥4★) ratings counted as "likes".';
@@ -55,7 +55,7 @@ const projectsInfo =
       icon="star"
       value={`${formatStat(stats.starsAndLikes)}+`}
       label="Stars & likes"
-      sublabel={`across ${stats.openSourceCount} open-source ${stats.openSourceCount === 1 ? 'project' : 'projects'}`}
+      sublabel={`across ${stats.totalProjects} ${stats.totalProjects === 1 ? 'project' : 'projects'}`}
       info={starsInfo}
     />
     {config.ui.hero.showDownloads && stats.downloadsAndPulls > 0 && (
@@ -63,7 +63,7 @@ const projectsInfo =
         icon="download"
         value={`${formatStat(stats.downloadsAndPulls)}+`}
         label="Downloads & pulls"
-        sublabel="cumulative install events"
+        sublabel="lifetime installs and pulls"
         info={downloadsInfo}
       />
     )}
@@ -72,7 +72,7 @@ const projectsInfo =
         icon="users"
         value={`${formatStat(stats.activeUsers)}+`}
         label="Active users"
-        sublabel="current installs"
+        sublabel="weekly active users"
         info={usersInfo}
       />
     )}
