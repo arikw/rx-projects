@@ -250,6 +250,46 @@ const config: ProjectsConfig = {
       ],
     },
     // ----------------------------------------------------------------
+    // Poper Blocker — Chrome popup/popunder blocker SOLD on 2014-09-12.
+    // The live CWS listing at bkkbcggn... still exists but belongs to
+    // the new owner now, so we deliberately DO NOT add the id to
+    // sources.chrome.extensionIds — that would scrape the current
+    // owner's stats and credit them to us. Headline numbers come
+    // from a Wayback snapshot taken three months after the sale
+    // (the closest record to the handover date). Icon URL points at
+    // Wayback too; richer screenshots can be added once local
+    // archive assets are recovered. Year is a best-guess placeholder.
+    // ----------------------------------------------------------------
+    {
+      slug: 'poper-blocker',
+      title: 'Poper Blocker',
+      description:
+        'Blocks all these annoying popups and popunders that pop no matter where you click on a page.',
+      url: 'https://web.archive.org/web/20141224182724/https://chrome.google.com/webstore/detail/poper-blocker/bkkbcggnhapdmkeljlodobbkopceiche',
+      source: 'chrome',
+      kind: 'extension',
+      language: 'JavaScript',
+      tags: ['chrome-extension', 'browser', 'popup', 'blocker'],
+      year: 2013, // TODO: verify the actual first-release year
+      asOf: '2014-12-24',
+      retired: true,
+      // The og:image URL CWS embeds in the page uses a sizing suffix
+      // (=s128-h128) that Wayback never crawled, so it 404s. The actual
+      // <img src> URLs ON the page use s26 for the icon and s640-h400
+      // for the marquee — those WERE crawled and still serve 200. Card
+      // art picks `banner` first so the marquee wins and the s26 icon
+      // is just there as a fallback / chip-badge source.
+      icon: 'https://web.archive.org/web/20141224182724im_/https://lh4.googleusercontent.com/9fFpYKngoFXpxFSZa7ymWlIc55oe_1pKKbFjsOF0_-sKiDHoqE2NTggq2hiURFmXUrdS3giWuTw=s26-h26-e365',
+      banner: 'https://web.archive.org/web/20141224182724im_/https://lh4.googleusercontent.com/uQyWPXQwDhwntFRhea8fma6czvNP-2j_Wt1fBjo1aBM14aUgNWY7RftlmtE81Rvc1Qt101XfuA=s640-h400-e365',
+      stats: {
+        // Headline numbers from the 2014-12-24 Wayback snapshot of the
+        // CWS listing — interactionCount "UserDownloads:250,600" and
+        // aggregateRating ratingValue 4.459 / ratingCount 917.
+        users: 250600,
+        rating: { average: 4.46, count: 917 },
+      },
+    },
+    // ----------------------------------------------------------------
     // Math4Mobile — five J2ME math apps for feature phones (2005-era).
     // Download counts + screenshots scraped 2026-06-02 from
     // https://www.math4mobile.com/download/<slug>. The page is still
