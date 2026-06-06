@@ -668,7 +668,7 @@ span.card-source {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 5.5rem;
   line-height: 0.5;
-  color: var(--card-accent, var(--accent));
+  color: var(--fg);
   opacity: 0.22;
   margin: 4px 0 -14px;
   user-select: none;
@@ -1687,10 +1687,11 @@ a.filter-chip {
   transition: transform 0.15s;
 }
 .section-reset[hidden] {
-  /* Override default `display: none` so the slot stays in the layout
-     and the count's x-position doesn't change between states. */
-  display: inline-flex;
-  visibility: hidden;
+  /* The flex rule absorbs the freed space, so the count's x stays
+     pinned to the right edge anyway — `display: none` lets the rule
+     extend uninterrupted to the count instead of leaving a gap where
+     the reset chip would sit. */
+  display: none;
 }
 
 /* Bottom-of-gallery reset — text link with ↺ icon, centred under the
