@@ -41,16 +41,23 @@ const featured = featuredScore(p);
 // Card stats: number + icon only (no descriptive words). The hero stats
 // act as a legend — same icons, full labels — so visitors learn the meaning
 // once at the top, then read the cards as compact number rows.
-type CardStat = { text: string; title: string; icon?: 'star' | 'download' | 'users' | 'calendar' };
+type CardStat = { text: string; title: string; icon?: 'star' | 'download' | 'users' | 'past-users' | 'calendar' };
 const stats: CardStat[] = [];
 const st = p.stats;
 if (st.stars && st.stars > 0)
   stats.push({ text: formatStat(st.stars), title: 'Stars (GitHub + Docker Hub)', icon: 'star' });
-// Skip the active-users badge for retired projects — the count is a
-// historical snapshot (e.g. an AMO Wayback figure), so showing it next to
-// the live-extension headcount would conflate two different metrics.
-if (st.users && st.users > 0 && !p.retired)
-  stats.push({ text: formatStat(st.users), title: 'Weekly active users (Chrome Web Store)', icon: 'users' });
+// Active-users badge — appears on retired cards too, but with a tooltip
+// that flags the number as a historical snapshot rather than a current
+// headcount. (The hero "Active users" tile still excludes retired in
+// aggregateStats, so the dashboard-level number stays a live total.)
+if (st.users && st.users > 0)
+  stats.push({
+    text: formatStat(st.users),
+    title: p.retired
+      ? 'Past active users (historical snapshot)'
+      : 'Weekly active users (Chrome Web Store)',
+    icon: p.retired ? 'past-users' : 'users',
+  });
 if (st.downloads && st.downloads > 0)
   stats.push({ text: formatStat(st.downloads), title: 'Downloads / pulls (npm, Docker, GNOME, mirrors)', icon: 'download' });
 if (st.downloadsMonthly && st.downloadsMonthly > 0)
@@ -180,7 +187,7 @@ const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
   {stats.length > 0 && (
     <p class="card-stats">
       {stats.map((s) => (
-        <span class="card-stat" title={s.title}>
+        <span class="card-stat" data-tooltip={s.title}>
           {s.icon === 'star' && (
             <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
@@ -194,6 +201,18 @@ const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
           {s.icon === 'users' && (
             <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+            </svg>
+          )}
+          {s.icon === 'past-users' && (
+            <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true">
+              {/* Person silhouette nudged to the top-left so a clock
+                  badge can sit at the bottom-right. The clock body is
+                  redrawn over the silhouette so the two shapes don't
+                  visually fuse. */}
+              <path fill="currentColor" d="M9 11c2.21 0 4-1.79 4-4S11.21 3 9 3 5 4.79 5 7s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h10v-2c0-1.32 0.4-2.55 1.08-3.59A14.6 14.6 0 0 0 9 13z"/>
+              <circle cx="18" cy="17" r="5" fill="currentColor"/>
+              <circle cx="18" cy="17" r="3.6" fill="var(--card-bg, #fff)"/>
+              <path stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none" d="M18 14.8 V 17 L 19.8 17.8"/>
             </svg>
           )}
           {s.icon === 'calendar' && (
