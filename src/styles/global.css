@@ -1458,6 +1458,7 @@ a.card-source:hover {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  cursor: help;
 }
 
 .card-stat:not(:first-child)::before {
@@ -1467,7 +1468,7 @@ a.card-source:hover {
   border-radius: 999px;
   background: currentColor;
   opacity: 0.4;
-  margin: 0 9px;
+  margin: 0 2px 0 8px;
 }
 
 .stat-icon {
