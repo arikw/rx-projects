@@ -270,7 +270,7 @@ const config: ProjectsConfig = {
       kind: 'extension',
       language: 'JavaScript',
       tags: ['chrome-extension', 'browser', 'popup', 'blocker'],
-      year: 2013, // TODO: verify the actual first-release year
+      year: 2012,
       asOf: '2014-12-24',
       retired: true,
       // The og:image URL CWS embeds in the page uses a sizing suffix
