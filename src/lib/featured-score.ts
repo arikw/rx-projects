@@ -97,6 +97,34 @@ export function featuredScore(p: Project, nowYear = new Date().getUTCFullYear())
   if (liveSignal > 0) q += Math.log10(1 + liveSignal) * 18;
   if (lifetimeSignal > 0) q += Math.log10(1 + lifetimeSignal) * 10;
 
+  // "Front door" boost — a github-only project that ships a deployed
+  // GitHub Pages site (favicon picked up as p.icon) is itself a
+  // distribution channel. The base `installable` check doesn't catch
+  // this case (github is excluded), so without an explicit lift these
+  // projects sit below docker-only repos with single-digit pulls.
+  // Recruiter-facing reading: a deployed site is something you can
+  // click; an internal docker tarball is not.
+  const isDeployedPagesSite = p.sources.length === 1 && p.sources[0] === 'github' && !!p.icon;
+  if (isDeployedPagesSite) q += 15;
+
+  // Soft floor on the +50 installable bonus when the ONLY non-github
+  // distribution channel is a docker repo with trivial pull volume.
+  // A docker image with <500 pulls reads as a private deploy artefact,
+  // not consumer distribution — give it half the installable bonus.
+  const nonGithubSources = p.sources.filter((s) => s !== 'github' && s !== 'manual');
+  const lifetimeDistribution =
+    (p.stats.downloads ?? 0) +
+    (p.stats.installs?.value ?? 0) +
+    (p.stats.users ?? 0);
+  if (
+    installable &&
+    nonGithubSources.length === 1 &&
+    nonGithubSources[0] === 'docker' &&
+    lifetimeDistribution < 500
+  ) {
+    q -= 25;
+  }
+
   // Retired discount — multiply by 0.85 instead of 0.7, so substantial
   // retired work (the Firefox addon with 87K downloads + visuals)
   // still beats lame live competitors.
