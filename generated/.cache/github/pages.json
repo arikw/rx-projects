@@ -2,25 +2,10 @@
   "version": 1,
   "_generated": "Auto-generated GitHub Pages meta (favicon + <title>), fetched once per repo whose has_pages=true. Delete to refresh.",
   "pages": {
-    "rx-projects": {
-      "pagesUrl": "https://arikw.github.io/rx-projects/",
-      "favicon": null,
-      "title": "My Projects"
-    },
     "rx-dev-dashboard": {
       "pagesUrl": "https://arikw.github.io/rx-dev-dashboard/",
       "favicon": "https://wzmn.net/projects/_cache/favicon/75904bcdcb67134e-32.png",
       "title": "My Projects"
-    },
-    "script-shield-poc": {
-      "pagesUrl": "https://arikw.github.io/script-shield-poc/",
-      "favicon": null,
-      "title": "Protect me please"
-    },
-    "css-units-demo": {
-      "pagesUrl": "https://arikw.github.io/css-units-demo/",
-      "favicon": null,
-      "title": null
     },
     "rx-browser-bridge-mcp": {
       "pagesUrl": "https://arikw.github.io/rx-browser-bridge-mcp/",
@@ -42,11 +27,6 @@
       "favicon": "https://kids.wzmn.net/favicon.svg",
       "title": "Kids Games Portal"
     },
-    "move-it-game": {
-      "pagesUrl": "https://arikw.github.io/move-it-game/",
-      "favicon": null,
-      "title": "Mouse Movement Game"
-    },
     "kids-keyboard-game": {
       "pagesUrl": "https://arikw.github.io/kids-keyboard-game/",
       "favicon": "https://arikw.github.io/kids-keyboard-game/src/assets/icon.svg",
@@ -66,6 +46,26 @@
       "pagesUrl": "https://arikw.github.io/android-permissions-explorer/",
       "favicon": "https://arikw.github.io/android-permissions-explorer/favicon.ico",
       "title": "Android Permissions Explorer"
+    },
+    "rx-projects": {
+      "pagesUrl": "https://arikw.github.io/rx-projects/",
+      "favicon": "https://wzmn.net/projects/_cache/favicon/75904bcdcb67134e-180-r.png",
+      "title": "My Projects"
+    },
+    "script-shield-poc": {
+      "pagesUrl": "https://arikw.github.io/script-shield-poc/",
+      "favicon": null,
+      "title": "Protect me please"
+    },
+    "css-units-demo": {
+      "pagesUrl": "https://arikw.github.io/css-units-demo/",
+      "favicon": null,
+      "title": null
+    },
+    "move-it-game": {
+      "pagesUrl": "https://arikw.github.io/move-it-game/",
+      "favicon": null,
+      "title": "Mouse Movement Game"
     },
     "contact-me": {
       "pagesUrl": "https://arikw.github.io/contact-me/",
