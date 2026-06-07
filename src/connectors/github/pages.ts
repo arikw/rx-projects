@@ -168,9 +168,27 @@ function inferSize(rel: string, href: string): number {
   return 16;
 }
 
+/** Re-resolve an absolute-path href ("/foo/bar.png") as if it were a path
+ *  relative to the page's pathname. This catches GitHub Pages deployments
+ *  where the site was built with a `base` path that doesn't match its
+ *  github.io subpath (e.g. an Astro/Hugo/Jekyll site built with
+ *  `base: '/projects/'` and hosted at arikw.github.io/rx-projects/ — the
+ *  favicon hrefs ship as `/projects/_cache/…` but the actual files are
+ *  served from `/rx-projects/projects/_cache/…`). Returns null when the
+ *  input isn't an absolute path or the resolution fails. */
+function pageRelativeFallback(rawHref: string, baseUrl: string): string | null {
+  if (!rawHref.startsWith('/')) return null;
+  try {
+    const pageBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    return new URL(rawHref.slice(1), pageBase).toString();
+  } catch {
+    return null;
+  }
+}
+
 async function extractFavicon(html: string, baseUrl: string): Promise<string | null> {
   const links = collectFaviconLinks(html);
-  const candidates: FaviconCandidate[] = [];
+  const candidates: (FaviconCandidate & { rawHref: string })[] = [];
   for (const l of links) {
     let resolved: string;
     try {
@@ -180,7 +198,7 @@ async function extractFavicon(html: string, baseUrl: string): Promise<string | n
     }
     const declared = parseSizes(l.sizes);
     const size = declared > 0 ? declared : inferSize(l.rel, resolved);
-    candidates.push({ href: resolved, rel: l.rel, size });
+    candidates.push({ href: resolved, rel: l.rel, size, rawHref: l.href });
   }
   // Rank: largest size first; ties broken by rel preference (mask-icon /
   // SVG > apple-touch > generic icon — vector formats and Apple's 180px
@@ -195,6 +213,10 @@ async function extractFavicon(html: string, baseUrl: string): Promise<string | n
 
   for (const c of candidates) {
     if (c.href.startsWith('data:') || (await isReachable(c.href))) return c.href;
+    // Absolute-path miss → try page-relative resolution before giving up
+    // on this candidate.
+    const alt = pageRelativeFallback(c.rawHref, baseUrl);
+    if (alt && (await isReachable(alt))) return alt;
   }
   // Fallback to /favicon.ico convention.
   try {
@@ -204,6 +226,26 @@ async function extractFavicon(html: string, baseUrl: string): Promise<string | n
     /* fallthrough */
   }
   return null;
+}
+
+/** Resolve a `<link rel="canonical" href="…">` if present and pointing
+ *  at a different origin. Used as a fallback hop when favicon paths
+ *  scraped from the github.io URL don't resolve (typically because the
+ *  dashboard's build `base` doesn't match the github.io subpath — the
+ *  canonical points at the dashboard's actual public URL where the
+ *  paths line up). Returns null when missing or same-as-current. */
+function followCanonical(html: string, baseUrl: string): string | null {
+  const m =
+    html.match(/<link[^>]+rel=(["'])canonical\1[^>]+href=(["'])([^"']+)\2/i) ??
+    html.match(/<link[^>]+href=(["'])([^"']+)\1[^>]+rel=(["'])canonical\3/i);
+  const raw = m?.[3] ?? m?.[2];
+  if (!raw) return null;
+  try {
+    const resolved = new URL(raw, baseUrl).toString();
+    return resolved === baseUrl ? null : resolved;
+  } catch {
+    return null;
+  }
 }
 
 /** Resolve a `<meta http-equiv="refresh" content="0;url=…">` redirect
@@ -253,7 +295,12 @@ export async function fetchPagesMeta(
     if (!title) title = extractTitle(html);
     if (!favicon) favicon = await extractFavicon(html, finalUrl);
     if (title && favicon) break;
-    const next = followMetaRefresh(html, finalUrl);
+    // Prefer following <meta http-equiv="refresh"> (SPA / locale stubs);
+    // if there isn't one and the favicon still hasn't been found, try the
+    // <link rel="canonical"> as a hop — catches deployments where the
+    // github.io subpath doesn't match the dashboard's build base.
+    let next = followMetaRefresh(html, finalUrl);
+    if (!next && !favicon) next = followCanonical(html, finalUrl);
     if (!next) break;
     currentUrl = next;
   }
