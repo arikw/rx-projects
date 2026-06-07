@@ -1,0 +1,120 @@
+name: Setup
+
+# One-time, form-driven setup for a fresh fork. Generates
+# projects.config.local.ts from form inputs, enables GitHub Pages,
+# commits the result — and the regular `deploy.yml` workflow picks up
+# the commit and publishes the site. Lets a forker go from "Fork"
+# to a live dashboard without ever opening a terminal.
+#
+# To re-run later (with new handles / different sources): Actions tab →
+# Setup → Run workflow. The script always overwrites
+# projects.config.local.ts, so each run is a clean re-config.
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_title:
+        description: 'Site title (shown in the browser tab and at the top of the hero)'
+        required: false
+        default: 'My Projects'
+      site_tagline:
+        description: 'Short kicker above the hero (optional)'
+        required: false
+      site_about:
+        description: 'Longer intro paragraph between hero and projects (optional, markdown OK)'
+        required: false
+      npm_user:
+        description: 'Your npm username (optional)'
+        required: false
+      docker_user:
+        description: 'Your Docker Hub username (optional)'
+        required: false
+      stackoverflow_user_id:
+        description: 'Your Stack Overflow numeric user id (optional — find it in your SO profile URL)'
+        required: false
+      chrome_extension_ids:
+        description: 'Chrome Web Store extension ids, comma-separated (32 chars each — find in chromewebstore.google.com/detail/<id> URLs)'
+        required: false
+      gplay_packages:
+        description: 'Google Play package names, comma-separated (e.g. com.yourcompany.app)'
+        required: false
+      gnome_extension_ids:
+        description: 'GNOME Shell extension numeric ids, comma-separated (find in extensions.gnome.org/extension/<id>/ URLs)'
+        required: false
+      default_language:
+        description: 'Default content-language filter (e.g. en / he, or blank for "All")'
+        required: false
+        default: 'en'
+      favicon_shape:
+        description: 'Favicon shape — rounded, square, or auto (auto = rounded when source is a profile avatar)'
+        required: false
+        default: 'auto'
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Generate projects.config.local.ts
+        env:
+          GH_OWNER: ${{ github.repository_owner }}
+          GH_REPO: ${{ github.event.repository.name }}
+          SITE_TITLE: ${{ inputs.site_title }}
+          SITE_TAGLINE: ${{ inputs.site_tagline }}
+          SITE_ABOUT: ${{ inputs.site_about }}
+          NPM_USER: ${{ inputs.npm_user }}
+          DOCKER_USER: ${{ inputs.docker_user }}
+          STACKOVERFLOW_USER_ID: ${{ inputs.stackoverflow_user_id }}
+          CHROME_EXTENSION_IDS: ${{ inputs.chrome_extension_ids }}
+          GPLAY_PACKAGES: ${{ inputs.gplay_packages }}
+          GNOME_EXTENSION_IDS: ${{ inputs.gnome_extension_ids }}
+          DEFAULT_LANGUAGE: ${{ inputs.default_language }}
+          FAVICON_SHAPE: ${{ inputs.favicon_shape }}
+        run: node .github/scripts/setup.mjs
+
+      - name: Enable GitHub Pages (build_type=workflow)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # POST creates the Pages site. If it already exists, GitHub
+          # returns 409 — that's fine, the existing config is what we
+          # want (build_type=workflow). PUT updates an existing site;
+          # we run it conditionally so a re-run leaves things as-is.
+          set +e
+          create_resp=$(gh api -X POST "/repos/${GITHUB_REPOSITORY}/pages" -f build_type=workflow 2>&1)
+          create_code=$?
+          set -e
+          if [ $create_code -eq 0 ]; then
+            echo "Pages: created with build_type=workflow"
+          elif echo "$create_resp" | grep -q '409\|already exists\|HTTP 409'; then
+            echo "Pages: already enabled — leaving as-is"
+          else
+            echo "Pages create attempt produced:"
+            echo "$create_resp"
+            echo "Proceeding — if Pages isn't on, enable it manually under Settings → Pages."
+          fi
+
+      - name: Commit projects.config.local.ts
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects.config.local.ts
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Setup: configure dashboard for ${{ github.repository_owner }}"
+            git push
+          fi
+
+      - name: Next-steps summary
+        run: |
+          echo "::notice::Setup complete. The deploy workflow will fire automatically on the commit above."
+          echo "::notice::Once it lands (~1 min), your dashboard is live at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
