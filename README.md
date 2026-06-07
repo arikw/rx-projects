@@ -33,34 +33,43 @@ This pulls every project — wherever it lives — onto one page that updates it
 - ✅ **Resilient** — connectors degrade gracefully; a hiccup on one source never blanks the dashboard; `/status.json` surfaces what's broken
 - ✅ **Auto-detected retirement** — Play Store 404s and Chrome Web Store `isDeleted` flags surface as retired-project state automatically
 
-## Setup
+## Setup (no terminal needed)
 
-After you've forked (see [Deploy](#deploy) below for the GitHub Pages flow):
+Everything below happens in the browser. No local clone, no Node, no terminal.
+
+1. **Fork** — click **Fork** at the top of this page. GitHub creates a copy of the repo under your account.
+2. **Enable Actions on your fork** — GitHub disables Actions on forks by default. On your fork, open the **Actions** tab and click **"I understand my workflows, go ahead and enable them"**.
+3. **Run the Setup workflow** — Actions → **Setup** (in the left sidebar) → **Run workflow** (button on the right). A form appears with optional fields:
+   - **Site title** — what shows in the browser tab / hero
+   - **Tagline** — short kicker above the hero
+   - **About** — longer intro paragraph (markdown OK)
+   - **npm / Docker / Stack Overflow handles** — your public usernames / numeric SO id
+   - **Chrome extension ids** — 32-char ids from `chromewebstore.google.com/detail/<id>` URLs, comma-separated
+   - **Google Play packages** — `com.you.app`-style package names, comma-separated
+   - **GNOME extension ids** — numeric ids from `extensions.gnome.org/extension/<id>/` URLs, comma-separated
+   - **Default language** — `en` / `he` / blank for "All"
+   - **Favicon shape** — `auto` / `rounded` / `square`
+
+   Fill what's relevant, leave the rest empty, click **Run workflow**.
+4. **Done.** The Setup workflow generates `projects.config.local.ts` for you, enables GitHub Pages with `build_type=workflow`, and commits the result. The regular Deploy workflow fires automatically on that commit and publishes your site to `https://<your-user>.github.io/<your-fork>/` within ~1 minute.
+
+To re-configure later (new handles, more sources): Actions → Setup → Run workflow with the new values. Each run **overwrites** `projects.config.local.ts` cleanly, so it's safe to use as a regenerator.
+
+**Custom domain or sub-path?** Edit `deployment.site` and `deployment.base` in the generated `projects.config.local.ts` from the GitHub web editor (press `.` on the file, or click the pencil) — the `base` prefix carries through every internal link and canonical tag, so you can also proxy GitHub Pages from a sub-path on an existing site.
+
+## Setup (locally, optional)
+
+If you'd rather work locally — to tweak styles, write detail pages, add a new connector, etc.:
 
 ```bash
-git clone https://github.com/<your-user>/rx-dev-dashboard.git
-cd rx-dev-dashboard
+git clone https://github.com/<your-user>/<your-fork>.git
+cd <your-fork>
 npm install
 npm run init       # auto-detects your GitHub handle from your git remote
 npm run dev        # → http://localhost:4321/
 ```
 
 `init` reads your git remote and pre-fills `projects.config.local.ts` with sensible defaults. **The first `dev` view is empty by design** — drop your real handles (npm, Docker, Chrome extension IDs, Play package names) into the generated file and refresh. The first full build with real handles takes a few minutes (every connector fetches fresh + every banner/icon gets cached); subsequent builds reuse the on-disk cache and run in seconds.
-
-## Deploy
-
-The fast path — fork this repo:
-
-1. Click **Fork** at the top of this page.
-2. Enable GitHub Actions on your fork (forks have Actions disabled by default):
-   - **Web UI:** your fork's **Actions** tab → click "I understand my workflows, go ahead and enable them"
-   - **CLI:** `gh api -X PUT repos/<your-user>/rx-dev-dashboard/actions/permissions -F enabled=true`
-3. Settings → **Pages → Source: GitHub Actions**.
-4. Clone your fork locally, `npm install`, `npm run init`, fill in handles, commit + push.
-
-The workflow builds and publishes on every push, and on a daily cron at 08:00 UTC so stats stay fresh without manual touches.
-
-**Custom domain or sub-path?** Edit `deployment.site` and `deployment.base` in `projects.config.local.ts` — the `base` prefix carries through every internal link and canonical tag, so you can also proxy GitHub Pages from a sub-path on an existing site.
 
 ## Built-in sources
 
