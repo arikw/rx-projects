@@ -19,7 +19,7 @@ const config: ProjectsConfig = {
     siteTitle: 'My Projects',
     siteDescription: "RX (Arik's) Projects — My dev projects, packages, and tooling",
     siteTagline: "Things I've built — with the live numbers",
-    siteAbout: `Most things here started as a tool I needed but couldn't find. A few started as a tool that almost existed but had a sharp edge worth filing down. The dashboard pulls live numbers on each one from the public web at build time — open-source repos, packages, extensions, mobile games — so the stats above stay honest. Code's open; if something here scratches an itch you have too, feedback's welcome.`,
+    siteAbout: `Almost everything below started the same way: I went looking for something, couldn't find it, and built it myself. Most are solo from first commit to last; a smaller group are ones where I came in as a meaningful contributor and shaped where they went. Scratching that itch is still what keeps me shipping — and if you spot something worth a comment, send it my way.`,
     defaultLanguage: 'en',
   },
   user: {
@@ -319,6 +319,10 @@ const config: ProjectsConfig = {
       year: 2005,
       asOf: '2026-06-02',
       retired: true,
+      // J2ME platform reached effective end-of-life around 2014; the
+      // download page is still up so we keep crediting stats, but the
+      // lifespan range ends here.
+      retiredAt: '2014-12-31',
       screenshots: [
         'https://www.math4mobile.com/wp-content/images/Graph2Go-Screenshot.gif',
       ],
@@ -345,6 +349,10 @@ const config: ProjectsConfig = {
       year: 2005,
       asOf: '2026-06-02',
       retired: true,
+      // J2ME platform reached effective end-of-life around 2014; the
+      // download page is still up so we keep crediting stats, but the
+      // lifespan range ends here.
+      retiredAt: '2014-12-31',
       screenshots: [
         'https://www.math4mobile.com/wp-content/images/Solve2Go-Screenshot.gif',
       ],
@@ -368,6 +376,10 @@ const config: ProjectsConfig = {
       year: 2005,
       asOf: '2026-06-02',
       retired: true,
+      // J2ME platform reached effective end-of-life around 2014; the
+      // download page is still up so we keep crediting stats, but the
+      // lifespan range ends here.
+      retiredAt: '2014-12-31',
       screenshots: [
         'https://www.math4mobile.com/wp-content/images/Quad2Go-Screenshot.gif',
       ],
@@ -391,6 +403,10 @@ const config: ProjectsConfig = {
       year: 2005,
       asOf: '2026-06-02',
       retired: true,
+      // J2ME platform reached effective end-of-life around 2014; the
+      // download page is still up so we keep crediting stats, but the
+      // lifespan range ends here.
+      retiredAt: '2014-12-31',
       screenshots: [
         'https://www.math4mobile.com/wp-content/images/Sketch2Go-Screenshot.gif',
       ],
@@ -414,6 +430,10 @@ const config: ProjectsConfig = {
       year: 2005,
       asOf: '2026-06-02',
       retired: true,
+      // J2ME platform reached effective end-of-life around 2014; the
+      // download page is still up so we keep crediting stats, but the
+      // lifespan range ends here.
+      retiredAt: '2014-12-31',
       screenshots: [
         'https://www.math4mobile.com/wp-content/images/Fit2Go-Screenshot.gif',
       ],
