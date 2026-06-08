@@ -49,6 +49,19 @@ export const GET: APIRoute = async () => {
   // card edge.
   const cellX = [0, 145, 290, 435];
 
+  // Icon paths lifted verbatim from src/components/Stat.astro so the
+  // glyphs in the README match what the hero on /projects/ uses.
+  // Each is drawn in a 24×24 viewBox; the inline <svg> wrappers in
+  // the markup scale them to ~11px next to the label text.
+  const ICONS = {
+    star:     'M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z',
+    download: 'M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z',
+    users:    'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
+    projects: 'M3 5h7l2 2h9v12H3V5zm2 2v10h14V9h-7.83l-2-2H5z',
+  };
+  const icon = (kind: keyof typeof ICONS, x: number, y: number) =>
+    `<svg x="${x}" y="${y}" width="11" height="11" viewBox="0 0 24 24"><path class="muted" d="${ICONS[kind]}"/></svg>`;
+
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 220" width="640" height="220" role="img" aria-label="${userName} — live project stats">
   <title>${userName} — live project stats</title>
   <style>
@@ -103,7 +116,7 @@ export const GET: APIRoute = async () => {
     <!-- Top kicker: live dot + label -->
     <g transform="translate(30 32)">
       <circle class="live-dot" cx="0" cy="-2" r="3.5"/>
-      <text class="sans label muted" x="11" y="2">LIVE PROJECT STATS · ${userHandle.toUpperCase()}</text>
+      <text class="sans label muted" x="11" y="2">LIVE PROJECT STATS</text>
     </g>
 
     <!-- Title + tagline -->
@@ -111,23 +124,29 @@ export const GET: APIRoute = async () => {
     ${tagline ? `<text class="sans muted" x="30" y="95" font-size="12">${tagline}</text>` : ''}
     <line class="accent-rule" x1="30" y1="106" x2="68" y2="106" stroke-width="2"/>
 
-    <!-- Stats row -->
+    <!-- Stats row. Each cell pairs the big number with a small icon
+         (from the same set the hero on /projects/ uses) + label text
+         shifted right by the icon width so they read as one line. -->
     <g transform="translate(30 144)">
       <g>
         <text class="serif num fg" font-size="30" x="${cellX[0]}" y="0">${formatStat(stats.starsAndLikes)}+</text>
-        <text class="sans label muted" x="${cellX[0]}" y="18">★ Stars &amp; likes</text>
+        ${icon('star', cellX[0], 9)}
+        <text class="sans label muted" x="${cellX[0] + 14}" y="18">Stars &amp; likes</text>
       </g>
       <g>
         <text class="serif num fg" font-size="30" x="${cellX[1]}" y="0">${formatStat(stats.downloadsAndPulls)}+</text>
-        <text class="sans label muted" x="${cellX[1]}" y="18">↓ Downloads &amp; pulls</text>
+        ${icon('download', cellX[1], 9)}
+        <text class="sans label muted" x="${cellX[1] + 14}" y="18">Downloads &amp; pulls</text>
       </g>
       <g>
         <text class="serif num fg" font-size="30" x="${cellX[2]}" y="0">${formatStat(stats.activeUsers)}+</text>
-        <text class="sans label muted" x="${cellX[2]}" y="18">⏺ Active users</text>
+        ${icon('users', cellX[2], 9)}
+        <text class="sans label muted" x="${cellX[2] + 14}" y="18">Active users</text>
       </g>
       <g>
         <text class="serif num fg" font-size="30" x="${cellX[3]}" y="0">${stats.totalProjects}</text>
-        <text class="sans label muted" x="${cellX[3]}" y="18">▢ Projects shipped</text>
+        ${icon('projects', cellX[3], 9)}
+        <text class="sans label muted" x="${cellX[3] + 14}" y="18">Projects shipped</text>
       </g>
     </g>
 
