@@ -71,6 +71,11 @@
       "pagesUrl": "https://arikw.github.io/contact-me/",
       "favicon": null,
       "title": null
+    },
+    "live-dev-portfolio": {
+      "pagesUrl": "https://arikw.github.io/live-dev-portfolio/",
+      "favicon": null,
+      "title": null
     }
   }
 }
