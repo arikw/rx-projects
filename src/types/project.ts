@@ -44,6 +44,8 @@ export type CanonicalStats = {
   downloads?: number;
   /** Recent download rate, last 30 days (npm) — point-in-time, card-only. */
   downloadsMonthly?: number;
+  /** Other packages that depend on this one (ecosyste.ms `dependent_packages_count`). */
+  dependents?: number;
   /** Unique app installs (Google Play). `exact:false` = a tier floor like "10,000+". */
   installs?: { value: number; exact: boolean };
   /** Current active installs / users (Chrome Web Store). */

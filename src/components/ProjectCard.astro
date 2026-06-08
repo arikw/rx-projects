@@ -42,7 +42,7 @@ const featured = featuredScore(p);
 // Card stats: number + icon only (no descriptive words). The hero stats
 // act as a legend — same icons, full labels — so visitors learn the meaning
 // once at the top, then read the cards as compact number rows.
-type CardStat = { text: string; title: string; icon?: 'star' | 'download' | 'users' | 'past-users' | 'calendar' };
+type CardStat = { text: string; title: string; icon?: 'star' | 'download' | 'users' | 'past-users' | 'calendar' | 'dependents' };
 const stats: CardStat[] = [];
 const st = p.stats;
 if (st.stars && st.stars > 0)
@@ -63,6 +63,14 @@ if (st.downloads && st.downloads > 0)
   stats.push({ text: formatStat(st.downloads), title: 'Downloads / pulls (npm, Docker, GNOME, mirrors)', icon: 'download' });
 if (st.downloadsMonthly && st.downloadsMonthly > 0)
   stats.push({ text: `${formatStat(st.downloadsMonthly)}/mo`, title: 'npm downloads in the last 30 days', icon: 'download' });
+if (st.dependents && st.dependents > 0)
+  stats.push({
+    text: formatStat(st.dependents),
+    title: st.dependents === 1
+      ? '1 other npm package depends on this one'
+      : `${st.dependents.toLocaleString('en')} other npm packages depend on this one`,
+    icon: 'dependents',
+  });
 if (st.installs && st.installs.value > 0)
   stats.push({
     text: `${formatStat(st.installs.value)}${st.installs.exact ? '' : '+'}`,
@@ -205,6 +213,13 @@ const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
           {s.icon === 'calendar' && (
             <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" />
+            </svg>
+          )}
+          {s.icon === 'dependents' && (
+            <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true">
+              {/* Material "device_hub" — one node at the top branching to
+                  three at the bottom. Reads as "N things depend on this". */}
+              <path fill="currentColor" d="M17 16l-4-4V8.82C14.16 8.4 15 7.3 15 6c0-1.66-1.34-3-3-3S9 4.34 9 6c0 1.3.84 2.4 2 2.82V12l-4 4H3v5h5v-3.05l4-4.2 4 4.2V21h5v-5h-4z"/>
             </svg>
           )}
           {s.text}

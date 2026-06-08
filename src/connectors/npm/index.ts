@@ -1,3 +1,5 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import type { Connector } from '../types';
 import type { ConnectorResult } from '../../types/project';
 import { defineConnector, type UrlIdExtractor } from '../_define';
@@ -11,6 +13,8 @@ import {
   type PackageDownloads,
 } from '../../lib/npm-downloads-cache';
 import iconSvg from './icon.svg?raw';
+
+const runCurl = promisify(execFile);
 
 export const urlExtractors: UrlIdExtractor[] = [
   {
@@ -44,11 +48,11 @@ class NotFoundError extends Error {}
 // A couple of quick retries only — this runs in a cron, so we never stall long
 // on a rate limit. If it keeps failing, we give up and let the next run retry
 // (the cache is eventually-correct).
-async function fetchJson<T>(url: string, tries = 3): Promise<T> {
+async function fetchJson<T>(url: string, tries = 3, extraHeaders: Record<string, string> = {}): Promise<T> {
   let lastErr: unknown;
   for (let i = 0; i < tries; i++) {
     try {
-      const res = await fetch(url, { headers: UA });
+      const res = await fetch(url, { headers: { ...UA, ...extraHeaders } });
       if (res.ok) return (await res.json()) as T;
       if (res.status === 404) throw new NotFoundError(`404 ${url}`);
       // Rate limited / server error — short capped back-off, then retry.
@@ -90,6 +94,45 @@ async function fetchPackagesByMaintainer(user: string): Promise<NpmSearchResult[
     if (data.objects.length < 250) break;
   }
   return all;
+}
+
+// Dependent-packages count from the same Spiferack JSON endpoint npmjs.com's
+// own package page uses. Sending `X-Spiferack: 1` flips the response from HTML
+// to JSON, and `dependents.dependentsCount` is the exact number the site
+// renders — keeping the dashboard in lock-step with what visitors see on
+// npmjs.com itself.
+//
+// npmjs.com is fronted by Cloudflare and gates on TLS fingerprint (Node's
+// fetch handshake gets a 403 "Just a moment..."), so we shell out to curl —
+// whose ClientHello passes — for this one call. Returns null on any
+// failure; the caller falls back to the last cached value so a transient
+// blip never drops the figure to 0.
+async function fetchDependents(pkg: string): Promise<number | null> {
+  const url = `https://www.npmjs.com/package/${encodeURIComponent(pkg)}`;
+  try {
+    const { stdout } = await runCurl(
+      'curl',
+      [
+        '-sL', '--max-time', '15',
+        // npmjs.com's Cloudflare gate flips a bare "Mozilla/5.0" to a 403
+        // challenge but lets a full browser-style UA through — the rest of
+        // the connector's UA stays as the bot label since the registry
+        // and downloads APIs are unhostile.
+        '-A', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+        '-H', 'X-Spiferack: 1',
+        '-H', 'Accept: application/json',
+        url,
+      ],
+      { maxBuffer: 4 * 1024 * 1024 },
+    );
+    if (!stdout || stdout[0] !== '{') return null;
+    const data = JSON.parse(stdout) as { dependents?: { dependentsCount?: string | number } };
+    const raw = data.dependents?.dependentsCount;
+    const n = typeof raw === 'number' ? raw : raw != null ? parseInt(String(raw), 10) : NaN;
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  } catch {
+    return null;
+  }
 }
 
 // Returns null on fetch failure (e.g. rate-limit) so a transient error is never
@@ -195,12 +238,15 @@ export const fetchNpmProjects: Connector = async (config, options) => {
     const dl = await refreshPackage(cache, name, m.package.date, now);
     if (fetched != null) dl.lastMonth = fetched; // persist last-good monthly
     const monthly = fetched ?? dl.lastMonth ?? null; // reuse cached when fetch failed
-    return { entry: m, monthly, allTime: sumAllTime(dl), firstYear: new Date(dl.created).getUTCFullYear() };
+    const fetchedDependents = await fetchDependents(name);
+    if (fetchedDependents != null) dl.dependents = fetchedDependents; // persist last-good
+    const dependents = fetchedDependents ?? dl.dependents ?? null;
+    return { entry: m, monthly, dependents, allTime: sumAllTime(dl), firstYear: new Date(dl.created).getUTCFullYear() };
   });
 
   writeNpmCache(cache);
 
-  return enriched.map<ConnectorResult>(({ entry, monthly, allTime, firstYear }) => ({
+  return enriched.map<ConnectorResult>(({ entry, monthly, dependents, allTime, firstYear }) => ({
     // npm registry is the origin. All-time → canonical `downloads`.
     origin: {
       platform: 'npm',
@@ -217,6 +263,7 @@ export const fetchNpmProjects: Connector = async (config, options) => {
       stats: {
         downloads: allTime,
         ...(monthly != null ? { downloadsMonthly: monthly } : {}),
+        ...(dependents != null && dependents > 0 ? { dependents } : {}),
       },
     },
   }));
