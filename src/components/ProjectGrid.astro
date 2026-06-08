@@ -200,8 +200,29 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     //       NOT used by writeHash(): including it would let a saved
     //       preference suppress hash params and break URL sharing
     //       (the recipient's localStorage isn't ours).
+    // localStorage keys for "remember last filter" across reloads. Each
+    // axis is independent: language has its own auto-detect-from-browser
+    // fallback (see the layered defaults below), the others just store
+    // and restore the last-selected value verbatim.
+    const STORAGE_KEYS = {
+      source: 'rxp:source-filter',
+      sort: 'rxp:sort-filter',
+      tag: 'rxp:tag-filter',
+      lang: 'rxp:lang-filter',
+      status: 'rxp:status-filter',
+    } as const;
+    function lsGet(k: string): string | null {
+      try { return localStorage.getItem(k); } catch { return null; }
+    }
+    function lsSet(k: string, v: string) {
+      try { localStorage.setItem(k, v); } catch { /* private mode etc. */ }
+    }
+    function lsDel(k: string) {
+      try { localStorage.removeItem(k); } catch { /* private mode etc. */ }
+    }
+
     const configDefaultLanguage = root.dataset.defaultLanguage ?? '';
-    const LANG_STORAGE_KEY = 'rxp:lang-filter';
+    const LANG_STORAGE_KEY = STORAGE_KEYS.lang;
     const projectLanguages = new Set(
       Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter-language]'))
         .map((c) => c.dataset.filterLanguage ?? '')
@@ -419,7 +440,13 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       activeSource = '';
       activeSort = 'featured';
       activeTag = '';
-      activeLanguage = personalDefaultLanguage;
+      // For the user's mental model, Reset = "really go back to the
+      // unfiltered baseline." If localStorage kept the previous picks,
+      // the next reload would silently restore them and the reset would
+      // feel undone. Clear all axis storage first; activeLanguage falls
+      // back to the environment default (browser-detected → config).
+      Object.values(STORAGE_KEYS).forEach(lsDel);
+      activeLanguage = environmentDefaultLanguage;
       activeStatus = '';
       shown = pageSize;
       sourceChips.forEach((c) => {
@@ -452,6 +479,7 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
 
     function setSource(source: string) {
       activeSource = source;
+      lsSet(STORAGE_KEYS.source, source);
       shown = pageSize;
       sourceChips.forEach((c) => {
         c.setAttribute('aria-pressed', String((c.dataset.filterSource ?? '') === source));
@@ -471,6 +499,7 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
 
     function setSort(sort: Sort) {
       activeSort = sort;
+      lsSet(STORAGE_KEYS.sort, sort);
       shown = pageSize;
       sortChips.forEach((c) => {
         c.setAttribute('aria-pressed', String(c.dataset.filterSort === sort));
@@ -481,6 +510,7 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
 
     function setTag(tag: string) {
       activeTag = tag;
+      lsSet(STORAGE_KEYS.tag, tag);
       shown = pageSize;
       tagChips.forEach((c) => {
         c.setAttribute('aria-pressed', String((c.dataset.filterTag ?? '') === tag));
@@ -499,7 +529,7 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
         // Save explicit chip clicks so the next visit (without a hash)
         // restores the choice. Programmatic resets pass persist=false to
         // avoid burning the user's preference on a Reset Filters click.
-        try { localStorage.setItem(LANG_STORAGE_KEY, lang); } catch { /* private mode etc. */ }
+        lsSet(LANG_STORAGE_KEY, lang);
       }
       writeHash();
       applyFilter();
@@ -507,6 +537,7 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
 
     function setStatus(status: Status) {
       activeStatus = status;
+      lsSet(STORAGE_KEYS.status, status);
       shown = pageSize;
       statusChips.forEach((c) => {
         c.setAttribute('aria-pressed', String((c.dataset.filterStatus ?? '') === status));
@@ -620,15 +651,21 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
 
     // Apply initial state from the hash before the first render so the
     // page lands in the requested state without a visible filter flicker.
+    // Hash wins over localStorage so a shared URL always renders verbatim;
+    // when the hash is absent for a given axis, fall back to the user's
+    // last-stored choice (so "select filter, reload without hash" still
+    // shows that filter on the next visit).
     const initial = readHash();
-    if (initial.source && sourceChips.some((c) => c.dataset.filterSource === initial.source)) {
-      activeSource = initial.source;
+    const sourceCandidate = initial.source ?? lsGet(STORAGE_KEYS.source);
+    if (sourceCandidate && sourceChips.some((c) => c.dataset.filterSource === sourceCandidate)) {
+      activeSource = sourceCandidate;
       sourceChips.forEach((c) => {
         c.setAttribute('aria-pressed', String((c.dataset.filterSource ?? '') === activeSource));
       });
     }
-    if (initial.sort && (['featured', 'popularity', 'year'] as Sort[]).includes(initial.sort as Sort)) {
-      activeSort = initial.sort as Sort;
+    const sortCandidate = initial.sort ?? lsGet(STORAGE_KEYS.sort);
+    if (sortCandidate && (['featured', 'popularity', 'year'] as Sort[]).includes(sortCandidate as Sort)) {
+      activeSort = sortCandidate as Sort;
       sortChips.forEach((c) => {
         c.setAttribute('aria-pressed', String(c.dataset.filterSort === activeSort));
       });
@@ -646,8 +683,9 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       c.setAttribute('aria-pressed', String((c.dataset.filterLanguage ?? '') === activeLanguage));
     });
     const VALID_STATUSES: Status[] = ['live', 'retired', 'updated'];
-    if (typeof initial.status === 'string' && (VALID_STATUSES as string[]).includes(initial.status)) {
-      activeStatus = initial.status as Status;
+    const statusCandidate = initial.status ?? lsGet(STORAGE_KEYS.status);
+    if (statusCandidate && (VALID_STATUSES as string[]).includes(statusCandidate)) {
+      activeStatus = statusCandidate as Status;
     }
     statusChips.forEach((c) => {
       c.setAttribute('aria-pressed', String((c.dataset.filterStatus ?? '') === activeStatus));
@@ -663,10 +701,11 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     // Tag validation runs after refreshTagCounts because chip visibility
     // depends on the active source — a tag that doesn't appear under the
     // current source is silently dropped.
-    if (initial.tag) {
-      const chip = tagChips.find((c) => c.dataset.filterTag === initial.tag);
+    const tagCandidate = initial.tag ?? lsGet(STORAGE_KEYS.tag);
+    if (tagCandidate) {
+      const chip = tagChips.find((c) => c.dataset.filterTag === tagCandidate);
       if (chip && !chip.hasAttribute('hidden')) {
-        activeTag = initial.tag;
+        activeTag = tagCandidate;
         tagChips.forEach((c) => {
           c.setAttribute('aria-pressed', String((c.dataset.filterTag ?? '') === activeTag));
         });
