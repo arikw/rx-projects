@@ -229,6 +229,7 @@ function reconcileResource(cands: Cand[]): CanonicalStats {
   const forks = pick(cands, (x) => x.forks, (v) => v);
   const downloads = pick(cands, (x) => x.downloads, (v) => v);
   const downloadsMonthly = pick(cands, (x) => x.downloadsMonthly, (v) => v);
+  const dependents = pick(cands, (x) => x.dependents, (v) => v);
   const users = pick(cands, (x) => x.users, (v) => v);
   const installs = pick(cands, (x) => x.installs, (v) => v.value);
   const rating = pick(cands, (x) => x.rating, (v) => v.count ?? 0);
@@ -236,6 +237,7 @@ function reconcileResource(cands: Cand[]): CanonicalStats {
   if (forks != null) s.forks = forks;
   if (downloads != null) s.downloads = downloads;
   if (downloadsMonthly != null) s.downloadsMonthly = downloadsMonthly;
+  if (dependents != null) s.dependents = dependents;
   if (users != null) s.users = users;
   if (installs != null) s.installs = installs;
   if (rating != null) s.rating = rating;
@@ -288,6 +290,7 @@ function buildProject(group: ConnectorResult[]): Project {
   if (has((c) => c.forks)) stats.forks = sum((c) => c.forks);
   if (has((c) => c.downloads)) stats.downloads = sum((c) => c.downloads);
   if (has((c) => c.downloadsMonthly)) stats.downloadsMonthly = sum((c) => c.downloadsMonthly);
+  if (has((c) => c.dependents)) stats.dependents = sum((c) => c.dependents);
   if (has((c) => c.users)) stats.users = sum((c) => c.users);
 
   const installContribs = contributions.filter((c) => c.installs);
@@ -392,6 +395,7 @@ function buildProject(group: ConnectorResult[]): Project {
   const tags = [...new Set(allReps.flatMap((r) => r.tags ?? []))];
   const years = allReps.map((r) => r.firstReleased).filter((y): y is number => typeof y === 'number');
   const updatedAts = allReps.map((r) => r.asOf).filter((u): u is string => !!u);
+  const retiredAts = allReps.map((r) => r.retiredAt).filter((u): u is string => !!u);
 
   const ownUrls = new Set(group.flatMap(identityUrls));
   const homepage = allReps
@@ -426,6 +430,7 @@ function buildProject(group: ConnectorResult[]): Project {
     openSource: allReps.some((r) => r.openSource),
     sourceUrl: firstField(ordered, (r) => r.sourceUrl),
     retired: allReps.some((r) => r.retired),
+    retiredAt: retiredAts.sort().at(-1),
     featured: false,
     hasDetail: false,
   };

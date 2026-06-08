@@ -27,18 +27,24 @@ type AppbrainApp = {
   installs?: number;
   /** First year on Google Play (from firstSeenS). */
   year?: number;
+  /** ISO date AppBrain last observed the listing alive (from lastSeenS).
+   * For retired apps this is effectively the retirement date; for live apps
+   * it's close to today. Feeds the rep's `asOf` so the build reconciler
+   * has an end-year signal — without it, retired Play apps showed only the
+   * first-released year, no range. */
+  lastSeen?: string;
   /** App icon URL (Google-hosted). */
   iconUrl?: string;
   /** Positive review snippets surfaced by AppBrain's `commentInsights`. */
   positiveQuotes?: string[];
 };
 
-type AppbrainCache = { version: 1; _generated: string; apps: Record<string, AppbrainApp> };
+type AppbrainCache = { version: 2; _generated: string; apps: Record<string, AppbrainApp> };
 
 const NOTE =
   'Auto-generated AppBrain cache (GetIntelligenceDataRequest + Play tier). Frozen removed apps — fetched once.';
 
-const emptyCache = (): AppbrainCache => ({ version: 1, _generated: NOTE, apps: {} });
+const emptyCache = (): AppbrainCache => ({ version: 2, _generated: NOTE, apps: {} });
 
 // AppBrain is behind Cloudflare, which blocks Node's fetch (undici) regardless
 // of headers; curl's TLS handshake passes, so we shell out. Fetch-once cache,
@@ -74,6 +80,7 @@ type Intel = {
   histogram?: number[];
   description?: string;
   year?: number;
+  lastSeen?: string;
   iconUrl?: string;
   positiveQuotes?: string[];
 };
@@ -104,6 +111,13 @@ async function fetchIntel(pkg: string): Promise<Intel | null> {
     const histogram = [1, 2, 3, 4, 5].map((i) => Number(d[`ratings${i}`]) || 0);
     const fsRaw = Number(d.firstSeenS);
     const year = Number.isFinite(fsRaw) && fsRaw > 0 ? new Date(fsRaw * 1000).getUTCFullYear() : undefined;
+    // lastSeenS = epoch seconds AppBrain last observed the listing alive.
+    // For retired apps this is the de-facto removal date; for live apps it's
+    // close to today's date. ISO YYYY-MM-DD is the format the build reconciler
+    // sorts on for `asOf` / `updatedAt`.
+    const lsRaw = Number(d.lastSeenS);
+    const lastSeen =
+      Number.isFinite(lsRaw) && lsRaw > 0 ? new Date(lsRaw * 1000).toISOString().slice(0, 10) : undefined;
     const ci = d.commentInsights as { positiveQuotes?: unknown } | undefined;
     const rawQuotes = Array.isArray(ci?.positiveQuotes) ? (ci!.positiveQuotes as unknown[]) : [];
     const positiveQuotes = rawQuotes
@@ -117,6 +131,7 @@ async function fetchIntel(pkg: string): Promise<Intel | null> {
       description:
         typeof d.shortDescription === 'string' ? scrubEmails(d.shortDescription) || undefined : undefined,
       year,
+      lastSeen,
       iconUrl: typeof d.iconUrl === 'string' ? d.iconUrl : undefined,
       positiveQuotes: positiveQuotes.length ? positiveQuotes : undefined,
     };
@@ -163,6 +178,7 @@ async function scrapeApp(pkg: string): Promise<AppbrainApp | null> {
     ratingHistogram: intel.histogram,
     installs,
     year: intel.year,
+    lastSeen: intel.lastSeen,
     iconUrl: intel.iconUrl,
     positiveQuotes: intel.positiveQuotes,
   };
@@ -178,7 +194,7 @@ export const fetchAppbrainProjects = async (
   if (options?.fixtureMode) return { projects: await loadFixture('appbrain') };
 
   const cache = readJsonCache<AppbrainCache>(CACHE_PATH, emptyCache());
-  if (cache.version !== 1 || !cache.apps) Object.assign(cache, emptyCache());
+  if (cache.version !== 2 || !cache.apps) Object.assign(cache, emptyCache());
   cache._generated = NOTE;
 
   // Track fresh-fetch attempts vs failures so we can signal ok:false when
@@ -209,6 +225,11 @@ export const fetchAppbrainProjects = async (
         platform: 'appbrain',
         id: a.packageName,
         url: a.url,
+        // `asOf` = the date AppBrain last observed this listing alive
+        // (lastSeenS). For retired Play apps this gives the build the
+        // end-year signal needed to render `YYYY–YYYY`; for live apps
+        // it's close to today's date.
+        asOf: a.lastSeen,
         title: a.title,
         description: a.description ?? '',
         firstReleased: a.year,

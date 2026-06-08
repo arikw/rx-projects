@@ -1,12 +1,10 @@
 ---
 import type { Project } from '../types/project';
 import { formatStat } from '../lib/aggregate-stats';
-import { sourceLabel } from '../lib/source-label';
-import { getPlatformToSourceGroup } from '../connectors/_registry';
 import { featuredScore } from '../lib/featured-score';
-import { resolveHomepageChip } from '../lib/homepage-chip';
 import { resolveTitleHref } from '../lib/title-href';
 import ProjectThumb from './ProjectThumb.astro';
+import CardSources from './CardSources.astro';
 
 interface Props {
   project: Project;
@@ -21,8 +19,40 @@ interface Props {
   /** 0-based index in config.featured when this project is pinned. Drives
    *  the client-side "Featured" sort. Omit for non-featured cards. */
   featuredRank?: number;
+  /** Where the year/year-range is rendered:
+   *   - 'kicker' — small uppercase kicker line above the title; pairs with
+   *     the bold-title + accent-rule editorial treatment driven by the
+   *     `data-year-style="kicker"` selector in global.css. Default.
+   *   - 'inline' — legacy mode: year appears as a stat chip in the stats row.
+   *  For retired projects with a known last-active year, both modes render
+   *  the range `YYYY–YYYY`. */
+  yearStyle?: 'kicker' | 'inline';
+  /** Where the source/platform link chips are rendered:
+   *   - 'footer' — bottom of the card with a divider rule above (default).
+   *   - 'title'  — legacy mode: beside the title in `.card-head`. */
+  chipsLayout?: 'footer' | 'title';
 }
-const { project: p, size = 'compact', sourceGroups = '', tagList = '', contentLanguage = 'en', featuredRank } = Astro.props;
+const { project: p, size = 'compact', sourceGroups = '', tagList = '', contentLanguage = 'en', featuredRank, yearStyle = 'kicker', chipsLayout = 'footer' } = Astro.props;
+
+// Display string for the year slot. Retired projects with a known last
+// activity render as `YYYY–YYYY` (active lifespan); live projects render
+// just the first-released year (the "most recent" date isn't meaningful
+// when the project is still moving).
+//
+// Source precedence for the end-year: an explicit `retiredAt` (set on
+// manual entries with a known sunset date) wins, falling back to
+// `updatedAt` (computed from mirror `asOf` timestamps).
+const lastYearSource = p.retiredAt ?? p.updatedAt;
+const lastYear = lastYearSource ? new Date(lastYearSource).getUTCFullYear() : undefined;
+// Retired projects always render the range when a last-seen year is known
+// — even when start == end (e.g. a Chrome extension that lived only a few
+// weeks in 2017 shows `2017–2017`). The visible duplication is the point:
+// it signals retirement at a glance without needing a separate badge.
+const yearLabel = !p.year ? null : (
+  p.retired && lastYear
+    ? `${p.year}–${lastYear}`
+    : String(p.year)
+);
 const base = import.meta.env.BASE_URL;
 
 // Popularity signal for client-side "sort by popularity" — raw,
@@ -42,7 +72,7 @@ const featured = featuredScore(p);
 // Card stats: number + icon only (no descriptive words). The hero stats
 // act as a legend — same icons, full labels — so visitors learn the meaning
 // once at the top, then read the cards as compact number rows.
-type CardStat = { text: string; title: string; icon?: 'star' | 'download' | 'users' | 'past-users' | 'calendar' };
+type CardStat = { text: string; title: string; icon?: 'star' | 'download' | 'users' | 'past-users' | 'calendar' | 'dependents' };
 const stats: CardStat[] = [];
 const st = p.stats;
 if (st.stars && st.stars > 0)
@@ -63,6 +93,14 @@ if (st.downloads && st.downloads > 0)
   stats.push({ text: formatStat(st.downloads), title: 'Downloads / pulls (npm, Docker, GNOME, mirrors)', icon: 'download' });
 if (st.downloadsMonthly && st.downloadsMonthly > 0)
   stats.push({ text: `${formatStat(st.downloadsMonthly)}/mo`, title: 'npm downloads in the last 30 days', icon: 'download' });
+if (st.dependents && st.dependents > 0)
+  stats.push({
+    text: formatStat(st.dependents),
+    title: st.dependents === 1
+      ? '1 other npm package depends on this one'
+      : `${st.dependents.toLocaleString('en')} other npm packages depend on this one`,
+    icon: 'dependents',
+  });
 if (st.installs && st.installs.value > 0)
   stats.push({
     text: `${formatStat(st.installs.value)}${st.installs.exact ? '' : '+'}`,
@@ -78,37 +116,13 @@ if (st.rating)
       : `${st.rating.average.toFixed(1)}★`,
     title: st.rating.count ? 'Store rating (number of ratings)' : 'Store rating',
   });
-if (p.year)
-  stats.push({ text: String(p.year), title: `First released in ${p.year}`, icon: 'calendar' });
+if (p.year && yearStyle === 'inline')
+  stats.push({ text: yearLabel ?? String(p.year), title: p.retired && lastYear && lastYear > p.year
+    ? `Active ${p.year}–${lastYear}`
+    : `First released in ${p.year}`, icon: 'calendar' });
 
-// Friendly chip labels, deduped — e.g. a google-play + apkpure card shows one
-// "Android app" chip rather than two raw platform keys. Each chip resolves
-// to a clickable URL via project.sourceUrls (origin URL preferred, mirror
-// URL as fallback when the origin is removed). Source→group map is derived
-// from the registry.
-const SOURCE_TO_GROUP: Record<string, string> = getPlatformToSourceGroup();
-const seenSourceLabels = new Set<string>();
-const sourceChips: { s: string; label: string; href?: string }[] = [];
-for (const s of p.sources) {
-  const label = sourceLabel(s);
-  if (seenSourceLabels.has(label)) continue;
-  seenSourceLabels.add(label);
-  // Registered connector → use its source-group; one-off platforms (e.g.
-  // `'firefox'` declared by a ManualProject.source) → look up their own
-  // platform key directly. buildProjects stores sourceUrls under either,
-  // so the chip becomes clickable for both cases.
-  const group = SOURCE_TO_GROUP[s] ?? s;
-  const href = p.sourceUrls?.[group];
-  sourceChips.push({ s, label, href });
-}
-
-// Surface the project's homepage as its own chip when it's a genuine
-// external site (resolveHomepageChip handles the dedup against title /
-// source-platform URLs / platform hostnames). The chip is generically
-// labelled "Website" so it reads as a short label like the platform
-// chips do; the actual URL is exposed via the link's title attribute
-// for hover verification.
-const homepageChip = resolveHomepageChip(p);
+// Chip rendering lives in CardSources.astro — see that component for
+// dedup-by-source-group, the homepage-chip resolver, and the markup.
 const titleHref = resolveTitleHref(p);
 
 const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
@@ -125,6 +139,7 @@ const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
   data-featured-score={featured}
   data-featured-rank={featuredRank ?? ''}
   data-status={p.retired ? 'retired' : 'live'}
+  data-year-style={yearStyle}
 >
   <span class="card-new-ribbon" hidden>NEW</span>
   <div class="card-thumb-frame">
@@ -132,41 +147,19 @@ const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
     <span class="card-updated-chip" hidden></span>
   </div>
   <header class="card-head">
+    {yearStyle === 'kicker' && yearLabel && (
+      <p class="card-year-kicker" aria-label={p.retired && lastYear && lastYear > (p.year ?? 0)
+        ? `Active ${p.year}–${lastYear}`
+        : `First released in ${p.year}`}>
+        <svg class="year-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" />
+        </svg>{yearLabel}
+      </p>
+    )}
     <a class="card-title" href={titleHref} rel="noopener" target="_blank">
       <h3>{p.title}</h3>
     </a>
-    <span class="card-sources">
-      {sourceChips.map(({ s, label, href }) => (
-        href ? (
-          <a
-            class={`card-source card-source--${s}`}
-            href={href}
-            target="_blank"
-            rel="noopener"
-            title={href}
-          >{label} <span class="card-source-arrow" aria-hidden="true">↗</span></a>
-        ) : (
-          <span class={`card-source card-source--${s}`}>{label}</span>
-        )
-      ))}
-      {homepageChip && (
-        <a
-          class="card-source card-source--homepage"
-          href={homepageChip.href}
-          target="_blank"
-          rel="noopener"
-          title={homepageChip.href}
-        >
-          <svg class="card-source-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="2" y1="12" x2="22" y2="12"/>
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-          </svg>
-          Website
-          <span class="card-source-arrow" aria-hidden="true">↗</span>
-        </a>
-      )}
-    </span>
+    {chipsLayout === 'title' && <CardSources project={p} layout="title" />}
   </header>
 
   {p.description && <p class="card-desc">{p.description}</p>}
@@ -207,11 +200,20 @@ const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
               <path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" />
             </svg>
           )}
+          {s.icon === 'dependents' && (
+            <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true">
+              {/* Material "device_hub" — one node at the top branching to
+                  three at the bottom. Reads as "N things depend on this". */}
+              <path fill="currentColor" d="M17 16l-4-4V8.82C14.16 8.4 15 7.3 15 6c0-1.66-1.34-3-3-3S9 4.34 9 6c0 1.3.84 2.4 2 2.82V12l-4 4H3v5h5v-3.05l4-4.2 4 4.2V21h5v-5h-4z"/>
+            </svg>
+          )}
           {s.text}
         </span>
       ))}
     </p>
   )}
+
+  {chipsLayout === 'footer' && <CardSources project={p} layout="footer" />}
 
   {detailHref && (
     <a class="card-detail-link" href={detailHref}>Details →</a>

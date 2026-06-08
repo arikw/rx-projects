@@ -44,6 +44,8 @@ export type CanonicalStats = {
   downloads?: number;
   /** Recent download rate, last 30 days (npm) — point-in-time, card-only. */
   downloadsMonthly?: number;
+  /** Other packages that depend on this one (ecosyste.ms `dependent_packages_count`). */
+  dependents?: number;
   /** Unique app installs (Google Play). `exact:false` = a tier floor like "10,000+". */
   installs?: { value: number; exact: boolean };
   /** Current active installs / users (Chrome Web Store). */
@@ -167,6 +169,12 @@ export type Representation = {
    * retired addon / removed listing whose user count belongs to a past
    * snapshot. */
   retired?: boolean;
+  /** ISO date when the project effectively retired (listing pulled,
+   *  platform sunset, manual end-of-life). Distinct from `asOf` — `asOf`
+   *  is "when we recorded this data," while `retiredAt` is "when the
+   *  thing stopped being a live thing." Used by ProjectCard to compute
+   *  the end-year of a retired project's lifespan range. */
+  retiredAt?: string;
   /** Canonical source-repo URL, when known. */
   sourceUrl?: string;
   /** The project's own website, distinct from `url`. */
@@ -235,6 +243,9 @@ export type Project = {
    * from the active-user total for retired projects so historical
    * snapshots don't inflate the headline. */
   retired?: boolean;
+  /** ISO date when the project effectively retired — see
+   *  `Representation.retiredAt`. Picked as the max across all reps. */
+  retiredAt?: string;
   featured: boolean;
   hasDetail: boolean;
 };

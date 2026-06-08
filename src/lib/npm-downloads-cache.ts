@@ -23,6 +23,9 @@ export type PackageDownloads = {
   /** Last successfully-fetched last-30-days count. Reused when a fetch fails so
    * a transient rate-limit doesn't drop the figure (it's never stored as 0). */
   lastMonth?: number;
+  /** Last successfully-fetched dependent-packages count (ecosyste.ms). Reused
+   * when the source is down, same rationale as `lastMonth`. */
+  dependents?: number;
 };
 
 export type NpmDownloadsCache = {
@@ -51,7 +54,7 @@ function coerceYear(v: unknown): number | undefined {
 export function readNpmCache(): NpmDownloadsCache {
   if (!existsSync(CACHE_PATH)) return empty();
   try {
-    const parsed = JSON.parse(readFileSync(CACHE_PATH, 'utf8')) as { packages?: Record<string, { created?: string; years?: Record<string, unknown>; lastMonth?: unknown }> };
+    const parsed = JSON.parse(readFileSync(CACHE_PATH, 'utf8')) as { packages?: Record<string, { created?: string; years?: Record<string, unknown>; lastMonth?: unknown; dependents?: unknown }> };
     if (!parsed?.packages) return empty();
     const out = empty();
     for (const [name, p] of Object.entries(parsed.packages)) {
@@ -65,6 +68,7 @@ export function readNpmCache(): NpmDownloadsCache {
         created: p.created,
         years,
         ...(typeof p.lastMonth === 'number' ? { lastMonth: p.lastMonth } : {}),
+        ...(typeof p.dependents === 'number' ? { dependents: p.dependents } : {}),
       };
     }
     return out;

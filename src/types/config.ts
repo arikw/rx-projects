@@ -99,6 +99,13 @@ export type ManualProject = {
    *  removed Chrome / Firefox / Edge extensions, taken-down listings,
    *  apps whose store page is dead but whose history matters. */
   retired?: boolean;
+  /** ISO date the project effectively retired. Distinct from `asOf` —
+   *  `asOf` is "when we recorded these stats," `retiredAt` is "when the
+   *  thing stopped being a live thing." Drives the end-year shown in the
+   *  card's lifespan range; falls back to `asOf` (then to `updatedAt`)
+   *  when omitted. Useful for manual entries whose `asOf` records a
+   *  recent scrape but whose actual sunset was years earlier. */
+  retiredAt?: string;
   /** Explicit cross-platform identity pointer. Set to the id of an
    *  existing project that this manual entry is the same project as —
    *  the builder will merge the two into one card. Useful for porting

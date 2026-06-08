@@ -102,7 +102,13 @@ button {
 .page {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 32px 24px 80px;
+  /* Bottom padding tightened — the page used to end with 80px of empty
+     space below "Built with" to push it off the viewport's bottom edge.
+     With the footer now treated as a chapter-break sibling (see the
+     .site-main > .site-foot rule), the breathing room above it does the
+     work, and a smaller pad below stops the page feeling like it floats
+     on a long blank shelf. */
+  padding: 32px 24px 32px;
 }
 
 .site-header {
@@ -168,6 +174,22 @@ button {
   display: flex;
   flex-direction: column;
   gap: clamp(36px, 6vw, 48px);
+}
+
+/* Extra breathing room at the two strongest narrative transitions on the
+   page: gallery → reviews ("you've seen the work, here's what users say")
+   and reviews → author ("…and here's the person behind it"). The base
+   `.site-main` gap (36-48px) gets an additive margin-top on these two
+   sections so they feel like chapter breaks rather than just-another-row.
+   :has() lets us target the reviews wrapper without polluting every
+   .section-group (Profile Statistics / Intro keep the standard rhythm).
+   Floor 56px keeps the break visible on phones — the previous 28px floor
+   shrank to a row-gap on narrow viewports because vw scales backward
+   into smaller numbers there. */
+.site-main > .section-group:has(.review-carousel),
+.site-main > .author-bio,
+.site-main > .site-foot {
+  margin-top: clamp(56px, 5vw, 72px);
 }
 
 /* A labelled divider + the section it labels are wrapped in
@@ -919,8 +941,11 @@ hr.section-divider {
    second, slightly quieter line — the two are different kinds of
    metadata (when this view was generated vs. what generated it). */
 .site-foot {
-  /* Top gap owned by the `.site-main` flex gap. */
-  margin: 0 auto 24px;
+  /* Top gap owned by the `.site-main` flex gap + chapter-break margin
+     on `.site-main > .site-foot` (matches the rhythm of the gallery →
+     reviews → author transitions). Bottom margin trimmed so the page
+     doesn't end with a tall blank strip below "Built with…". */
+  margin: 0 auto;
   text-align: center;
   font-feature-settings: 'tnum';
   letter-spacing: 0.02em;
@@ -1311,7 +1336,7 @@ hr.section-divider {
 }
 
 .card-head {
-  padding-top: 16px;
+  padding-top: 8px;
 }
 
 .card.is-hidden {
@@ -1436,6 +1461,94 @@ a.card-source:hover {
    corner of the thumb, straddling the thumb/content boundary. */
 .card-thumb-frame {
   position: relative;
+}
+
+/* J / "editorial" card layout — kicker year + bold title + accent rule.
+   Activated when ProjectCard is rendered with yearStyle="kicker"; the
+   :has() selectors pick up the kicker child to retarget the title and
+   draw the accent rule beneath it. */
+.year-icon {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  opacity: 0.78;
+}
+.card-year-kicker {
+  margin: 0 0 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted, #888);
+  font-feature-settings: 'tnum';
+}
+/* Bold-title + accent-rule treatment for the J / kicker layout. Selected
+   via the data attribute set by ProjectCard from the `yearStyle` prop —
+   an earlier `:has(.card-year-kicker)` selector skipped cards whose
+   `p.year` was undefined (the kicker element doesn't render in that
+   case), leaving them with the default title style and visibly out of
+   sync with the rest of the grid. */
+.card[data-year-style="kicker"] .card-title h3 {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.018em;
+  line-height: 1.18;
+}
+/* Accent rule hangs off the h3 (block child of .card-title) — placing
+   it on .card-title would make it a flex sibling to the h3 (rendered
+   to the right) instead of below. */
+.card[data-year-style="kicker"] .card-title h3::after {
+  content: '';
+  display: block;
+  width: 44px;
+  height: 2px;
+  background: var(--accent, #5a3ec8);
+  opacity: 0.8;
+  margin-top: 10px;
+}
+
+/* Source-chip layout variants. `--footer` is the production default
+   (chips anchored at the bottom of the card with a divider rule above);
+   `--title` keeps chips inside .card-head next to the title (legacy
+   layout, still selectable via the `chipsLayout` prop). */
+.card-sources--footer {
+  margin: 0;
+  /* Equidistant 12px above and below the chips. The card root's bottom
+     padding gets zeroed (see below) so this row's padding-bottom is
+     what holds the chips off the card edge — no longer fighting the
+     card's 18px bottom for vertical rhythm. */
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-top: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+  /* Card root is flex-column with `gap: 10px`; margin-top: auto pulls
+     this row to the bottom so it always rests at the card floor. */
+  margin-top: auto;
+}
+/* When the chips are the bottom-of-card footer, the card root's own
+   padding-bottom would double-up the visual gap. Let the footer's
+   padding-bottom alone control that distance. */
+.card:has(.card-sources--footer) {
+  padding-bottom: 0;
+}
+
+/* Bigger tap targets on touch-width viewports — desktop chips at
+   3px/8px are ergonomic with a cursor but too short to thumb-tap.
+   Pinning border-radius to 999px keeps the pill shape even at the
+   larger height; the default 12px radius starts reading as a "rounded
+   rectangle" once the chip grows past ~24px tall. */
+@media (max-width: 720px) {
+  .card-source {
+    padding: 8px 14px;
+    font-size: 0.7rem;
+    border-radius: 999px;
+  }
+  .card-source-icon {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 .card-stats {
@@ -1927,6 +2040,10 @@ a.filter-chip {
 
 .site-about-body p {
   margin: 0 0 1em;
+  text-align: justify;
+  /* Soften the gappiest cases — let the browser hyphenate so it
+     doesn't have to stretch single-word lines into deserts of space. */
+  hyphens: auto;
 }
 
 .site-about-body p:last-child {
