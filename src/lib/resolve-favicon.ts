@@ -110,6 +110,15 @@ function loadSource(sourceUrl: string): { buf: Buffer; hash: string; mtime: numb
 // still reads well at 16×16 in a browser tab.
 const ROUNDED_CIRCLE_FRACTION = 0.85;
 
+// Bumped whenever the favicon-generation algorithm changes (geometry,
+// compositing, colour handling). Baked into the output filename so a
+// fresh build never reuses a stale-shape file produced by an older
+// version of `ensureResized()`. The mtime check inside that function
+// only catches changes to the SOURCE bytes — it can't see a change to
+// THIS file. Bump → all sizes regenerate on the next build, old files
+// become orphans (cleared by re-running with a clean `_cache/favicon/`).
+const FAVICON_ALGO_VERSION = 2;
+
 /** Resize the source into a PNG of the given pixel size, optionally
  *  applying a circular mask so the result reads as a round avatar.
  *  Idempotent — skips re-encoding when the output exists and is no older
@@ -131,7 +140,7 @@ async function ensureResized(
   const outDir = resolve(process.cwd(), 'public/_cache/favicon');
   mkdirSync(outDir, { recursive: true });
   const shapeKey = shape === 'rounded' ? 'r' : 's';
-  const filename = `${hash}-${size}-${shapeKey}.png`;
+  const filename = `${hash}-${size}-${shapeKey}v${FAVICON_ALGO_VERSION}.png`;
   const outPath = resolve(outDir, filename);
   if (existsSync(outPath) && statSync(outPath).mtimeMs >= srcMtime) {
     return `${base}_cache/favicon/${filename}`;
