@@ -27,7 +27,7 @@ const config: ProjectsConfig = {
     github: 'arikw',
     npm: 'arik.w',
     docker: 'arikwe',
-    bio: 'Software engineer by day, tinkerer by night. Reach me on [GitHub](https://github.com/arikw).',
+    bio: 'Software engineer by day, tinkerer by night—building browser extensions, libraries, and web apps. Reach me on [GitHub](https://github.com/arikw).',
   },
   sources: {
     ...baseConfig.sources,
