@@ -1533,6 +1533,17 @@ a.card-source:hover {
 .card:has(.card-sources--footer) {
   padding-bottom: 0;
 }
+/* Both .card-stats and .card-sources--footer carry `margin-top: auto`
+   so each can pin itself to the bottom in its respective layout. With
+   BOTH present in a flex column, the auto-margins split the slack,
+   so on short-body cards (e.g. one-line description + 2 stat chips)
+   the gap appears above BOTH stats AND chips, leaving stats floating
+   mid-card. Inside the footer layout, stats give up its auto-margin
+   and just sit at its natural position — the chip footer alone
+   anchors to the bottom. */
+.card:has(.card-sources--footer) .card-stats {
+  margin-top: 0;
+}
 
 /* Bigger tap targets on touch-width viewports — desktop chips at
    3px/8px are ergonomic with a cursor but too short to thumb-tap.
