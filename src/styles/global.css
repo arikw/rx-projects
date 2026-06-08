@@ -170,6 +170,18 @@ button {
   gap: clamp(36px, 6vw, 48px);
 }
 
+/* Extra breathing room at the two strongest narrative transitions on the
+   page: gallery → reviews ("you've seen the work, here's what users say")
+   and reviews → author ("…and here's the person behind it"). The base
+   `.site-main` gap (36-48px) gets an additive margin-top on these two
+   sections so they feel like chapter breaks rather than just-another-row.
+   :has() lets us target the reviews wrapper without polluting every
+   .section-group (Profile Statistics / Intro keep the standard rhythm). */
+.site-main > .section-group:has(.review-carousel),
+.site-main > .author-bio {
+  margin-top: clamp(28px, 3.5vw, 48px);
+}
+
 /* A labelled divider + the section it labels are wrapped in
    `.section-group` so a TIGHTER gap can hug the label to its
    content, while the outer `.site-main` gap still separates this
