@@ -2,15 +2,10 @@
   "version": 1,
   "_generated": "Auto-generated GitHub Pages meta (favicon + <title>), fetched once per repo whose has_pages=true. Delete to refresh.",
   "pages": {
-    "rx-dev-dashboard": {
-      "pagesUrl": "https://arikw.github.io/rx-dev-dashboard/",
-      "favicon": "https://wzmn.net/projects/_cache/favicon/75904bcdcb67134e-32.png",
-      "title": "My Projects"
-    },
     "rx-browser-bridge-mcp": {
       "pagesUrl": "https://arikw.github.io/rx-browser-bridge-mcp/",
       "favicon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%F0%9F%8C%90%3C/text%3E%3C/svg%3E",
-      "title": "RX Browser Bridge — drive any browser tab from your AI coding agent"
+      "title": "RX Browser Bridge \u2014 drive any browser tab from your AI coding agent"
     },
     "rx-tech-blog": {
       "pagesUrl": "https://arikw.github.io/rx-tech-blog/",
@@ -20,7 +15,7 @@
     "claude-code-matrix-bridge": {
       "pagesUrl": "https://arikw.github.io/claude-code-matrix-bridge/",
       "favicon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%F0%9F%94%97%3C/text%3E%3C/svg%3E",
-      "title": "RX Claude Code Matrix Bridge — talk to your AI coding agent from anywhere"
+      "title": "RX Claude Code Matrix Bridge \u2014 talk to your AI coding agent from anywhere"
     },
     "rx-kids-games-portal": {
       "pagesUrl": "https://arikw.github.io/rx-kids-games-portal/",
@@ -35,22 +30,17 @@
     "multiplication-table-practice": {
       "pagesUrl": "https://arikw.github.io/multiplication-table-practice/",
       "favicon": "https://arikw.github.io/multiplication-table-practice/favicon.ico",
-      "title": "תרגול לוח הכפל"
+      "title": "\u05ea\u05e8\u05d2\u05d5\u05dc \u05dc\u05d5\u05d7 \u05d4\u05db\u05e4\u05dc"
     },
     "cs-haifa-website": {
       "pagesUrl": "https://arikw.github.io/cs-haifa-website/",
       "favicon": "https://cs-haifa.wzmn.net/favicon.ico",
-      "title": "אתר הסטודנטים - החוג למדעי המחשב, אוניברסיטת חיפה"
+      "title": "\u05d0\u05ea\u05e8 \u05d4\u05e1\u05d8\u05d5\u05d3\u05e0\u05d8\u05d9\u05dd - \u05d4\u05d7\u05d5\u05d2 \u05dc\u05de\u05d3\u05e2\u05d9 \u05d4\u05de\u05d7\u05e9\u05d1, \u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05ea \u05d7\u05d9\u05e4\u05d4"
     },
     "android-permissions-explorer": {
       "pagesUrl": "https://arikw.github.io/android-permissions-explorer/",
       "favicon": "https://arikw.github.io/android-permissions-explorer/favicon.ico",
       "title": "Android Permissions Explorer"
-    },
-    "rx-projects": {
-      "pagesUrl": "https://arikw.github.io/rx-projects/",
-      "favicon": "https://wzmn.net/projects/_cache/favicon/75904bcdcb67134e-180-r.png",
-      "title": "My Projects"
     },
     "script-shield-poc": {
       "pagesUrl": "https://arikw.github.io/script-shield-poc/",
