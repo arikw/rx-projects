@@ -102,7 +102,13 @@ button {
 .page {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 32px 24px 80px;
+  /* Bottom padding tightened — the page used to end with 80px of empty
+     space below "Built with" to push it off the viewport's bottom edge.
+     With the footer now treated as a chapter-break sibling (see the
+     .site-main > .site-foot rule), the breathing room above it does the
+     work, and a smaller pad below stops the page feeling like it floats
+     on a long blank shelf. */
+  padding: 32px 24px 32px;
 }
 
 .site-header {
@@ -181,7 +187,8 @@ button {
    shrank to a row-gap on narrow viewports because vw scales backward
    into smaller numbers there. */
 .site-main > .section-group:has(.review-carousel),
-.site-main > .author-bio {
+.site-main > .author-bio,
+.site-main > .site-foot {
   margin-top: clamp(56px, 5vw, 72px);
 }
 
@@ -934,8 +941,11 @@ hr.section-divider {
    second, slightly quieter line — the two are different kinds of
    metadata (when this view was generated vs. what generated it). */
 .site-foot {
-  /* Top gap owned by the `.site-main` flex gap. */
-  margin: 0 auto 24px;
+  /* Top gap owned by the `.site-main` flex gap + chapter-break margin
+     on `.site-main > .site-foot` (matches the rhythm of the gallery →
+     reviews → author transitions). Bottom margin trimmed so the page
+     doesn't end with a tall blank strip below "Built with…". */
+  margin: 0 auto;
   text-align: center;
   font-feature-settings: 'tnum';
   letter-spacing: 0.02em;
