@@ -46,12 +46,6 @@ export const GET: APIRoute = async () => {
     .replace(/\.\s*$/, '')
     .trim();
 
-  // Hand-picked X positions for the 4 stat cells — evenly distributed
-  // across a 580px usable width with 20px gap, so the column rhythm
-  // is visible at a glance and the rightmost cell doesn't crowd the
-  // card edge.
-  const cellX = [0, 145, 290, 435];
-
   // Icon paths lifted verbatim from src/components/Stat.astro so the
   // glyphs in the README match what the hero on /projects/ uses.
   // Each is drawn in a 24×24 viewBox; the inline <svg> wrappers in
@@ -65,7 +59,30 @@ export const GET: APIRoute = async () => {
   const icon = (kind: keyof typeof ICONS, x: number, y: number) =>
     `<svg x="${x}" y="${y}" width="11" height="11" viewBox="0 0 24 24"><path class="muted" d="${ICONS[kind]}"/></svg>`;
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 220" width="640" height="220" role="img" aria-label="${userName} — live project stats">
+  // Zero-value stats would render as "0+ Stars" which reads as
+  // empty bragging. Filter them out, then redistribute the surviving
+  // cells evenly across the 580px usable width — the column rhythm
+  // stays clean whether the card renders 1, 2, 3, or 4 cells.
+  type Cell = { value: number; suffix: string; label1: string; label2: string; iconKey: keyof typeof ICONS };
+  const allCells: Cell[] = [
+    { value: stats.starsAndLikes,      suffix: '+', label1: 'Stars',     label2: '&amp; likes', iconKey: 'star' },
+    { value: stats.downloadsAndPulls,  suffix: '+', label1: 'Downloads', label2: '&amp; pulls', iconKey: 'download' },
+    { value: stats.activeUsers,        suffix: '+', label1: 'Active',    label2: 'users',       iconKey: 'users' },
+    { value: stats.totalProjects,      suffix: '',  label1: 'Projects',  label2: 'shipped',     iconKey: 'projects' },
+  ];
+  const cells = allCells.filter((c) => c.value > 0);
+  const innerWidth = 580;
+  const step = cells.length > 0 ? innerWidth / cells.length : innerWidth;
+  const cellsMarkup = cells.map((c, i) => {
+    const x = Math.round(i * step);
+    return `<g>
+        <text class="serif num fg" font-size="30" x="${x}" y="0">${formatStat(c.value)}${c.suffix}</text>
+        ${icon(c.iconKey, x, 9)}
+        <text class="sans label muted" x="${x + 14}" y="18">${c.label1}<tspan x="${x + 14}" dy="12">${c.label2}</tspan></text>
+      </g>`;
+  }).join('\n      ');
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 236" width="640" height="236" role="img" aria-label="${userName} — live project stats">
   <title>${userName} — live project stats</title>
   <style>
     :root {
@@ -112,8 +129,8 @@ export const GET: APIRoute = async () => {
   </style>
 
   <!-- Frame -->
-  <rect class="bg" width="640" height="220" rx="14"/>
-  <rect class="card" x="10" y="10" width="620" height="200" rx="10" stroke-width="1"/>
+  <rect class="bg" width="640" height="236" rx="14"/>
+  <rect class="card" x="10" y="10" width="620" height="216" rx="10" stroke-width="1"/>
 
   <g class="content">
     <!-- Top row: live-dot kicker on the left, template attribution
@@ -134,38 +151,20 @@ export const GET: APIRoute = async () => {
     ${tagline ? `<text class="sans muted" x="30" y="95" font-size="12">${tagline}</text>` : ''}
     <line class="accent-rule" x1="30" y1="106" x2="68" y2="106" stroke-width="2"/>
 
-    <!-- Stats row. Each cell pairs the big number with a small icon
-         (from the same set the hero on /projects/ uses) and a 2-line
-         label. The second line is split out with a <tspan x= dy= …>
-         which resets the X position and drops vertical baseline by
-         the line height — gives the same wording the hero uses
-         ("Stars & likes" / "Downloads & pulls") without the labels
-         crowding their neighbour at 145px column width. -->
+    <!-- Stats row. Built from the filtered cells array above so
+         zero-value tiles don't render and the remaining ones spread
+         evenly across the card width. Each cell pairs the big number
+         with a small icon (same set the hero on /projects/ uses) and
+         a 2-line label split via tspan with x= dy= so the second
+         line aligns under the first word, not under the icon. -->
     <g transform="translate(30 144)">
-      <g>
-        <text class="serif num fg" font-size="30" x="${cellX[0]}" y="0">${formatStat(stats.starsAndLikes)}+</text>
-        ${icon('star', cellX[0], 9)}
-        <text class="sans label muted" x="${cellX[0] + 14}" y="18">Stars<tspan x="${cellX[0] + 14}" dy="12">&amp; likes</tspan></text>
-      </g>
-      <g>
-        <text class="serif num fg" font-size="30" x="${cellX[1]}" y="0">${formatStat(stats.downloadsAndPulls)}+</text>
-        ${icon('download', cellX[1], 9)}
-        <text class="sans label muted" x="${cellX[1] + 14}" y="18">Downloads<tspan x="${cellX[1] + 14}" dy="12">&amp; pulls</tspan></text>
-      </g>
-      <g>
-        <text class="serif num fg" font-size="30" x="${cellX[2]}" y="0">${formatStat(stats.activeUsers)}+</text>
-        ${icon('users', cellX[2], 9)}
-        <text class="sans label muted" x="${cellX[2] + 14}" y="18">Active<tspan x="${cellX[2] + 14}" dy="12">users</tspan></text>
-      </g>
-      <g>
-        <text class="serif num fg" font-size="30" x="${cellX[3]}" y="0">${stats.totalProjects}</text>
-        ${icon('projects', cellX[3], 9)}
-        <text class="sans label muted" x="${cellX[3] + 14}" y="18">Projects<tspan x="${cellX[3] + 14}" dy="12">shipped</tspan></text>
-      </g>
+      ${cellsMarkup}
     </g>
 
-    <!-- Footer: side stats + clickable dashboard link on one line. -->
-    <text class="sans muted" x="30" y="200" font-size="11">${
+    <!-- Footer: side stats + clickable dashboard link on one line.
+         Pushed down to y=216 so there's real breathing room between
+         the stat-label block (which ends around y=174) and this row. -->
+    <text class="sans muted" x="30" y="216" font-size="11">${
       [
         githubRepos != null ? `GitHub: <tspan class="fg" font-weight="600">${githubRepos}</tspan> repos` : '',
         stackoverflowRep != null ? `Stack Overflow: <tspan class="fg" font-weight="600">${formatStat(stackoverflowRep)}</tspan> rep` : '',
