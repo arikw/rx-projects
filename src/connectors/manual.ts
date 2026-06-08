@@ -47,6 +47,7 @@ export function manualToResults(config: ProjectsConfig): ConnectorResult[] {
       openSource: m.openSource ?? !!m.sourceUrl,
       archived: m.archived,
       retired: m.retired,
+      retiredAt: m.retiredAt,
       relatesToProjectId: m.relatesToProjectId,
       sourceUrl: m.sourceUrl,
       homepage: m.homepage,

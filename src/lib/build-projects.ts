@@ -395,6 +395,7 @@ function buildProject(group: ConnectorResult[]): Project {
   const tags = [...new Set(allReps.flatMap((r) => r.tags ?? []))];
   const years = allReps.map((r) => r.firstReleased).filter((y): y is number => typeof y === 'number');
   const updatedAts = allReps.map((r) => r.asOf).filter((u): u is string => !!u);
+  const retiredAts = allReps.map((r) => r.retiredAt).filter((u): u is string => !!u);
 
   const ownUrls = new Set(group.flatMap(identityUrls));
   const homepage = allReps
@@ -429,6 +430,7 @@ function buildProject(group: ConnectorResult[]): Project {
     openSource: allReps.some((r) => r.openSource),
     sourceUrl: firstField(ordered, (r) => r.sourceUrl),
     retired: allReps.some((r) => r.retired),
+    retiredAt: retiredAts.sort().at(-1),
     featured: false,
     hasDetail: false,
   };
