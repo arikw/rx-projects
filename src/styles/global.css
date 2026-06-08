@@ -1519,30 +1519,20 @@ a.card-source:hover {
   /* Equidistant 12px above and below the chips. The card root's bottom
      padding gets zeroed (see below) so this row's padding-bottom is
      what holds the chips off the card edge — no longer fighting the
-     card's 18px bottom for vertical rhythm. */
+     card's 18px bottom for vertical rhythm. No margin-top:auto here —
+     `.card-stats` carries the auto-margin so stats pin to the floor of
+     the body, and the chip footer sits flush right below them. With
+     auto-margins on BOTH the stats split the slack with the footer,
+     leaving stats floating mid-card on short-body cards. */
   padding-top: 12px;
   padding-bottom: 12px;
   border-top: 1px solid var(--border, rgba(0, 0, 0, 0.08));
-  /* Card root is flex-column with `gap: 10px`; margin-top: auto pulls
-     this row to the bottom so it always rests at the card floor. */
-  margin-top: auto;
 }
 /* When the chips are the bottom-of-card footer, the card root's own
    padding-bottom would double-up the visual gap. Let the footer's
    padding-bottom alone control that distance. */
 .card:has(.card-sources--footer) {
   padding-bottom: 0;
-}
-/* Both .card-stats and .card-sources--footer carry `margin-top: auto`
-   so each can pin itself to the bottom in its respective layout. With
-   BOTH present in a flex column, the auto-margins split the slack,
-   so on short-body cards (e.g. one-line description + 2 stat chips)
-   the gap appears above BOTH stats AND chips, leaving stats floating
-   mid-card. Inside the footer layout, stats give up its auto-margin
-   and just sit at its natural position — the chip footer alone
-   anchors to the bottom. */
-.card:has(.card-sources--footer) .card-stats {
-  margin-top: 0;
 }
 
 /* Bigger tap targets on touch-width viewports — desktop chips at
