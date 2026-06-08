@@ -8,22 +8,21 @@ import config from '../lib/load-config';
 // the rest of the dashboard, so the numbers below stay in sync with what
 // `/projects/` is showing.
 //
-// What it ships:
-//   - Headline name + tagline
-//   - 2×2 grid of the hero stats (stars-and-likes / downloads / users /
-//     projects shipped)
-//   - Footer line with GitHub repos + Stack Overflow rep (when present)
-//   - CSS keyframe animations: a soft fade-in-up stagger on the four
-//     stat cells + a slow pulse on the "live" dot in the corner
-//   - `prefers-color-scheme: dark` overrides so it adapts to whatever
-//     theme the README is being viewed under (GitHub honours media
-//     queries inside an SVG served as an image)
+// Layout (640×220, anchored at the top so it sits cleanly inline next
+// to other README content):
+//   - Header: small "LIVE PROJECT STATS · ARIKW" kicker + name + tagline
+//   - Stats row: 4 evenly-spaced cells filling the card width
+//   - Footer: single line with GitHub repos · Stack Overflow rep ·
+//     dashboard link
 //
 // Why CSS animations instead of SMIL: GitHub's camo proxy serves SVGs
-// fine and honours embedded `<style>` blocks, but `<script>` is stripped
-// (a hard security rule). SMIL works too, but CSS keyframes give the
-// nicer staggered delays without writing each `<animate>` element by
-// hand.
+// fine and honours embedded `<style>`, but `<script>` is stripped.
+// CSS keyframes are the cleanest way to express "fade in once on
+// load" without writing per-element animate nodes. Transforms on
+// SVG `<g>` elements behave unevenly across browsers though, so the
+// animation here is a pure opacity fade — no translate, no scale.
+// `prefers-color-scheme: dark` overrides inside the SVG let one URL
+// adapt to either GitHub theme.
 export const GET: APIRoute = async () => {
   const projects = await loadProjects();
   const stats = aggregateStats(projects);
@@ -33,7 +32,6 @@ export const GET: APIRoute = async () => {
   const stackoverflowFact = profiles.find((p) => p.source === 'stackoverflow');
 
   const githubRepos = typeof githubFact?.headline.value === 'number' ? githubFact.headline.value : null;
-  const githubStars = githubFact?.details?.find((d) => d.label.toLowerCase().includes('star'))?.value;
   const stackoverflowRep = typeof stackoverflowFact?.headline.value === 'number' ? stackoverflowFact.headline.value : null;
 
   const userName = config.user.name || 'Arik W.';
@@ -41,18 +39,17 @@ export const GET: APIRoute = async () => {
   const dashboardUrl = `${config.deployment.site}${config.deployment.base}`;
   const tagline = (config.user.bio ?? '')
     .replace(/\[([^\]]+)]\([^)]+\)/g, '$1') // strip markdown links
+    .replace(/\.\s*Reach me on GitHub.*$/i, '')
     .replace(/\.\s*$/, '')
-    .replace(/\.\s*Reach me on GitHub/i, '')
-    .replace(/Reach me on GitHub/i, '')
     .trim();
 
-  const buildLabel = `Updated ${new Date(0).toISOString().slice(0, 10)}`;
-  // ^ Date.now() is unavailable inside the build context for some Astro
-  // configs; the dashboard's "Last updated" line elsewhere uses the
-  // snapshot timestamp. For this card we just omit the date — the
-  // build runs daily, freshness is implicit.
+  // Hand-picked X positions for the 4 stat cells — evenly distributed
+  // across a 580px usable width with 20px gap, so the column rhythm
+  // is visible at a glance and the rightmost cell doesn't crowd the
+  // card edge.
+  const cellX = [0, 145, 290, 435];
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 340" width="740" height="340" role="img" aria-label="${userName} — live project stats">
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 220" width="640" height="220" role="img" aria-label="${userName} — live project stats">
   <title>${userName} — live project stats</title>
   <style>
     :root {
@@ -61,7 +58,6 @@ export const GET: APIRoute = async () => {
       --fg: #1a1a1a;
       --muted: #6a6a6a;
       --accent: #2e4f6f;
-      --accent-soft: #e5edf4;
       --border: #e8e3da;
       --live: #16a34a;
     }
@@ -72,7 +68,6 @@ export const GET: APIRoute = async () => {
         --fg: #ecebe5;
         --muted: #a8a39a;
         --accent: #94bcdb;
-        --accent-soft: #243246;
         --border: #3a3c41;
         --live: #4ade80;
       }
@@ -81,7 +76,6 @@ export const GET: APIRoute = async () => {
     .card { fill: var(--card); stroke: var(--border); }
     .fg { fill: var(--fg); }
     .muted { fill: var(--muted); }
-    .accent { fill: var(--accent); }
     .accent-rule { stroke: var(--accent); }
     .live-dot { fill: var(--live); }
 
@@ -90,73 +84,60 @@ export const GET: APIRoute = async () => {
     .num { font-weight: 700; letter-spacing: -0.02em; }
     .label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
 
-    /* Subtle fade-in-up stagger on the four stat cells. Anchors at the
-       baseline of each cell so the upward motion lands on the number
-       rather than dragging the label with it. */
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
+    /* Pure-opacity fade-in for the whole content layer. CSS transforms
+       on SVG group elements render unevenly across browsers (the
+       coordinate systems disagree on transform-origin), so the
+       animation avoids translate/scale and stays subtle. */
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
-    .cell {
-      animation: rise 700ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
-      transform-origin: center bottom;
-    }
-    .cell.c1 { animation-delay: 80ms; }
-    .cell.c2 { animation-delay: 180ms; }
-    .cell.c3 { animation-delay: 280ms; }
-    .cell.c4 { animation-delay: 380ms; }
-
-    /* Slow pulse on the live dot to communicate that the numbers are
-       refreshed by the daily build. */
-    @keyframes pulse {
-      0%, 100% { opacity: 0.55; }
-      50% { opacity: 1; }
-    }
-    .live-dot { animation: pulse 2.4s ease-in-out infinite; }
+    .content { animation: fade-in 700ms ease-out backwards; }
   </style>
 
   <!-- Frame -->
-  <rect class="bg" width="740" height="340" rx="16"/>
-  <rect class="card" x="14" y="14" width="712" height="312" rx="12" stroke-width="1"/>
+  <rect class="bg" width="640" height="220" rx="14"/>
+  <rect class="card" x="10" y="10" width="620" height="200" rx="10" stroke-width="1"/>
 
-  <!-- Top kicker: live dot + label -->
-  <g transform="translate(40 44)">
-    <circle class="live-dot" cx="0" cy="-2" r="4"/>
-    <text class="sans label muted" x="12" y="2">LIVE PROJECT STATS · ${userHandle.toUpperCase()}</text>
-  </g>
+  <g class="content">
+    <!-- Top kicker: live dot + label -->
+    <g transform="translate(30 32)">
+      <circle class="live-dot" cx="0" cy="-2" r="3.5"/>
+      <text class="sans label muted" x="11" y="2">LIVE PROJECT STATS · ${userHandle.toUpperCase()}</text>
+    </g>
 
-  <!-- Title -->
-  <text class="serif num fg" x="40" y="100" font-size="36">${userName}</text>
-  ${tagline ? `<text class="sans muted" x="40" y="124" font-size="13">${tagline}</text>` : ''}
-  <line class="accent-rule" x1="40" y1="138" x2="84" y2="138" stroke-width="2"/>
+    <!-- Title + tagline -->
+    <text class="serif num fg" x="30" y="74" font-size="28">${userName}</text>
+    ${tagline ? `<text class="sans muted" x="30" y="95" font-size="12">${tagline}</text>` : ''}
+    <line class="accent-rule" x1="30" y1="106" x2="68" y2="106" stroke-width="2"/>
 
-  <!-- 2×2 stat grid. Each cell carries a c1..c4 class for the stagger. -->
-  <g transform="translate(40 178)">
-    <g class="cell c1">
-      <text class="serif num fg" font-size="42" x="0" y="0">${formatStat(stats.starsAndLikes)}+</text>
-      <text class="sans label muted" x="2" y="22">★ Stars &amp; likes</text>
+    <!-- Stats row -->
+    <g transform="translate(30 144)">
+      <g>
+        <text class="serif num fg" font-size="30" x="${cellX[0]}" y="0">${formatStat(stats.starsAndLikes)}+</text>
+        <text class="sans label muted" x="${cellX[0]}" y="18">★ Stars &amp; likes</text>
+      </g>
+      <g>
+        <text class="serif num fg" font-size="30" x="${cellX[1]}" y="0">${formatStat(stats.downloadsAndPulls)}+</text>
+        <text class="sans label muted" x="${cellX[1]}" y="18">↓ Downloads &amp; pulls</text>
+      </g>
+      <g>
+        <text class="serif num fg" font-size="30" x="${cellX[2]}" y="0">${formatStat(stats.activeUsers)}+</text>
+        <text class="sans label muted" x="${cellX[2]}" y="18">⏺ Active users</text>
+      </g>
+      <g>
+        <text class="serif num fg" font-size="30" x="${cellX[3]}" y="0">${stats.totalProjects}</text>
+        <text class="sans label muted" x="${cellX[3]}" y="18">▢ Projects shipped</text>
+      </g>
     </g>
-    <g class="cell c2" transform="translate(165 0)">
-      <text class="serif num fg" font-size="42" x="0" y="0">${formatStat(stats.downloadsAndPulls)}+</text>
-      <text class="sans label muted" x="2" y="22">↓ Downloads &amp; pulls</text>
-    </g>
-    <g class="cell c3" transform="translate(360 0)">
-      <text class="serif num fg" font-size="42" x="0" y="0">${formatStat(stats.activeUsers)}+</text>
-      <text class="sans label muted" x="2" y="22">⏺ Active users</text>
-    </g>
-    <g class="cell c4" transform="translate(525 0)">
-      <text class="serif num fg" font-size="42" x="0" y="0">${stats.totalProjects}</text>
-      <text class="sans label muted" x="2" y="22">▢ Projects shipped</text>
-    </g>
-  </g>
 
-  <!-- Footer: GitHub + Stack Overflow side stats + link back to dashboard. -->
-  <g transform="translate(40 280)">
-    ${githubRepos != null ? `<text class="sans muted" x="0" y="0" font-size="12">GitHub: <tspan class="fg" font-weight="600">${githubRepos}</tspan> repos${githubStars != null ? ` · <tspan class="fg" font-weight="600">★ ${githubStars}</tspan>` : ''}</text>` : ''}
-    ${stackoverflowRep != null ? `<text class="sans muted" x="${githubRepos != null ? 220 : 0}" y="0" font-size="12">Stack Overflow: <tspan class="fg" font-weight="600">${formatStat(stackoverflowRep)}</tspan> rep</text>` : ''}
-  </g>
-  <g transform="translate(40 306)">
-    <text class="sans muted" x="0" y="0" font-size="11" font-style="italic">Live dashboard ↗ ${dashboardUrl}</text>
+    <!-- Footer: side stats + clickable dashboard link on one line. -->
+    <text class="sans muted" x="30" y="200" font-size="11">${
+      [
+        githubRepos != null ? `GitHub: <tspan class="fg" font-weight="600">${githubRepos}</tspan> repos` : '',
+        stackoverflowRep != null ? `Stack Overflow: <tspan class="fg" font-weight="600">${formatStat(stackoverflowRep)}</tspan> rep` : '',
+      ].filter(Boolean).join('  ·  ')
+    }${githubRepos != null || stackoverflowRep != null ? '  ·  ' : ''}<a href="${dashboardUrl}" target="_blank"><tspan class="fg" font-weight="600" text-decoration="underline">↗ ${dashboardUrl.replace(/^https?:\/\//, '')}</tspan></a></text>
   </g>
 </svg>`;
 
