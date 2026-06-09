@@ -6,7 +6,7 @@ import config from '../lib/load-config';
 // Vertical-stack profile card variant. Mounted at
 // `<base>profile-card-vertical.svg`. Same data shape and theming as
 // the horizontal flavour at profile-card.svg, but each stat sits on
-// its own row inside a 480px-wide card. Labels stay on a single line
+// its own row inside a 400px-wide card. Labels stay on a single line
 // (no <tspan> wrapping); numbers are right-aligned to a fixed column.
 //
 // Drops the headline + tagline section — the vertical variant is
@@ -62,14 +62,17 @@ export const GET: APIRoute = async () => {
     return `<g>
         ${icon(c.iconKey, 24, y - 14)}
         <text class="sans label muted" x="46" y="${y - 2}">${c.label.replace(/&/g, '&amp;')}</text>
-        <text class="serif num fg" font-size="26" x="456" y="${y}" text-anchor="end">${formatStat(c.value)}${c.suffix}</text>
+        <text class="serif num fg" font-size="26" x="376" y="${y}" text-anchor="end">${formatStat(c.value)}${c.suffix}</text>
       </g>`;
   }).join('\n      ');
 
-  // Card adapts: 1 cell -> 160 tall, 2 -> 200, 3 -> 240, 4 -> 280
-  const cardH = startY + rowH * cells.length + 40;
+  // Card adapts to the non-zero cell count. The +30 at the end leaves
+  // room for the two-line footer (side stats + dashboard URL on its
+  // own row) with a comfortable gap above. +60 left a visibly empty
+  // band, +20 read as cramped; +30 lands in the readable middle.
+  const cardH = startY + rowH * cells.length + 30;
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 ${cardH}" width="480" height="${cardH}" role="img" aria-label="Live project stats">
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 ${cardH}" width="400" height="${cardH}" role="img" aria-label="Live project stats">
   <title>Live project stats</title>
   <style>
     :root {
@@ -105,7 +108,7 @@ export const GET: APIRoute = async () => {
     .content { animation: fade-in 700ms ease-out backwards; }
   </style>
 
-  <rect class="card" width="480" height="${cardH}" rx="14" stroke-width="1"/>
+  <rect class="card" width="400" height="${cardH}" rx="14" stroke-width="1"/>
 
   <g class="content">
     <!-- Top row: live-dot kicker on the left, template attribution on the right. -->
@@ -114,19 +117,25 @@ export const GET: APIRoute = async () => {
       <text class="sans label muted" x="11" y="2">LIVE STATS · ${stats.totalProjects} PROJECTS</text>
     </g>
     <a href="${templateRepoUrl}" target="_blank">
-      <text class="sans label muted" x="456" y="34" text-anchor="end">MAKE YOURS ↗</text>
+      <text class="sans label muted" x="376" y="34" text-anchor="end">MAKE YOURS ↗</text>
     </a>
 
     <!-- Stat rows: icon + single-line label on the left, big number right-aligned -->
     ${cellsMarkup}
 
-    <!-- Footer: side stats + clickable dashboard link on one line. -->
-    <text class="sans muted" x="24" y="${cardH - 18}" font-size="11">${
+    <!-- Footer block: side stats on the first line, clickable dashboard
+         URL on its own line below. Separate <text> elements rather than
+         a <tspan dy=...> because GitHub's SVG renderer is more
+         consistent with explicit y-positions across browsers. -->
+    <text class="sans muted" x="24" y="${cardH - 38}" font-size="11">${
       [
         githubRepos != null ? `GitHub: <tspan class="fg" font-weight="600">${githubRepos}</tspan> repos` : '',
         stackoverflowRep != null ? `Stack Overflow: <tspan class="fg" font-weight="600">${formatStat(stackoverflowRep)}</tspan> rep` : '',
       ].filter(Boolean).join('  ·  ')
-    }${githubRepos != null || stackoverflowRep != null ? '  ·  ' : ''}<a href="${dashboardUrl}" target="_blank"><tspan class="fg" font-weight="600" text-decoration="underline">↗ ${dashboardUrl.replace(/^https?:\/\//, '')}</tspan></a></text>
+    }</text>
+    <a href="${dashboardUrl}" target="_blank">
+      <text class="sans" x="24" y="${cardH - 18}" font-size="11"><tspan class="fg" font-weight="600" text-decoration="underline">${dashboardUrl.replace(/^https?:\/\//, '')}</tspan> <tspan class="fg" font-weight="600">↗</tspan></text>
+    </a>
   </g>
 </svg>`;
 
