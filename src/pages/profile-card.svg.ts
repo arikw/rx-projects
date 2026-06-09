@@ -128,9 +128,13 @@ export const GET: APIRoute = async () => {
     .content { animation: fade-in 700ms ease-out backwards; }
   </style>
 
-  <!-- Frame -->
-  <rect class="bg" width="640" height="236" rx="14"/>
-  <rect class="card" x="10" y="10" width="620" height="216" rx="10" stroke-width="1"/>
+  <!-- Frame. One rect filling the whole viewBox — embedded on
+       a README the card sits flush against the host background
+       (no cream "halo" around the white card on GitHub's white
+       page). The subtle stroke is the only thing defining the
+       edge; on the dashboard at /projects/ where the page bg is
+       cream, the white-on-cream contrast still reads as a card. -->
+  <rect class="card" width="640" height="236" rx="14" stroke-width="1"/>
 
   <g class="content">
     <!-- Top row: live-dot kicker on the left, template attribution
