@@ -71,6 +71,11 @@
       "pagesUrl": "https://arikw.github.io/rx-projects/",
       "favicon": "https://wzmn.net/projects/_cache/favicon/75904bcdcb67134e-180-rv2.png",
       "title": "My Projects"
+    },
+    "tooleap-website": {
+      "pagesUrl": "https://arikw.github.io/tooleap-website/",
+      "favicon": "https://tooleap.com/images/favicon/favicon-196x196.png",
+      "title": "Tooleap - Your App on Top"
     }
   }
 }
