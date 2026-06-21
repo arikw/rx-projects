@@ -216,6 +216,14 @@ export type ProjectsConfig = {
     siteTagline?: string;
     /** Longer site introduction rendered between hero and featured row. Markdown. */
     siteAbout?: string;
+    /** Default social-share image (og:image / twitter:image) used on
+     *  pages that don't surface their own art — the homepage and any
+     *  project that lacks a banner / screenshot / icon. Absolute or
+     *  root-relative URL; resolved against `deployment.site` at render
+     *  time. Recommended: 1200×630 JPEG or PNG, < 600 KB. Leave unset
+     *  to omit the image entirely (most platforms still render a
+     *  text-only preview; WhatsApp collapses to bare hostname). */
+    ogImage?: string;
     /** Browser tab favicon source.
      *   - `undefined` (default): auto — first available profile avatar from a
      *     profile connector (typically github → stackoverflow → …). Falls back
