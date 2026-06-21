@@ -42,12 +42,40 @@
 </button>
 
 <script>
+  /** Copy text via the legacy `document.execCommand('copy')` route.
+   *  Modern clipboard / Web Share APIs require a secure context — on
+   *  `http://` LAN dev (e.g. testing on a phone against your laptop's
+   *  IP) they're unavailable / throw. execCommand is deprecated but
+   *  still works in every browser and crucially works in insecure
+   *  contexts, so it's our floor for "the button does something". */
+  function copyViaExecCommand(text: string): boolean {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  function flashCopied(btn: HTMLButtonElement): void {
+    btn.classList.add('share-copied');
+    btn.setAttribute('aria-label', 'Link copied to clipboard');
+    setTimeout(() => {
+      btn.classList.remove('share-copied');
+      btn.setAttribute('aria-label', 'Share this page');
+    }, 1500);
+  }
+
   document.querySelectorAll<HTMLButtonElement>('[data-share-button]').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      const shareData: ShareData = {
-        title: document.title,
-        url: location.href,
-      };
+      const url = location.href;
+      const shareData: ShareData = { title: document.title, url };
       // og:description is already on every page (BaseHead always emits
       // it). Surface it as the share sheet's text body so WhatsApp /
       // Mail / etc. prefill a meaningful description.
@@ -55,36 +83,38 @@
         .querySelector<HTMLMetaElement>('meta[name="description"]')?.content;
       if (desc) shareData.text = desc;
 
-      // Web Share API path — mobile + recent macOS/Windows. The user-
-      // gesture requirement is satisfied because we're inside a click.
+      // Path 1 — Web Share API. Mobile + recent macOS / Windows. Only
+      // works in a SECURE context (https or localhost). On http:// LAN
+      // the function isn't even defined, so we drop straight through.
       if (typeof navigator.share === 'function') {
         try {
           await navigator.share(shareData);
           return;
         } catch (err) {
-          // AbortError = user dismissed the share sheet. Nothing went
-          // wrong — don't fall through to the clipboard fallback in
-          // that case (that would feel like the action ran twice).
+          // User dismissed the share sheet — they're done, no fallback.
           if ((err as DOMException)?.name === 'AbortError') return;
           // Any other error: fall through to clipboard.
         }
       }
 
-      // Clipboard fallback. Show the checkmark for 1.5 s so the user
-      // gets a definite "yes that worked" signal without a toast.
-      try {
-        await navigator.clipboard.writeText(location.href);
-        btn.classList.add('share-copied');
-        btn.setAttribute('aria-label', 'Link copied to clipboard');
-        setTimeout(() => {
-          btn.classList.remove('share-copied');
-          btn.setAttribute('aria-label', 'Share this page');
-        }, 1500);
-      } catch {
-        // Clipboard blocked (insecure context, perms denied). We don't
-        // have a heavier UI layer to fall back to here; the click just
-        // appears to do nothing. Rare enough to accept.
+      // Path 2 — async Clipboard API. Also secure-context only, so it
+      // throws on http:// LAN. Wrapped in try/catch so we silently
+      // fall through to execCommand without surfacing the error.
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        try {
+          await navigator.clipboard.writeText(url);
+          flashCopied(btn);
+          return;
+        } catch {
+          // Fall through to execCommand.
+        }
       }
+
+      // Path 3 — execCommand. The insecure-context floor.
+      if (copyViaExecCommand(url)) flashCopied(btn);
+      // Everything failed: the click really does nothing. We accept
+      // this for the very rare browser that strips both APIs and
+      // also blocks execCommand.
     });
   });
 </script>
