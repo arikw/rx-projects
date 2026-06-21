@@ -1,0 +1,85 @@
+---
+// Share button — invokes the Web Share API on platforms that support
+// it (every mobile browser plus recent macOS / Windows builds),
+// falling back to a clipboard copy with brief checkmark feedback on
+// desktop browsers that don't have a share sheet.
+//
+// Lives alongside the theme toggle in the header so users see one
+// "share / theme" pair instead of having to hunt for either action.
+---
+<button
+  type="button"
+  class="share-button"
+  aria-label="Share this page"
+  title="Share this page"
+  data-share-button
+>
+  <svg class="share-icon share-icon-share" viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M12 3v12M12 3l-4 4M12 3l4 4M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+  <svg class="share-icon share-icon-check" viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M5 12.5L10 17.5L20 7.5"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+</button>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-share-button]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const shareData: ShareData = {
+        title: document.title,
+        url: location.href,
+      };
+      // og:description is already on every page (BaseHead always emits
+      // it). Surface it as the share sheet's text body so WhatsApp /
+      // Mail / etc. prefill a meaningful description.
+      const desc = document
+        .querySelector<HTMLMetaElement>('meta[name="description"]')?.content;
+      if (desc) shareData.text = desc;
+
+      // Web Share API path — mobile + recent macOS/Windows. The user-
+      // gesture requirement is satisfied because we're inside a click.
+      if (typeof navigator.share === 'function') {
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (err) {
+          // AbortError = user dismissed the share sheet. Nothing went
+          // wrong — don't fall through to the clipboard fallback in
+          // that case (that would feel like the action ran twice).
+          if ((err as DOMException)?.name === 'AbortError') return;
+          // Any other error: fall through to clipboard.
+        }
+      }
+
+      // Clipboard fallback. Show the checkmark for 1.5 s so the user
+      // gets a definite "yes that worked" signal without a toast.
+      try {
+        await navigator.clipboard.writeText(location.href);
+        btn.classList.add('share-copied');
+        btn.setAttribute('aria-label', 'Link copied to clipboard');
+        setTimeout(() => {
+          btn.classList.remove('share-copied');
+          btn.setAttribute('aria-label', 'Share this page');
+        }, 1500);
+      } catch {
+        // Clipboard blocked (insecure context, perms denied). We don't
+        // have a heavier UI layer to fall back to here; the click just
+        // appears to do nothing. Rare enough to accept.
+      }
+    });
+  });
+</script>

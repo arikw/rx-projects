@@ -326,6 +326,50 @@ body.changes-hidden .visit-summary {
 :root[data-theme='light'] .theme-icon-sun { display: none; }
 :root[data-theme='light'] .theme-icon-moon { display: block; }
 
+/* Share button — same shape + interactions as `.theme-toggle`, sits
+   directly next to it in the header nav. */
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--fg);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+}
+.share-button:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.share-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.share-icon {
+  width: 18px;
+  height: 18px;
+}
+.share-icon-check { display: none; }
+.share-icon-share { display: block; }
+/* Clipboard-fallback feedback: swap to checkmark + accent tint for
+   the 1.5 s set by ShareButton's script. */
+.share-button.share-copied {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.share-button.share-copied .share-icon-share { display: none; }
+.share-button.share-copied .share-icon-check { display: block; }
+
 /* Hero */
 .hero {
   /* Rhythm is owned by the `.site-main` flex gap. No margin needed here. */
