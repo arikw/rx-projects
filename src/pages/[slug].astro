@@ -301,6 +301,14 @@ const displayTitle = resolveDisplayTitle(project);
 const pageTitle = `${displayTitle} | ${config.meta.siteTitle}`;
 const pageDesc = project.description ?? `Details for ${displayTitle}`;
 
+// Social-share image priority: the marketing banner (widest, designed
+// for hero use) → the first gallery screenshot (typically 16:10
+// landscape — good large-card material) → the icon (square, last
+// resort but at least branded). BaseHead resolves the URL to absolute
+// against Astro.site; WhatsApp refuses to fetch root-relative paths.
+const pageImage = project.banner ?? project.screenshots?.[0] ?? project.icon;
+const pageImageAlt = displayTitle;
+
 // Stats picked for the sidebar — only show ones with real values.
 type StatChip = { label: string; value: string; title?: string };
 function formatNumber(n: number): string {
@@ -517,7 +525,7 @@ function projectGroups(p: Project): string[] {
 }
 ---
 
-<BaseLayout title={pageTitle} description={pageDesc}>
+<BaseLayout title={pageTitle} description={pageDesc} image={pageImage} imageAlt={pageImageAlt}>
   <article class="detail">
     <a class="back" href={base}>← Back to projects</a>
 

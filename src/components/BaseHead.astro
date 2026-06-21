@@ -8,11 +8,47 @@ interface Props {
   description: string;
   ogType?: 'website' | 'article';
   author?: string;
+  /** Absolute or root-relative URL for the social-share image
+   *  (og:image / twitter:image). Resolved against `Astro.site`, so a
+   *  `/projects/foo.png` becomes `https://your-site/projects/foo.png` —
+   *  WhatsApp / Slack / LinkedIn crawl images only via absolute URLs.
+   *  Falls back to `config.meta.ogImage` when the page doesn't
+   *  supply one; both being absent simply omits the image meta
+   *  block (and `twitter:card` stays as the smaller `summary`). */
+  image?: string;
+  /** Alt text for the social-share image. Defaults to `title` when
+   *  omitted. */
+  imageAlt?: string;
 }
 
-const { title, description, ogType = 'website', author = config.user.name } = Astro.props;
+const { title, description, ogType = 'website', author = config.user.name, image, imageAlt } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+/** Resolve a possibly-relative URL to an absolute one against the
+ *  site origin. Social crawlers (WhatsApp especially) refuse to
+ *  fetch root-relative paths in og:image, so we always emit absolute.
+ *  Rejects `data:` URIs outright — WhatsApp / Slack / LinkedIn can't
+ *  fetch them, and several projects use emoji-SVG `data:` placeholders
+ *  as fallback icons. Returning undefined here lets the caller fall
+ *  through to `config.meta.ogImage` (or omit the meta block entirely
+ *  if both are absent). */
+function toAbsoluteSocialUrl(u: string | undefined): string | undefined {
+  if (!u) return undefined;
+  if (u.startsWith('data:')) return undefined;
+  try {
+    return new URL(u, Astro.site).toString();
+  } catch {
+    return undefined;
+  }
+}
+const socialImage = toAbsoluteSocialUrl(image) ?? toAbsoluteSocialUrl(config.meta.ogImage);
+const socialImageAlt = imageAlt ?? title;
+// Twitter card variant: `summary_large_image` shows a full-width image
+// preview when one is available; `summary` is the small thumbnail
+// fallback for image-less pages. WhatsApp / Slack / LinkedIn / Discord
+// ignore this property entirely — they read og:image.
+const twitterCard = socialImage ? 'summary_large_image' : 'summary';
 // Ensure the loader has run so `getProfiles()` is populated — loadProjects is
 // memoised, so this just hits the cached result on subsequent pages.
 await loadProjects();
@@ -87,9 +123,22 @@ const swEnabled = config.meta.serviceWorker !== false && import.meta.env.PROD;
 <meta property="og:description" content={description} />
 <meta property="og:url" content={canonicalURL} />
 <meta property="og:site_name" content={config.meta.siteTitle} />
+{socialImage && (
+  <>
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:secure_url" content={socialImage} />
+    <meta property="og:image:alt" content={socialImageAlt} />
+  </>
+)}
 
-<meta name="twitter:card" content="summary" />
+<meta name="twitter:card" content={twitterCard} />
 <meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={description} />
+{socialImage && (
+  <>
+    <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image:alt" content={socialImageAlt} />
+  </>
+)}
 
 <meta name="robots" content="index,follow" />
