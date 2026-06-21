@@ -11,6 +11,7 @@
 // consults the url-map at the end of the load to rewrite Project / ProfileFact
 // image URLs to the local served paths.
 
+import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   copyFileSync,
@@ -18,13 +19,22 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { dirname, extname, resolve } from 'node:path';
+import { promisify } from 'node:util';
 import { readJsonCache, writeJsonCache } from './json-cache';
+
+const run = promisify(execFile);
 
 const CACHE_ROOT = 'generated/.cache';
 const PUBLIC_ROOT = 'public/_cache';
+/** Shared subdirectory under PUBLIC_ROOT for YouTube MP4s. ONE file per
+ *  video id, reused across every connector that references the same
+ *  video and across builds — so a video downloaded once stays
+ *  downloaded forever (until you delete it). */
+const YOUTUBE_DIR = 'youtube';
 /** Fallback root: if a fresh fetch fails (rate limit, network blip),
  *  cacheMedia tries to recover the bytes from here. Populated manually by
  *  whatever process stashed the previous cache state (e.g. a one-off
@@ -152,6 +162,166 @@ function tryFallbackFromTmp(
   return newServed;
 }
 
+/** Extract a YouTube video id from a URL across the common shapes:
+ *  `youtu.be/<id>`, `youtube.com/watch?v=<id>`, `youtube.com/embed/<id>`,
+ *  `youtube.com/shorts/<id>`, plus the `youtube-nocookie.com` mirror.
+ *  Returns null for everything else. Kept local (instead of importing
+ *  from `media-items.ts`) to avoid a circular dep — media-items
+ *  consumes the url-map this module writes. */
+function youtubeIdFromUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.toLowerCase().replace(/^www\./, '');
+    const isYt =
+      host === 'youtu.be' ||
+      host.endsWith('youtube.com') ||
+      host.endsWith('youtube-nocookie.com');
+    if (!isYt) return null;
+    if (host === 'youtu.be') {
+      const id = u.pathname.slice(1).split('/')[0];
+      return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+    }
+    const v = u.searchParams.get('v');
+    if (v && /^[A-Za-z0-9_-]{11}$/.test(v)) return v;
+    const m = u.pathname.match(/^\/(?:embed|v|shorts)\/([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+let ytDlpProbed = false;
+let ytDlpReady = false;
+/** Probe yt-dlp availability ONCE per build. If it's not installed, all
+ *  YouTube URLs fall through to the iframe-embed renderer (the same
+ *  behaviour as before this feature was added) — graceful degradation
+ *  so the build never breaks on a dev box without yt-dlp installed. */
+async function checkYtDlp(): Promise<boolean> {
+  if (ytDlpProbed) return ytDlpReady;
+  ytDlpProbed = true;
+  try {
+    await run('yt-dlp', ['--version'], { timeout: 5_000 });
+    ytDlpReady = true;
+  } catch {
+    console.warn(
+      '[media-cache] yt-dlp not installed — YouTube videos will render as <iframe> ' +
+        'embeds. Install yt-dlp (and ffmpeg) to cache YouTube videos as local MP4.',
+    );
+    ytDlpReady = false;
+  }
+  return ytDlpReady;
+}
+
+/** Cache a single YouTube video as a local MP4. Shared across all
+ *  connectors and all builds — the cached file lives at
+ *  `public/_cache/youtube/<videoId>.mp4` regardless of which connector
+ *  surfaced the URL. The url-map entry is written into the CALLING
+ *  connector's url-map so the rewriter resolves the URL via that
+ *  connector's lookup (then `getMergedUrlMap` collapses them all).
+ *
+ *  IMPORTANT: short-circuits whenever the shared file already exists
+ *  on disk — same build (multiple url variants for the same video),
+ *  later build (cron committed the bytes back), or other connectors
+ *  (chromestats AND extpose both citing the same demo) all skip
+ *  yt-dlp and just register the mapping. yt-dlp never runs for a
+ *  video we've already got. */
+async function cacheYouTubeVideo(
+  connectorKey: string,
+  url: string,
+  ytId: string,
+): Promise<string | null> {
+  const filename = `${ytId}.mp4`;
+  const servedPath = `_cache/${YOUTUBE_DIR}/${filename}`;
+  const diskPath = resolve(process.cwd(), PUBLIC_ROOT, YOUTUBE_DIR, filename);
+
+  const registerMapping = (path: string): string => {
+    const cache = readUrlMap(connectorKey);
+    if (cache.map[url] !== path) {
+      cache.map[url] = path;
+      writeUrlMap(connectorKey, cache);
+    }
+    return path;
+  };
+
+  // Backward compatibility: if THIS connector's url-map already
+  // points the URL at a cached MP4 (from before the shared youtube/
+  // directory existed, or from a fresh checkout that brought the
+  // committed cache), reuse it. We do NOT want to re-download a
+  // video the cron already paid for just because it lives at the
+  // old path. Same byte-presence + non-zero-size guard as below.
+  {
+    const cache = readUrlMap(connectorKey);
+    const existing = cache.map[url];
+    if (existing) {
+      const existingDisk = resolve(
+        process.cwd(),
+        PUBLIC_ROOT,
+        existing.replace(/^_cache\//, ''),
+      );
+      if (existsSync(existingDisk)) {
+        let size = 0;
+        try { size = statSync(existingDisk).size; } catch { /* */ }
+        if (size > 0) return existing;
+      }
+    }
+  }
+
+  // Shared-dir fast path: if the canonical youtube/<id>.mp4 file is
+  // already on disk (downloaded by another connector earlier in this
+  // build, or committed by a previous cron run), skip yt-dlp and
+  // just register the mapping. Zero-byte sentinels are treated as
+  // missing — a previous run's interruption gets a clean retry on
+  // the next build.
+  if (existsSync(diskPath)) {
+    let size = 0;
+    try { size = statSync(diskPath).size; } catch { /* */ }
+    if (size > 0) return registerMapping(servedPath);
+  }
+
+  if (!(await checkYtDlp())) return null;
+
+  mkdirSync(dirname(diskPath), { recursive: true });
+
+  // Canonicalise the URL passed to yt-dlp so noisy player params
+  // (?rel=0&autoplay=1&t=42 etc.) can't end up triggering different
+  // format negotiations for the same video. We always ask for the
+  // plain `watch?v=<id>` URL.
+  const canonical = `https://www.youtube.com/watch?v=${ytId}`;
+
+  // Format selector logic, in priority order:
+  //   1. A single pre-muxed MP4 ≤ 720p — no ffmpeg needed.
+  //   2. Any single MP4 file — covers cases where YouTube only offers
+  //      higher-res pre-muxed.
+  //   3. Best video + audio streams merged into MP4 — requires ffmpeg.
+  //   4. Whatever yt-dlp says is "best" — last-resort fallback.
+  // 720p is a deliberate cap: anything higher is wasted bytes on a
+  // dashboard thumbnail-sized gallery viewer, and adds disk pressure
+  // on the cron-committed cache.
+  const format =
+    'b[ext=mp4][height<=720]/b[ext=mp4]/bv*[height<=720]+ba[ext=m4a]/b';
+
+  try {
+    await run(
+      'yt-dlp',
+      [
+        '--no-warnings', '--quiet', '--no-playlist',
+        '-f', format,
+        '--merge-output-format', 'mp4',
+        '-o', diskPath,
+        canonical,
+      ],
+      { maxBuffer: 64 * 1024 * 1024, timeout: 5 * 60 * 1000 },
+    );
+  } catch (e) {
+    console.warn(`[media-cache] yt-dlp failed for ${url}:`, (e as { message?: string })?.message ?? e);
+    return null;
+  }
+
+  if (!existsSync(diskPath)) return null;
+  console.log(`[media-cache] yt-dlp cached ${ytId} (${url})`);
+  return registerMapping(servedPath);
+}
+
 /** Download a single media URL into the connector's cache, if not already
  *  cached. Returns the served path (relative — no leading slash, no base)
  *  on success or null if the URL was skipped / failed. Idempotent. */
@@ -160,6 +330,14 @@ export async function cacheMedia(connectorKey: string, url: string): Promise<str
   if (url.startsWith('data:')) return null;
   // Already a local cache path? Leave it alone.
   if (url.startsWith('_cache/') || url.includes('/_cache/')) return url;
+
+  // YouTube URLs are handled out-of-band by yt-dlp. The shared
+  // `public/_cache/youtube/` location and the in-function
+  // file-exists guard guarantee at-most-once download per video id,
+  // regardless of how many connectors surface the same video or how
+  // many builds we run.
+  const ytId = youtubeIdFromUrl(url);
+  if (ytId) return cacheYouTubeVideo(connectorKey, url, ytId);
 
   const cache = readUrlMap(connectorKey);
   const cached = cache.map[url];
