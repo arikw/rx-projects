@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "_generated": "Auto-generated chrome-stats.com cache. Fetched once per extension id; delete the file to refresh. PII (email, authorId) is intentionally omitted.",
   "apps": {
     "fimgfedafeadlieiabdeeaodndnlbhid": {
@@ -8,7 +8,7 @@
       "name": "Extensions Reloader",
       "description": "Reload all unpacked extensions using the extension's toolbar button or by browsing to \"http://reload.extensions\"",
       "version": "2.0",
-      "userCount": 20000,
+      "userCount": 10000,
       "rating": {
         "value": 4.364285714285714,
         "count": 140
@@ -50,35 +50,16 @@
         }
       ],
       "isDeleted": false,
+      "screenshots": [
+        "https://lh3.googleusercontent.com/tjMwgu-AwqdEZw8skEfX8EmfYn-z9sLrwAMBv4WyjCFtLWv5TM-Ad9u2RJbk7AuDytoe2RI-42O-fpYZs8PyrhiMaJQ",
+        "https://lh3.googleusercontent.com/Ip8ZzMmphcrhrhgPLKDPNXngxceWI4g5087jJ8deruX8glFmFB5jAQU8ggFO6Kxy7MtYLCDzvvWUiHDdmCIqZVyluA",
+        "https://lh3.googleusercontent.com/yqRq_MBZY51sDs98I9GjM-Uk6fAit_zlPq8j7VPxqhvEwbn1bqwdgyKEvgQnA_svXAHW68tM_kN6cubs6ULVXXhTmA"
+      ],
       "reviews": [
         {
           "rating": 5,
           "body": "Perfect!!!",
           "ts": "2025-09-22",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 5,
-          "body": "Wow it works!\nThe keyboard shortcut works fine, having two separate shortcuts -one with refresh the current tab another without refresh- would be super helpful.",
-          "ts": "2025-03-22",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 5,
-          "body": "você clica na extensão e ela recarrega as suas extensões e a página.",
-          "ts": "2024-11-24",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 5,
-          "body": "Thank you",
-          "ts": "2024-07-20",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 5,
-          "body": "Quick, minimalistic and reliable.\n\n\"does NOT work when you edit your `manifest.json` file\"? I just tried that and it works like a charm.",
-          "ts": "2024-01-19",
           "source": "chrome-stats"
         }
       ]
@@ -121,35 +102,17 @@
         }
       ],
       "isDeleted": false,
+      "screenshots": [
+        "https://lh3.googleusercontent.com/qOF4hfZepKYym96W1f3ceUD2Gk27ju5-0uZid9W3xa1JF0pe9Fvex9Ls6q80WDuXLK84_a3mrc6uvPH9s3vZFmoczj4",
+        "https://lh3.googleusercontent.com/fxOei0tuWbNqpjSmSQV-V0bcfc6X0LQBIFjhozkq1Dh2qgsgHr2HsKrc8BExqWe_dau3_RiFwFd_JnpalnPd7BoT1DE",
+        "https://lh3.googleusercontent.com/1YyCbO_oT6ybqidxvAN2U0vNgKw-BTcL70hHYxCVDNfyw9fSZ1wqnHAEqq4MbpzyqtbhBhgYJneJtWrXZuzFAqEPSJA",
+        "https://lh3.googleusercontent.com/3vBcQ7Jx-usE3cBMLdDYOkVNDVvAtNYK5QJRNqpm7n-M6Iq_Yf98z5GeQKGrGS0BhwoXfF88ljSfu6oXBEQPI-m6"
+      ],
       "reviews": [
         {
           "rating": 1,
           "body": "It doesn't block any pop-ups from Yahoo Finance.",
           "ts": "2023-07-11",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 1,
-          "body": "Doesn't work",
-          "ts": "2022-11-02",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 1,
-          "body": "Useless",
-          "ts": "2021-08-06",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 2,
-          "body": "Doesn't block all Pop ups, almost useless.",
-          "ts": "2021-04-11",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 4,
-          "body": "This extension needs some updating, I think some of it's blocking abilities have been circumvented recently.",
-          "ts": "2020-12-24",
           "source": "chrome-stats"
         }
       ]
@@ -179,6 +142,9 @@
       "riskImpact": 0,
       "riskLikelihood": 0,
       "isDeleted": false,
+      "screenshots": [
+        "https://lh3.googleusercontent.com/diIw7juIEgSjqigmjSGNUh1PGnFwZuTBe_qkCtETdc7k1kjs12rxgjNqSEWPJGU7GDQm9dnhCo_rQ8qUu5HQI1phcQ"
+      ],
       "reviews": [
         {
           "rating": 5,
@@ -225,6 +191,10 @@
         }
       ],
       "isDeleted": false,
+      "screenshots": [
+        "https://lh3.googleusercontent.com/dlRYpjyI21AhzPRjtnBcK64BIL9aDWtC5LzenIO55z-z90DsJ3U-lDkHM6wbdGeYkh_nEUd1dHagDBQ5Vc9WdU9nDQ",
+        "https://lh3.googleusercontent.com/zkGI3wsGLla31f8fszZ5fVDKqKLp5wSsb7LwiBGVbBJiCy2kTUCs6D-okaX65wDMr46yGd0Re9Kpn0WiOgvdCYZr"
+      ],
       "reviews": [
         {
           "rating": 5,
@@ -264,7 +234,10 @@
           "risk": 15
         }
       ],
-      "isDeleted": true
+      "isDeleted": true,
+      "screenshots": [
+        "https://lh3.googleusercontent.com/M4uJEuoqY6sNVQ1OoF4LrYqXTNjEwMZfxlpy6_GGeUOs6ROpd8Ss9KjX644TmekSXd5GpYl743fF3ppKtvtav3y5FQ=w640-h400-e365-rj-sc0x00ffffff"
+      ]
     },
     "mcdpnidfhfjfbafmpppcplcejgepadbo": {
       "id": "mcdpnidfhfjfbafmpppcplcejgepadbo",
@@ -307,65 +280,16 @@
       "videos": [
         "https://www.youtube.com/embed/LGAN_OqjgeY?rel=0&wmode=opaque&enablejsapi=1"
       ],
+      "screenshots": [
+        "https://lh3.googleusercontent.com/AvWbpckYl_84UytXmvqavb93NeqXfjvyNAsdSp6J2g9IlCxOYfi8Okb7M8TBHnSoWQcru4885TGThCjARe-nL4R58XE=w640-h400-e365-rj-sc0x00ffffff",
+        "https://lh3.googleusercontent.com/aJDTrn7CP4PrSFhxHHC_a0KUKpqIHGjf0DKKktuMo0GHCW_9q60hpYTcAEuHokSIp8cYf09sciMaT6_Q9y9clvszxw=w640-h400-e365-rj-sc0x00ffffff",
+        "https://lh3.googleusercontent.com/nm9jqKvczMO7Hkrkx4ie3xHH3mZZ9-YyKDofc2VJL9Lprr8_PQNnz9QlA4H5M6IbV5gF253ZCbIOCR25BiArOPQJ3w=w640-h400-e365-rj-sc0x00ffffff"
+      ],
       "reviews": [
         {
           "rating": 2,
           "body": "Does not work if you have YT premium.",
-          "ts": "2022-09-26",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 1,
-          "body": "No longer works. The author abandoned the extension",
           "ts": "2022-07-18",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 1,
-          "body": "This extension used to work, but as of 4/4/2022, it no longer does.",
-          "ts": "2022-04-04",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 1,
-          "body": "It doesn't work",
-          "ts": "2021-10-21",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 3,
-          "body": "When I used to use it years ago it worked perfectly, as of September 2021, it doesn't work anymore",
-          "ts": "2021-09-29",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 1,
-          "body": "沒用",
-          "ts": "2021-09-28",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 1,
-          "body": "doesn't work",
-          "ts": "2021-06-14",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 1,
-          "body": "doesn't work, app not updated since 2018",
-          "ts": "2021-06-09",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 5,
-          "body": "I really like it, but it's not working right now.",
-          "ts": "2021-05-24",
-          "source": "chrome-stats"
-        },
-        {
-          "rating": 1,
-          "body": "Doesn't work. either update, provide instructions for proper use, or get it off the google webstore, and stop wasting peoples time.",
-          "ts": "2021-03-28",
           "source": "chrome-stats"
         }
       ]

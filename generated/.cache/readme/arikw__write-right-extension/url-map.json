@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "_generated": "Auto-generated. Maps original upstream image URLs (from a README) to local served paths. Maintained by src/lib/readme-cache.ts. Delete to force re-fetch.",
+  "map": {
+    "https://raw.githubusercontent.com/arikw/write-right-extension/master/src/icons/128.png": "_cache/readme/arikw__write-right-extension/419c39014242be4c.png"
+  }
+}

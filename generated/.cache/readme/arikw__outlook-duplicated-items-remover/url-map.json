@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "_generated": "Auto-generated. Maps original upstream image URLs (from a README) to local served paths. Maintained by src/lib/readme-cache.ts. Delete to force re-fetch.",
+  "map": {
+    "https://raw.githubusercontent.com/arikw/outlook-duplicated-items-remover/master/docs/images/usage-step-3.png": "_cache/readme/arikw__outlook-duplicated-items-remover/c8ff20f782cc47b5.png",
+    "https://raw.githubusercontent.com/arikw/outlook-duplicated-items-remover/master/docs/images/usage-step-1.png": "_cache/readme/arikw__outlook-duplicated-items-remover/73f5fb98801174e1.png",
+    "https://raw.githubusercontent.com/arikw/outlook-duplicated-items-remover/master/docs/images/usage-step-2.png": "_cache/readme/arikw__outlook-duplicated-items-remover/802600465948b4fc.png"
+  }
+}

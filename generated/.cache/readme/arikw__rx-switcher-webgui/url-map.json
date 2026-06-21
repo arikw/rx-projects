@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "_generated": "Auto-generated. Maps original upstream image URLs (from a README) to local served paths. Maintained by src/lib/readme-cache.ts. Delete to force re-fetch.",
+  "map": {
+    "https://raw.githubusercontent.com/arikw/rx-switcher-webgui/master/images/screenshot.png": "_cache/readme/arikw__rx-switcher-webgui/9b49f830f400629e.png"
+  }
+}

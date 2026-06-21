@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "_generated": "Auto-generated extpose.com cache. Fetched once per extension id; delete the file to refresh.",
   "apps": {
     "fimgfedafeadlieiabdeeaodndnlbhid": {
@@ -7,7 +7,7 @@
       "url": "https://extpose.com/ext/fimgfedafeadlieiabdeeaodndnlbhid",
       "name": "Extensions Reloader",
       "description": "Reload all unpacked extensions using the extension's toolbar button or by browsing to \"http://reload.extensions\"",
-      "userCount": 20000,
+      "userCount": 10000,
       "rating": {
         "value": 4.36,
         "count": 140
@@ -16,7 +16,8 @@
       "lastUpdate": "2025-03-10",
       "isDeleted": false,
       "icon": "https://lh3.googleusercontent.com/kLAad_XbhoAEIn7sURHpYUZI0wVMYdQLjbXSKi0kOuXKuVyDBd1tS9JpbCBJRpUn46z2fgYDT41OcfvcOp5J--RE0w",
-      "banner": "https://lh3.googleusercontent.com/tjMwgu-AwqdEZw8skEfX8EmfYn-z9sLrwAMBv4WyjCFtLWv5TM-Ad9u2RJbk7AuDytoe2RI-42O-fpYZs8PyrhiMaJQ"
+      "banner": "https://lh3.googleusercontent.com/tjMwgu-AwqdEZw8skEfX8EmfYn-z9sLrwAMBv4WyjCFtLWv5TM-Ad9u2RJbk7AuDytoe2RI-42O-fpYZs8PyrhiMaJQ",
+      "body": "If you've ever developed a Google Chrome™ extension, you might have wanted to automate the process of reloading your unpacked extension without the need of going through the extensions page.\n\n\"Extensions Reloader\" allows you to reload all unpacked extensions using 3 ways:1- The extension's toolbar button2- Browsing to \"http://reload.extensions\"3- Keyboard shortcut\n\nThe toolbar icon will reload unpacked extensions using a single click.\n\nThe \"reload by browsing\" is intended for automating the reload process using \"post build\" scripts - just browse to \"http://reload.extensions\", and chrome will open with freshly reloaded extensions.\n\nWhenever a refresh is executed, a green \"OK\" badge will appear on Extensions Reloader's toolbar icon.\n\n** This extension is open-source and available on GitHub:https://github.com/arikw/chrome-extensions-reloader"
     },
     "jmjbmlfmmendpkpiggcfpjcpbbpedhha": {
       "id": "jmjbmlfmmendpkpiggcfpjcpbbpedhha",
@@ -32,7 +33,8 @@
       "lastUpdate": "2021-02-11",
       "isDeleted": false,
       "icon": "https://lh3.googleusercontent.com/f2SC0vCGC78-_hktgt8jcsv2UVGts9CYOEKdWaN8GKzguWScTwtq1ELWmUMcjBYis4sBX6Yk9jBvfqWMqb-AFPwfxA",
-      "banner": "https://lh3.googleusercontent.com/qOF4hfZepKYym96W1f3ceUD2Gk27ju5-0uZid9W3xa1JF0pe9Fvex9Ls6q80WDuXLK84_a3mrc6uvPH9s3vZFmoczj4"
+      "banner": "https://lh3.googleusercontent.com/qOF4hfZepKYym96W1f3ceUD2Gk27ju5-0uZid9W3xa1JF0pe9Fvex9Ls6q80WDuXLK84_a3mrc6uvPH9s3vZFmoczj4",
+      "body": "From the original founder of \"Poper Blocker\" - New defenses & algorithms that were built from the ground-up. No more undesired windows and tabs!\n\nThis extension prevents popups and popunders from appearing, and gives you back the control of your browsing experience.\n\nA notification will be shown when a block occurs so you'll have the opportunity to decide whether to keep blocking the window or to whitelist windows from that site using the “Allow Always” option.\n\nThe extension works well with ad-blocking extensions like adblocker and ublocker origin.\n\nYour privacy is our top priority! We do not transmit any data or monetize it."
     },
     "agpmfmfpldoabkmhjanenelnnplfcidm": {
       "id": "agpmfmfpldoabkmhjanenelnnplfcidm",
@@ -48,7 +50,8 @@
       "lastUpdate": "2023-04-22",
       "isDeleted": false,
       "icon": "https://lh3.googleusercontent.com/uvt-bBQ-VDZZZRZRCo7VL02ueZS1YrhcK3-1GxJMmgB3k1yklngrSeSpwqiOwElCCiu7Rk689aNZOG2xhrL501fkEg",
-      "banner": "https://lh3.googleusercontent.com/diIw7juIEgSjqigmjSGNUh1PGnFwZuTBe_qkCtETdc7k1kjs12rxgjNqSEWPJGU7GDQm9dnhCo_rQ8qUu5HQI1phcQ"
+      "banner": "https://lh3.googleusercontent.com/diIw7juIEgSjqigmjSGNUh1PGnFwZuTBe_qkCtETdc7k1kjs12rxgjNqSEWPJGU7GDQm9dnhCo_rQ8qUu5HQI1phcQ",
+      "body": "# Fullscreen Magic\n\nFullscreen Magic will automatically find the most relevant element of a webpage and show it to you in a full screen. Fully enjoy videos, games, pdfs, and other embedded content with just one click. No more distractions, no more zooming in and out, no more hassle. Just pure magic.\n\n## Features\n\n- Works for videos (YouTube, Facebook, Twitter, etc.), iframes, simple online games, canvas elements, PDF viewers and other embedded content- Detects the element of interest automatically and shows it in full screen mode- Supports keyboard shortcuts and mouse gestures for easy navigation- Compatible with Chrome, Firefox and Edge browsers\n\n## Usage\n\nTo use Fullscreen Magic, follow these steps:\n\n- Visit any webpage that contains an element you want to view in full screen mode- Click on the Fullscreen Magic icon in the toolbar- Enjoy the full screen experience- To exit full screen mode, press F11 or Esc on your keyboard\n\n## Source Code and License\n\nFullscreen Magic is open sourced and licensed under the MIT License.See https://github.com/arikw/fullscreen-magic-extension/"
     },
     "gleiglfcmildnecmodgoeijleblhobjk": {
       "id": "gleiglfcmildnecmodgoeijleblhobjk",
@@ -64,7 +67,8 @@
       "lastUpdate": "2023-04-29",
       "isDeleted": false,
       "icon": "https://lh3.googleusercontent.com/pl_X_v5glx6qNyeVKZTFnlFtCdbMaDjKwwtj0QKRN05HV6FY8Of1Gps7OFRm74tuOdm6iSO7lj2TS24gWO-odaqjiw",
-      "banner": "https://lh3.googleusercontent.com/dlRYpjyI21AhzPRjtnBcK64BIL9aDWtC5LzenIO55z-z90DsJ3U-lDkHM6wbdGeYkh_nEUd1dHagDBQ5Vc9WdU9nDQ"
+      "banner": "https://lh3.googleusercontent.com/dlRYpjyI21AhzPRjtnBcK64BIL9aDWtC5LzenIO55z-z90DsJ3U-lDkHM6wbdGeYkh_nEUd1dHagDBQ5Vc9WdU9nDQ",
+      "body": "# WriteRight\n\nWriteRight is a chrome extension that automatically sets the writing direction of input elements and allows the user to override it with keyboard shortcuts.\n\n## Features\n\n- Automatically detects the writing direction of the first word character in an input element and sets it to RTL or LTR accordingly.- Allows the user to manually set the writing direction to RTL with the right control and right shift keys, or to LTR with the left control and left shift keys.- Only changes the writing direction of editable input elements.- Re-enables the auto-detection mode when the input element is cleared.\n\n## Use Cases\n\nWriteRight is especially useful for users who need to switch between different writing directions frequently. Some examples are:\n\n- On Windows, users can change the writing direction to LTR or RTL using CTRL + LEFT or RIGHT SHIFT shortcuts. This feature is missing from Chrome on Linux, but WriteRight enables it.- WriteRight also automatically sets the writing direction in webpages that align the text to a fixed side. For example, in Google's website, the search field is fixed to LTR, but WriteRight can change it to RTL if needed.\n\n## Usage\n\nAfter installing WriteRight, you can use it on any webpage that has input elements. Just start typing and the extension will automatically set the writing direction for you. If you want to override the writing direction, you can use the keyboard shortcuts: left control and left shift for LTR, or right control and right shift for RTL.\n\n## Development\n\nWriteRight was generated using Bing's GPT, a powerful natural language processing model that can create various types of content. The extension's source files are available on [Github](https://github.com/arikw/write-right-extension), where you can also report issues or suggest improvements."
     },
     "jdmiahadpnljimfcnfaebjggbfkjkgan": {
       "id": "jdmiahadpnljimfcnfaebjggbfkjkgan",
@@ -80,7 +84,8 @@
       "lastUpdate": "2017-05-08",
       "isDeleted": true,
       "icon": "https://lh3.googleusercontent.com/7ity1pufw2Iuii-mlgNmNVUdpP3woUgk-2WOjMBMFbt6d0DgjsHQV9PtqCDcDrU8OAdok8P7WdAh8IuFEOsL5j8OMQ=w128-h128-e365-rj-sc0x00ffffff",
-      "banner": "https://lh3.googleusercontent.com/M4uJEuoqY6sNVQ1OoF4LrYqXTNjEwMZfxlpy6_GGeUOs6ROpd8Ss9KjX644TmekSXd5GpYl743fF3ppKtvtav3y5FQ=w640-h400-e365-rj-sc0x00ffffff"
+      "banner": "https://lh3.googleusercontent.com/M4uJEuoqY6sNVQ1OoF4LrYqXTNjEwMZfxlpy6_GGeUOs6ROpd8Ss9KjX644TmekSXd5GpYl743fF3ppKtvtav3y5FQ=w640-h400-e365-rj-sc0x00ffffff",
+      "body": "Keep those suggested posts and ads out of your social network news feed.Which social network? Say \"Phase-book\" out loud 3 times.\n\nThe suggested posts and ads will collapse into a minimal row, allowing you to take a peek with a single click.\n\nYour privacy is our top priority. We do not send any data to any server. Period.\n\nNews Feed Cleaner - Take control on your social network."
     },
     "mcdpnidfhfjfbafmpppcplcejgepadbo": {
       "id": "mcdpnidfhfjfbafmpppcplcejgepadbo",
@@ -96,7 +101,8 @@
       "lastUpdate": "2018-01-31",
       "isDeleted": true,
       "icon": "https://lh3.googleusercontent.com/pL7rJS6i3IRRovDdbD-gaetiQs7bVSngzXQKQ5u83kVU5XFybMsJtyIFcTd2uIOzT2wSmHAQYgR94di2kWsaZ3ZYiYY=w128-h128-e365-rj-sc0x00ffffff",
-      "banner": "https://lh3.googleusercontent.com/AvWbpckYl_84UytXmvqavb93NeqXfjvyNAsdSp6J2g9IlCxOYfi8Okb7M8TBHnSoWQcru4885TGThCjARe-nL4R58XE=w640-h400-e365-rj-sc0x00ffffff"
+      "banner": "https://lh3.googleusercontent.com/AvWbpckYl_84UytXmvqavb93NeqXfjvyNAsdSp6J2g9IlCxOYfi8Okb7M8TBHnSoWQcru4885TGThCjARe-nL4R58XE=w640-h400-e365-rj-sc0x00ffffff",
+      "body": "Adds a Replay button to YouTube™, allowing you to loop the video clip.\n\nReplay and share your loops using the built-in EZ Looper integration (http://www.ezlooper.com)\n\nExcellent for musicians: Loop to practice on a specific part of a song...\n\nNotes\n\n* I've integrated between the addon and EZ Looper (http://www.ezlooper.com). Your thoughts and comments are welcome!"
     }
   }
 }

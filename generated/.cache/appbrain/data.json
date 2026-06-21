@@ -1,5 +1,5 @@
 {
-  "version": 2,
-  "_generated": "Auto-generated AppBrain cache (GetIntelligenceDataRequest + Play tier). Frozen removed apps — fetched once.",
+  "version": 5,
+  "_generated": "Auto-generated AppBrain cache (GetIntelligenceDataRequest + Play tier + long description). Frozen removed apps — fetched once.",
   "apps": {}
 }
