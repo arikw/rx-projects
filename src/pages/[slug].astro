@@ -1,0 +1,2221 @@
+---
+// Auto-generated detail page for any project that has any kind of content.
+//
+// Resolution order (first hit wins):
+//   1. Hand-written src/content/projects/<slug>.mdx — author override.
+//   2. Cached README from readme-cache — full markdown body.
+//   3. project.body markdown (e.g. Docker Hub full_description).
+//   4. Screenshot gallery (CWS, retired Play apps, repos with /screenshots).
+//   5. Description-only fallback — minimal copy + stats sidebar.
+//
+// Every tier shares the same hero (icon / banner / title / source chips /
+// stats sidebar) — only the body BELOW the hero differs.
+
+import { Marked } from 'marked';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import CardSources from '../components/CardSources.astro';
+import { loadProjects } from '../lib/load-projects';
+import { getReadmeCacheState, hasCachedReadme, readmeSlugFromSourceUrl, getReadmeMeta } from '../lib/readme-cache';
+import { sanitizeMarkdownHtml } from '../lib/sanitize-md-html';
+import { pickCarouselReviews } from '../lib/pick-reviews';
+import { formatRating } from '../lib/aggregate-stats';
+import { resolveDisplayTitle } from '../lib/display-title';
+import { buildMediaItems } from '../lib/media-items';
+import { computeGalleryRatio } from '../lib/gallery-ratio';
+import { getPlatformToSourceGroup } from '../connectors/_registry';
+import config from '../lib/load-config';
+import { getCollection, render } from 'astro:content';
+import type { Project } from '../types/project';
+
+type Tier = 'mdx' | 'readme' | 'body' | 'gallery' | 'description';
+/** Tiers an MDX page can append AFTER its own content when the MDX
+ *  frontmatter declares `mode: 'prepend'`. Only README + body tiers
+ *  have a body to render; gallery/description don't add content. */
+type AppendTier = 'readme' | 'body';
+
+type PageProps = {
+  project: Project;
+  tier: Tier;
+  owner?: string;
+  repo?: string;
+  mdxSlug?: string;
+  /** For MDX pages with `mode: 'prepend'` — the auto-derived body
+   *  tier to render below the MDX content. Null/undefined when the
+   *  MDX replaces (default) or no usable auto body exists. */
+  appendTier?: AppendTier | null;
+};
+
+export async function getStaticPaths() {
+  const all = await loadProjects();
+  const mdxEntries = await getCollection('projects').catch(() => []);
+  const mdxSlugs = new Set(mdxEntries.map((e) => e.id.replace(/\.mdx?$/, '')));
+  /** id → MDX entry, so we can read its frontmatter `mode` field
+   *  without a second filesystem scan at render time. */
+  const mdxById = new Map(mdxEntries.map((e) => [e.id.replace(/\.mdx?$/, ''), e]));
+
+  const paths: { params: { slug: string }; props: PageProps }[] = [];
+  for (const p of all) {
+    if (mdxSlugs.has(p.id)) {
+      const entry = mdxById.get(p.id);
+      const mode = entry?.data?.mode ?? 'replace';
+      // For mode='prepend', figure out which auto-tier the MDX should
+      // be appended to. Resolution mirrors the regular waterfall:
+      // README beats Docker/CWS body beats nothing. Gallery /
+      // description don't add content so they're never an append
+      // target.
+      let appendTier: AppendTier | null = null;
+      let owner: string | undefined;
+      let repo: string | undefined;
+      if (mode === 'prepend') {
+        const ref = readmeSlugFromSourceUrl(p.sourceUrl);
+        if (ref && hasCachedReadme(ref.slug)) {
+          appendTier = 'readme';
+          owner = ref.owner;
+          repo = ref.repo;
+        } else if (p.body && p.body.length >= 40) {
+          appendTier = 'body';
+        }
+      }
+      paths.push({
+        params: { slug: p.routeSlug },
+        props: { project: p, tier: 'mdx', mdxSlug: p.id, appendTier, owner, repo },
+      });
+      continue;
+    }
+    const ref = readmeSlugFromSourceUrl(p.sourceUrl);
+    if (ref && hasCachedReadme(ref.slug)) {
+      paths.push({
+        params: { slug: p.routeSlug },
+        props: { project: p, tier: 'readme', owner: ref.owner, repo: ref.repo },
+      });
+      continue;
+    }
+    if (p.body && p.body.length >= 40) {
+      paths.push({ params: { slug: p.routeSlug }, props: { project: p, tier: 'body' } });
+      continue;
+    }
+    if (p.screenshots && p.screenshots.length >= 2) {
+      paths.push({ params: { slug: p.routeSlug }, props: { project: p, tier: 'gallery' } });
+      continue;
+    }
+    // Every project gets at least the description tier — the page
+    // renders the hero + chips + stats sidebar even when there's no
+    // body content to show. Keeps internal links (card → detail) and
+    // the discovery carousel consistent across every project.
+    paths.push({ params: { slug: p.routeSlug }, props: { project: p, tier: 'description' } });
+  }
+  return paths;
+}
+
+const { project, tier, mdxSlug, owner, repo, appendTier } = Astro.props as PageProps;
+
+// ─── Markdown helpers (used by README + body tiers) ───────────────────
+class Slugger {
+  seen = new Map<string, number>();
+  slugify(text: string): string {
+    // Positive class — keep only [a-z0-9-]. Strips ™ © ® et al that
+    // a punctuation blocklist would miss, while still producing
+    // GitHub-equivalent slugs for typical heading text.
+    const base = text.toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const c = this.seen.get(base) ?? 0;
+    this.seen.set(base, c + 1);
+    return c === 0 ? base : `${base}-${c}`;
+  }
+}
+
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+// Strip a leading h1 (ATX or setext) from a markdown source. README /
+// CWS / Docker bodies almost always lead with the project name as h1,
+// which is redundant once the page has an "About" section heading
+// AND the project name in the hero. We yank that heading at the
+// source so the body starts directly with its first real paragraph.
+//
+// Only the FIRST heading qualifies — subsequent h1s inside the body
+// (e.g. a multi-section landing README) are left alone, since dropping
+// them would break the article's outline.
+function stripLeadingH1(md: string): string {
+  const lines = md.split('\n');
+  let i = 0;
+  // Skip leading blank lines / HTML comments commonly seen at the top
+  // of READMEs (license banners, SVG-render-on-github-only blocks).
+  while (i < lines.length && (lines[i].trim() === '' || /^<!--/.test(lines[i].trim()))) i++;
+  if (i >= lines.length) return md;
+  // ATX form: `# Title`
+  if (/^#\s+\S/.test(lines[i])) {
+    const drop = i + 1 < lines.length && lines[i + 1].trim() === '' ? 2 : 1;
+    lines.splice(i, drop);
+    return lines.join('\n');
+  }
+  // Setext form: `Title` followed by `====`
+  if (i + 1 < lines.length && /^=+\s*$/.test(lines[i + 1]) && lines[i].trim() !== '') {
+    const drop = i + 2 < lines.length && lines[i + 2].trim() === '' ? 3 : 2;
+    lines.splice(i, drop);
+    return lines.join('\n');
+  }
+  return md;
+}
+
+
+// ─── README rendering (Tier 2) ────────────────────────────────────────
+// Fires for the native `readme` tier AND for MDX pages with
+// `mode: 'prepend'` whose appendTier resolved to 'readme'. The
+// container markup further down picks between primary placement
+// (readme tier) and appended placement (mdx + appendTier=readme).
+let readmeHtml: string | null = null;
+if ((tier === 'readme' || (tier === 'mdx' && appendTier === 'readme')) && owner && repo) {
+  const cacheSlug = `${owner}__${repo}`;
+  const state = getReadmeCacheState(cacheSlug);
+  if (state.readme) {
+    const meta = getReadmeMeta(cacheSlug);
+    const branch = meta?.branch ?? 'main';
+    const githubBlobBase = `https://github.com/${owner}/${repo}/blob/${branch}`;
+    const rawBase = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
+    const deployBase = config.deployment.base.endsWith('/') ? config.deployment.base : `${config.deployment.base}/`;
+    const localImageLookup: Record<string, string> = {};
+    for (const [upstream, served] of Object.entries(state.imageMap)) {
+      localImageLookup[upstream] = `${deployBase}${served}`;
+    }
+    function resolveImage(href: string): string {
+      let abs = href;
+      if (href && !/^https?:\/\//.test(href) && !href.startsWith('data:')) {
+        const path = href.replace(/^\.\//, '').replace(/^\//, '');
+        abs = `${rawBase}/${path}`;
+      }
+      return localImageLookup[abs] ?? abs;
+    }
+    function rewriteLinkHref(href: string, sl: Slugger): string {
+      if (!href) return href;
+      if (href.startsWith('#')) return `#readme-${sl.slugify(href.slice(1).replace(/-/g, ' '))}`;
+      if (/^https?:\/\//.test(href) || href.startsWith('mailto:') || href.startsWith('data:')) return href;
+      const p = href.replace(/^\.\//, '').replace(/^\//, '');
+      return `${githubBlobBase}/${p}`;
+    }
+    const linkSl = new Slugger();
+    const headingSl = new Slugger();
+    const marked = new Marked({ gfm: true, breaks: false });
+    marked.use({
+      renderer: {
+        link(token: any) {
+          const rewritten = rewriteLinkHref(token.href ?? '', linkSl);
+          const text = this.parser.parseInline(token.tokens);
+          const titleAttr = token.title ? ` title="${escapeAttr(token.title)}"` : '';
+          // In-page anchors (rewritten to `#readme-…`) stay in-tab so
+          // a click jumps the current page; everything else (GitHub
+          // links, external URLs the README references) opens in a
+          // new tab so the visitor keeps the project page handy.
+          const targetAttr = rewritten.startsWith('#') ? '' : ' target="_blank"';
+          return `<a href="${rewritten}"${titleAttr}${targetAttr} rel="noopener">${text}</a>`;
+        },
+        image(token: any) {
+          const rewritten = resolveImage(token.href ?? '');
+          const titleAttr = token.title ? ` title="${escapeAttr(token.title)}"` : '';
+          return `<img src="${rewritten}" alt="${escapeAttr(token.text ?? '')}"${titleAttr} loading="lazy">`;
+        },
+        heading(token: any) {
+          // Demote every heading by two levels (h1→h3 … h4→h6) so
+          // the body's headings rank BELOW the "About" <h2> that
+          // wraps this section, not on the same level as it. The
+          // page hierarchy is: page <h1> → section <h2> ("About",
+          // "Gallery", etc.) → body content starts at <h3>.
+          const depth = Math.min(6, token.depth + 2);
+          const text = this.parser.parseInline(token.tokens);
+          const plain = token.tokens.map((t: any) => ('text' in t ? t.text : '')).join('');
+          const slug = `readme-${headingSl.slugify(plain)}`;
+          return `<h${depth} id="${slug}">${text}</h${depth}>`;
+        },
+      },
+    });
+    readmeHtml = sanitizeMarkdownHtml(await marked.parse(stripLeadingH1(state.readme)));
+  }
+}
+
+// ─── Body rendering (Tier 3 — Docker full_description et al) ──────────
+let bodyHtml: string | null = null;
+// Fires for the native `body` tier AND for MDX pages with
+// `mode: 'prepend'` whose appendTier resolved to 'body'.
+if ((tier === 'body' || (tier === 'mdx' && appendTier === 'body')) && project.body) {
+  const m = new Marked({ gfm: true, breaks: false });
+  m.use({
+    renderer: {
+      // Same demotion as the README tier — see that block for the
+      // rationale.
+      heading(token: any) {
+        const depth = Math.min(6, token.depth + 2);
+        const text = this.parser.parseInline(token.tokens);
+        return `<h${depth}>${text}</h${depth}>`;
+      },
+      // Body tier links open in a new tab — these are typically
+      // Docker `full_description`, CWS extpose body, or manual
+      // entry text, all of which reference external resources the
+      // visitor probably wants to compare side-by-side with the
+      // current page. `rel="noopener"` is also a small security
+      // win against tabnapping.
+      link(token: any) {
+        const href = token.href ?? '';
+        const text = this.parser.parseInline(token.tokens);
+        const titleAttr = token.title ? ` title="${escapeAttr(token.title)}"` : '';
+        return `<a href="${href}"${titleAttr} target="_blank" rel="noopener">${text}</a>`;
+      },
+    },
+  });
+  bodyHtml = sanitizeMarkdownHtml(await m.parse(stripLeadingH1(project.body)));
+}
+
+// Changelog rendering lives in its own module so Astro's frontmatter
+// parser doesn't have to look at marked / sanitize / template literals
+// in the same scope as the rest of the page. Returns the rendered HTML
+// or null if no changelog is cached.
+const changelogHtml: string | null = (tier === 'readme' && owner && repo)
+  ? await (await import('../lib/render-changelog')).renderChangelogForRepo(owner, repo)
+  : null;
+
+// ─── MDX rendering (Tier 1) ───────────────────────────────────────────
+let MdxBody: any = null;
+if (tier === 'mdx' && mdxSlug) {
+  const entries = await getCollection('projects');
+  const entry = entries.find((e) => e.id.replace(/\.mdx?$/, '') === mdxSlug);
+  if (entry) {
+    const r = await render(entry);
+    MdxBody = r.Content;
+  }
+}
+
+// ─── Common derived values ────────────────────────────────────────────
+const base = config.deployment.base.endsWith('/') ? config.deployment.base : `${config.deployment.base}/`;
+
+// Pull the user-facing display title via the shared resolver — same
+// rules apply on cards (so the home grid sees the friendly name too).
+const displayTitle = resolveDisplayTitle(project);
+
+// Append the site title so the browser tab / search-result snippet
+// reads "Popper Stopper Pro | My Projects" — gives the page a clear
+// home-site anchor when the title is opened in isolation.
+const pageTitle = `${displayTitle} | ${config.meta.siteTitle}`;
+const pageDesc = project.description ?? `Details for ${displayTitle}`;
+
+// Stats picked for the sidebar — only show ones with real values.
+type StatChip = { label: string; value: string; title?: string };
+function formatNumber(n: number): string {
+  if (n >= 1000000) {
+    const v = (n / 1000000).toFixed(n >= 10000000 ? 0 : 1);
+    return (v.endsWith('.0') ? v.slice(0, -2) : v) + 'M';
+  }
+  if (n >= 1000) {
+    const v = (n / 1000).toFixed(n >= 10000 ? 0 : 1);
+    return (v.endsWith('.0') ? v.slice(0, -2) : v) + 'k';
+  }
+  return String(n);
+}
+const stats: StatChip[] = [];
+if (project.stats.stars) stats.push({ label: '★ Stars', value: formatNumber(project.stats.stars) });
+if (project.stats.forks) stats.push({ label: 'Forks', value: formatNumber(project.stats.forks) });
+if (project.stats.users) stats.push({ label: 'Users', value: formatNumber(project.stats.users) });
+if (project.stats.downloads) stats.push({ label: 'Downloads', value: formatNumber(project.stats.downloads) });
+if (project.stats.rating) stats.push({
+  label: 'Rating',
+  value: `${formatRating(project.stats.rating.average)} / 5`,
+  title: `${project.stats.rating.count.toLocaleString()} reviews`,
+});
+if (project.year) {
+  // Year stat splits into three labels so the row reads correctly
+  // regardless of status. "Active" was dropped because it collided
+  // with the visual signal of the RETIRED pill in the hero.
+  //
+  // - Live project              → "Released 2014"
+  // - Retired, multi-year span  → "Period 2012–2014"
+  // - Retired, single-year span → "Period 2017"
+  //
+  // End-year source mirrors ProjectCard.astro: prefer an explicit
+  // retiredAt; fall back to updatedAt when the project is retired
+  // but no end-date was recorded.
+  const lastYearSource = project.retiredAt ?? project.updatedAt;
+  const lastYear = lastYearSource
+    ? new Date(lastYearSource).getUTCFullYear()
+    : undefined;
+  if (!project.retired) {
+    stats.push({ label: 'Released', value: String(project.year) });
+  } else if (lastYear && lastYear > project.year) {
+    stats.push({ label: 'Period', value: `${project.year}–${lastYear}` });
+  } else {
+    stats.push({ label: 'Period', value: String(project.year) });
+  }
+}
+if (project.language) stats.push({ label: 'Language', value: project.language });
+
+// Source-platform chips: build from sources[] + sourceUrls map.
+// `sourceUrls` is keyed by source-GROUP (e.g. `android` covers
+// google-play + appbrain + apkpure), so each raw platform first
+// maps to its group before the URL lookup. We dedupe by URL so a
+// project on multiple Android mirrors doesn't render N "Google Play"
+// chips all pointing at the same AppBrain page.
+const sourceLabelByPlatform: Record<string, string> = {
+  github: 'GitHub',
+  npm: 'npm',
+  docker: 'Docker Hub',
+  chrome: 'Chrome Web Store',
+  'google-play': 'Google Play',
+  gnome: 'GNOME',
+  stackoverflow: 'Stack Overflow',
+};
+/** Canonical host suffix per platform. When the URL we have for a
+ *  platform points at a DIFFERENT host (e.g. chrome+wayback,
+ *  google-play+appbrain), we tag the chip "(mirror)" so the visitor
+ *  knows the link is a mirror rather than the live origin listing. */
+const platformCanonicalHost: Record<string, RegExp> = {
+  github: /(?:^|\.)github\.com$/i,
+  npm: /(?:^|\.)npmjs\.com$/i,
+  docker: /(?:^|\.)docker\.com$/i,
+  chrome: /(?:^|\.)chromewebstore\.google\.com$/i,
+  'google-play': /(?:^|\.)play\.google\.com$/i,
+  gnome: /(?:^|\.)gnome\.org$/i,
+  stackoverflow: /(?:^|\.)stackoverflow\.com$/i,
+};
+function chipLabel(platform: string, url: string): string {
+  const base = sourceLabelByPlatform[platform] ?? platform;
+  const canonical = platformCanonicalHost[platform];
+  if (!canonical) return base;
+  try {
+    const host = new URL(url).hostname;
+    return canonical.test(host) ? base : `${base} (mirror)`;
+  } catch {
+    return base;
+  }
+}
+const platformToGroup = getPlatformToSourceGroup();
+const sourceChipUrlsSeen = new Set<string>();
+const sourceChips: Array<{ platform: string; label: string; url: string }> = [];
+for (const platform of project.sources) {
+  const group = platformToGroup[platform] ?? platform;
+  const url = project.sourceUrls?.[group];
+  if (!url || sourceChipUrlsSeen.has(url)) continue;
+  sourceChipUrlsSeen.add(url);
+  sourceChips.push({ platform, url, label: chipLabel(platform, url) });
+}
+
+const hasBanner = !!project.banner;
+const hasIcon = !!project.icon;
+// Carousel feed = videos (first) + screenshots, dedup'd by src.
+const mediaItems = buildMediaItems({ videos: project.videos, screenshots: project.screenshots });
+// Aspect-ratio for the gallery envelope, measured from this project's
+// own screenshot dimensions. Falls back to null (→ CSS uses 16/9
+// default) when no measurement was possible.
+const galleryRatio = await computeGalleryRatio(project);
+
+// ─── About-section source indicator ─────────────────────────────
+// Tells the visitor where the body content came from (and links
+// off-site for non-MDX sources). For MDX-only pages, no indicator
+// is shown (the user authored it themselves). For MDX in `prepend`
+// mode, the indicator describes the appended auto body since that's
+// the one with non-obvious provenance. Body-tier inference uses
+// `project.sources` to label CWS / Docker / manual; the README
+// tier is unambiguous from the owner/repo props.
+type SourceLabel = { label: string; url: string | null };
+function resolveBodySource(): SourceLabel | null {
+  const effectiveBodyTier: AppendTier | 'mdx-only' | 'readme' | 'body' | null =
+    tier === 'mdx'
+      ? (appendTier ?? 'mdx-only')
+      : tier === 'readme' || tier === 'body'
+        ? tier
+        : null;
+  if (!effectiveBodyTier || effectiveBodyTier === 'mdx-only') return null;
+  if (effectiveBodyTier === 'readme' && owner && repo) {
+    return { label: `${owner}/${repo} README`, url: `https://github.com/${owner}/${repo}#readme` };
+  }
+  if (effectiveBodyTier === 'body') {
+    // Pick the most authoritative source-group emitting a body-style
+    // long description. Order: chrome (extpose) > docker (Hub) >
+    // manual > generic fallback.
+    if (project.sources.includes('chrome')) {
+      return { label: 'Chrome Web Store', url: project.sourceUrls?.chrome ?? null };
+    }
+    if (project.sources.includes('docker')) {
+      return { label: 'Docker Hub', url: project.sourceUrls?.docker ?? null };
+    }
+    if (project.sources.includes('npm')) {
+      return { label: 'npm', url: project.sourceUrls?.npm ?? null };
+    }
+    if (project.sources.some((s) => s === 'google-play' || s === 'appbrain' || s === 'apkpure')) {
+      // Android body comes from whichever Play-store mirror got there
+      // first — AppBrain's long description is the most common source.
+      const url = project.sourceUrls?.android ?? null;
+      const label = url && /play\.google\.com$/i.test(new URL(url).hostname)
+        ? 'Google Play'
+        : 'AppBrain';
+      return { label, url };
+    }
+    // For manual entries (any custom `source` value pointing at an
+    // external site, e.g. 'math4mobile'), use the project's `url`
+    // as the source link and capitalise the platform key for the
+    // label. The fallthrough is null — we deliberately NEVER render
+    // "Sourced from Project description" or similar fuzzy fallback.
+    const customSource = project.sources.find((s) => s !== 'manual' && s !== 'portfolio');
+    if (customSource && project.url) {
+      try {
+        const host = new URL(project.url).hostname.replace(/^www\./, '');
+        return { label: host, url: project.url };
+      } catch { /* fall through to null */ }
+    }
+    return null;
+  }
+  return null;
+}
+const bodySource = resolveBodySource();
+// JPEG icons can't carry transparency, so they render against the
+// page bg with whatever solid backdrop the source baked in (usually
+// white). On a dark-mode page that creates a hard rectangle. Force
+// the hero frame to white so the bg matches the image — visually
+// indistinguishable from a transparent PNG against a white frame.
+const iconNeedsSolidBg = /\.jpe?g(?:[?#].*)?$/i.test(project.icon ?? '');
+
+// Per-project positive reviews — same filter pipeline as the homepage
+// carousel (rating ≥ 4 OR positive-phrase match, English-only, newest
+// first), constrained to this project's own reviews.
+const positiveReviews = project.reviews && project.reviews.length > 0
+  ? pickCarouselReviews([project], 6)
+  : [];
+
+// ─── Discovery row ("More projects") ──────────────────────────────────
+// Pick up-to-6 OTHER projects the visitor might find interesting. Scoring:
+//   - +100 per shared tag
+//   - +50 if they share the primary source platform (github / chrome / etc.)
+//   - +1 per starred project featured-rank position from the back of the
+//     list (so explicit pins drift to the top among low-overlap picks)
+//   - + popularity / 1000 (stars + scaled user count) as a tiebreaker
+// Within the same total score, prefer projects with a real detail page so
+// the link goes somewhere worth visiting.
+const allProjectsForDiscovery = await loadProjects();
+const featuredSet = new Set(config.featured ?? []);
+
+function discoveryScore(other: Project): number {
+  const myTagSet = new Set(project.tags);
+  const sharedTags = (other.tags ?? []).filter((t) => myTagSet.has(t)).length;
+  const samePlatform = (other.sources?.[0] && project.sources?.[0] === other.sources[0]) ? 1 : 0;
+  const featuredBoost = featuredSet.has(other.id) ? 1 : 0;
+  const popularity = (other.stats?.stars ?? 0) + (other.stats?.users ?? 0) / 100;
+  return sharedTags * 100 + samePlatform * 50 + featuredBoost * 10 + popularity / 1000;
+}
+
+const moreProjects = allProjectsForDiscovery
+  .filter((p) => p.id !== project.id && p.hasDetail)
+  .map((p) => ({ p, score: discoveryScore(p) }))
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 6)
+  .map(({ p }) => p);
+
+// projectGroups() shape mirrors the home grid's so the source-filter
+// chips display the same way on these mini cards.
+function projectGroups(p: Project): string[] {
+  return [...new Set(p.sources ?? [])];
+}
+---
+
+<BaseLayout title={pageTitle} description={pageDesc}>
+  <article class="detail">
+    <a class="back" href={base}>← Back to projects</a>
+
+    <header class={`hero ${hasIcon ? 'has-icon' : ''}`}>
+      {hasIcon && (
+        <div class="hero-icon" style={iconNeedsSolidBg ? 'background:#fff;' : undefined}>
+          <img src={project.icon!} alt="" aria-hidden="true" onload="this.dataset.loaded=1" />
+        </div>
+      )}
+      <div class="hero-text">
+        <h1>
+          {displayTitle}
+          {project.retired && <span class="retired-pill">Retired</span>}
+        </h1>
+        {project.description && <p class="lede">{project.description}</p>}
+        {/* Source chips inline in hero — mobile only. Surfaces the
+            install/visit CTAs above the readme so users don't have to
+            scroll past a long article to find them. Desktop hides
+            this; the sidebar's "Find it on" card carries the same
+            chips there. */}
+        <div class="hero-chips-mobile" aria-label="Sources">
+          <CardSources project={project} layout="footer" />
+        </div>
+      </div>
+    </header>
+
+    <div class="content-grid">
+      <main class="main-col">
+        {/* Media gallery — unified carousel for videos + screenshots.
+            Videos are positioned first so the most expressive demo
+            leads. With a single item there are no arrows or dots,
+            but the user still sees the slide and can tap to open
+            the viewer dialog.
+
+            Reviews live OUTSIDE this column — see <section
+            class="review-list"> below. On desktop they occupy the
+            same grid column as main-col but a separate row; on
+            mobile they render AFTER the collapsed sidebar. */}
+        {mediaItems.length >= 1 && (
+          <section
+            class:list={[
+              'gallery-section',
+              { 'gallery-section--single': mediaItems.length === 1 },
+            ]}
+            style={galleryRatio ? `--gallery-aspect-ratio: ${galleryRatio};` : undefined}
+            aria-labelledby="gallery-section-title"
+          >
+            <h2 class="gallery-section-title section-h" id="gallery-section-title">Gallery</h2>
+            <div class="gallery" role="region" aria-label="Gallery" data-gallery>
+              {mediaItems.length > 1 && (
+                <>
+                  <button class="carousel-arrow gallery-prev" type="button" aria-label="Previous item">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                  <button class="carousel-arrow gallery-next" type="button" aria-label="Next item">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </>
+              )}
+              <div class="gallery-track" tabindex="0">
+                {mediaItems.map((item, i) => (
+                  <figure class="gallery-slide">
+                    <button
+                      type="button"
+                      class={`gallery-slide-btn ${item.kind === 'video' ? 'gallery-slide-btn--video' : ''}`}
+                      data-img-src={item.src}
+                      data-img-idx={i}
+                      aria-label={item.kind === 'video' ? `Play video ${i + 1}` : `Open screenshot ${i + 1} in viewer`}
+                    >
+                      {/* Blurred ambient backdrop — same image, scaled up
+                          and blurred to fill the letterbox margins behind
+                          the contained foreground image. Only rendered for
+                          true images; video slides keep their solid black
+                          poster backdrop. Browser caches by URL so the
+                          backdrop and foreground share a single HTTP
+                          fetch (two decodes). */}
+                      {item.kind === 'image' && item.posterUrl && (
+                        <img
+                          class="gallery-slide-bg"
+                          src={item.posterUrl}
+                          alt=""
+                          aria-hidden="true"
+                          loading={i < 2 ? 'eager' : 'lazy'}
+                        />
+                      )}
+                      {item.posterUrl ? (
+                        <img src={item.posterUrl} alt={`${project.title} ${item.kind} ${i + 1}`} loading={i < 2 ? 'eager' : 'lazy'} />
+                      ) : item.kind === 'video' ? (
+                        // Native-video item without an explicit poster (e.g. a
+                        // cached MP4 with no separately-cached thumbnail) — render
+                        // a <video preload="metadata"> so the browser pulls just
+                        // enough of the file to paint the first frame as a static
+                        // poster. The `#t=0.1` fragment nudges some browsers
+                        // (Safari) off the literal frame-0 black, and `muted` +
+                        // `playsinline` keep it from doing anything but show a
+                        // still image.
+                        <video
+                          class="gallery-slide-video-poster"
+                          src={`${item.src}#t=0.1`}
+                          preload="metadata"
+                          muted
+                          playsinline
+                          aria-hidden="true"
+                        ></video>
+                      ) : (
+                        <div class="gallery-slide-placeholder" aria-hidden="true" />
+                      )}
+                      {item.kind === 'video' && (
+                        <span class="gallery-slide-play" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" width="48" height="48"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+                        </span>
+                      )}
+                    </button>
+                  </figure>
+                ))}
+              </div>
+              {mediaItems.length > 1 && (
+                <nav class="gallery-dots" aria-label="Jump to item">
+                  {mediaItems.map((_, i) => (
+                    <button
+                      type="button"
+                      class="gallery-dot"
+                      data-jump={i}
+                      aria-label={`Show item ${i + 1} of ${mediaItems.length}`}
+                      aria-current={i === 0 ? 'true' : 'false'}
+                    />
+                  ))}
+                </nav>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* "About" section wraps every body tier (MDX / README / body)
+            so the page has a consistent header above the long-form
+            content regardless of source. The body's own leading h1
+            (typically the project name, redundant with the hero) is
+            stripped at markdown level for README + body tiers; MDX
+            bodies hide a leading h1 via the CSS rule below.
+
+            Author headings inside the body are demoted by one level
+            at render time (h1→h2 … h5→h6, see the marked renderer
+            overrides in the frontmatter) so they rank below the
+            page <h1> and this section's "About" <h2>. */}
+
+        {(tier === 'mdx' || (tier === 'readme' && readmeHtml) || (tier === 'body' && bodyHtml)) && (
+          <section class="about-section" aria-labelledby="about-section-title">
+            <h2 class="about-title" id="about-section-title">About</h2>
+            {bodySource && (
+              <p class="about-source">
+                Sourced from{' '}
+                {bodySource.url ? (
+                  <a href={bodySource.url} target="_blank" rel="noopener">{bodySource.label} <span aria-hidden="true">↗</span></a>
+                ) : (
+                  <span>{bodySource.label}</span>
+                )}
+              </p>
+            )}
+            {tier === 'mdx' && MdxBody && (
+              <div class="mdx-body">
+                <MdxBody components={{ h1: 'h3', h2: 'h4', h3: 'h5', h4: 'h6', h5: 'h6' }} />
+              </div>
+            )}
+            {/* Auto-derived body. Renders as PRIMARY content for the
+                readme/body tiers; renders as APPENDED content below
+                the MDX when an MDX page declares `mode: 'prepend'`. */}
+            {(tier === 'readme' || (tier === 'mdx' && appendTier === 'readme')) && readmeHtml && (
+              <div class="readme-body" set:html={readmeHtml} />
+            )}
+            {(tier === 'body' || (tier === 'mdx' && appendTier === 'body')) && bodyHtml && (
+              <div class="readme-body" set:html={bodyHtml} />
+            )}
+          </section>
+        )}
+
+        {tier === 'readme' && changelogHtml && (
+          <details class="changelog-block">
+            <summary>Changelog</summary>
+            <div class="readme-body" set:html={changelogHtml} />
+          </details>
+        )}
+
+        {tier === 'readme' && !readmeHtml && (
+          <p class="empty">README cache not yet populated. It builds during the daily cron.</p>
+        )}
+
+        {/* Description tier renders nothing more here — the lede in the
+            hero already says everything we have on file. */}
+      </main>
+
+      <aside class="side-col">
+        {stats.length > 0 && (
+          <section class="side-card">
+            <h2>Stats</h2>
+            <dl class="stats-list">
+              {stats.map((s) => (
+                <div class="stat-row" title={s.title}>
+                  <dt>{s.label}</dt>
+                  <dd>{s.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
+
+        {sourceChips.length > 0 && (
+          <section class="side-card">
+            <h2>Find it on</h2>
+            <ul class="source-chips">
+              {sourceChips.map((c) => (
+                <li>
+                  <a href={c.url} target="_blank" rel="noopener">{c.label} ↗</a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Hide the Homepage card when it would duplicate the single
+            Find-it-on chip — both pointing at the same URL gives the
+            visitor two CTAs to the same place. Dedupe is intentionally
+            strict (exact URL match): a Homepage at example.com/about
+            and a chip at example.com both stay visible. */}
+        {project.homepage && !(sourceChips.length === 1 && sourceChips[0].url === project.homepage) && (
+          <section class="side-card">
+            <h2>Homepage</h2>
+            <a class="homepage-link" href={project.homepage} target="_blank" rel="noopener">Visit website &#x2197;</a>
+          </section>
+        )}
+      </aside>
+
+      {positiveReviews.length > 0 && (
+        <section class="review-list" aria-label="Positive reviews" data-reviews>
+          <h2 class="section-h">What people are saying</h2>
+          <ul>
+            {positiveReviews.map((r, i) => (
+              <li class="review-card" hidden={i >= 3 ? true : undefined}>
+                {r.rating && (
+                  <p class="review-stars" aria-label={`${r.rating} out of 5 stars`}>
+                    {'★'.repeat(Math.round(r.rating))}<span class="review-stars-empty">{'★'.repeat(Math.max(0, 5 - Math.round(r.rating)))}</span>
+                  </p>
+                )}
+                <p class="review-body">{r.body}</p>
+                <p class="review-meta">
+                  {r.source && <span>via {r.source}</span>}
+                  {r.ts && <span class="review-date"> · {new Date(r.ts).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</span>}
+                </p>
+              </li>
+            ))}
+          </ul>
+          {positiveReviews.length > 3 && (
+            <div class="review-more-wrap">
+              <button type="button" class="show-more" data-reviews-more>
+                <span>Show {positiveReviews.length - 3} more {positiveReviews.length - 3 === 1 ? 'review' : 'reviews'}</span>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+
+    {moreProjects.length > 0 && (
+      <section class="discovery" aria-label="More projects">
+        <div class="discovery-head">
+          <h2 class="section-h">More projects</h2>
+          <a class="discovery-all" href={base}>See all &rarr;</a>
+        </div>
+        <div class="discovery-carousel" data-discovery>
+          <button class="carousel-arrow discovery-prev" type="button" aria-label="Previous projects">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="carousel-arrow discovery-next" type="button" aria-label="Next projects">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="discovery-track" tabindex="0">
+            {moreProjects.map((p) => (
+              <div class="discovery-cell">
+                <ProjectCard
+                  project={p}
+                  size="compact"
+                  sourceGroups={projectGroups(p).join(' ')}
+                  tagList={(p.tags ?? []).join(' ')}
+                  contentLanguage={p.contentLanguage || 'en'}
+                />
+              </div>
+            ))}
+          </div>
+          <nav class="discovery-dots" aria-label="Jump to project">
+            {moreProjects.map((_, i) => (
+              <button
+                type="button"
+                class="discovery-dot"
+                data-jump={i}
+                aria-label={`Show project ${i + 1} of ${moreProjects.length}`}
+                aria-current={i === 0 ? 'true' : 'false'}
+              />
+            ))}
+          </nav>
+        </div>
+      </section>
+    )}
+  </article>
+
+  {mediaItems.length >= 1 && (
+    <dialog class="img-viewer" data-img-viewer aria-label="Media viewer">
+      <div class="img-viewer-track" data-img-track>
+        {mediaItems.map((item, i) => (
+          <figure class={`img-viewer-slide img-viewer-slide--${item.kind}`} data-slide-kind={item.kind}>
+            {item.kind === 'image' ? (
+              <img class="img-viewer-img" src={item.src} alt={`${project.title} screenshot ${i + 1}`} loading={i === 0 ? 'eager' : 'lazy'} />
+            ) : item.embedSrc ? (
+              // YouTube embed. `src` is empty initially so playback only
+              // boots when the slide is activated (see viewer JS) — that
+              // avoids N iframes phoning home for every page view.
+              <iframe
+                class="img-viewer-iframe"
+                data-embed-src={item.embedSrc}
+                title={`${project.title} video ${i + 1}`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+                loading="lazy"
+              ></iframe>
+            ) : (
+              // Native MP4/WebM. `preload="none"` mirrors the iframe-defer
+              // trick: no byte fetched until the viewer activates the slide.
+              // Poster (when present) avoids the black "first frame" flash
+              // while the video buffers — same image used by the gallery
+              // slide thumbnail, so it lines up visually with what the user
+              // just clicked.
+              <video
+                class="img-viewer-video"
+                src={item.src}
+                controls
+                playsinline
+                preload="none"
+                poster={item.posterUrl ?? undefined}
+              ></video>
+            )}
+          </figure>
+        ))}
+      </div>
+      <button type="button" class="img-viewer-btn img-viewer-close" data-img-close aria-label="Close viewer">
+        <svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="img-viewer-controls">
+        <button type="button" class="img-viewer-nav" data-img-prev aria-label="Previous item">
+          <svg viewBox="0 0 24 24" aria-hidden="true" width="22" height="22"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <span class="img-viewer-counter"><span data-img-idx>1</span> / <span data-img-total>{mediaItems.length}</span></span>
+        <button type="button" class="img-viewer-nav" data-img-next aria-label="Next item">
+          <svg viewBox="0 0 24 24" aria-hidden="true" width="22" height="22"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </dialog>
+  )}
+</BaseLayout>
+
+<style>
+  .detail {
+    /* CRITICAL: no max-width / margin auto here. `.site-main` is a
+       flex column with align-items: stretch, and auto cross-axis
+       margins on a flex item DEFEAT that stretch — the item then
+       sizes to its max-content width (~990px from the gallery /
+       discovery tracks), pushing the whole page sideways on phones.
+       `.page` (the layout wrapper above) already enforces the 1100px
+       cap and centring; .detail just fills its row. */
+    width: 100%;
+    padding: 1.5rem 1.5rem 4rem;
+    color: var(--fg);
+    min-width: 0;
+    /* Note: no overflow-x: clip here. The clip was originally added as
+       defensive containment, but it also cropped the gallery /
+       discovery arrows whose left/right edges intentionally hang half
+       outside this container (the half-overlap design). The actual
+       overflow source — `margin: 0 auto` defeating flex stretch — is
+       fixed above, so the clip is no longer earning its keep. */
+  }
+  .back {
+    display: inline-block;
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-decoration: none;
+    margin-bottom: 1rem;
+  }
+  .back:hover { color: var(--fg); }
+
+  /* ─── Hero ─────────────────────────────────────────────────── */
+  /* Clean, light layout — icon + title + lede on the page bg,
+     no heavy blurred-banner backdrop. Banner is intentionally
+     dropped: it competed with the icon for visual weight and the
+     dark stripe felt out of place against the rest of the page.
+     A subtle bottom accent rule under the title gives the section
+     a little editorial structure without a full card frame. */
+  .hero {
+    margin-bottom: 2rem;
+    display: flex;
+    /* Icon hugs the top of the hero (next to the title's first line)
+       rather than being vertically centered against title + lede,
+       which made it drift below the title on long lede copy. */
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 0.5rem 0 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-icon {
+    flex: 0 0 84px;
+    width: 84px;
+    height: 84px;
+    border-radius: 18px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--border);
+  }
+  /* Icon image fills the frame with consistent breathing room (padding)
+     and lets `object-fit: contain` scale it down without distortion.
+     min-width/max-width inherited from the container so the image
+     fills uniformly regardless of source resolution. The spinner
+     background sits behind the image until it loads; .thumb img's
+     [data-loaded] rule (global.css) hides the spinner — same pattern
+     reused here via inline onload. */
+  .hero-icon img {
+    width: 100%;
+    object-fit: contain;
+    min-width: 50%;
+    padding: 8px;
+    max-width: inherit;
+    max-height: inherit;
+    background: var(--img-loading-spinner) center / 28px no-repeat;
+    background-origin: content-box;
+  }
+  .hero-icon img[data-loaded] {
+    background-image: none;
+  }
+  .hero-text { flex: 1; min-width: 0; }
+  .hero-text h1 {
+    margin: 0 0 0.45rem;
+    /* Floor matches the README's largest heading (1.8rem) — the hero
+       title must out-rank it visually at every viewport. */
+    font-size: clamp(1.8rem, 2.6vw, 2.2rem);
+    line-height: 1.15;
+    color: var(--fg);
+    word-break: break-word;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .retired-pill {
+    display: inline-block;
+    font-size: 0.6rem;
+    padding: 0.25em 0.7em;
+    border-radius: 99px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .lede {
+    margin: 0;
+    font-size: 1.02rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  /* ─── Two-column layout below the hero ─────────────────────── */
+  /* Three areas, two columns: main + reviews stack in the left
+     column while the sidebar spans both rows on the right. Reviews
+     are an explicit grid item (not inside .main-col) so they can
+     re-order to AFTER the sidebar on mobile. */
+  .content-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    grid-template-areas:
+      "main    side"
+      "reviews side";
+    gap: 2rem 2rem;
+    align-items: start;
+  }
+  .main-col { grid-area: main; }
+  .side-col { grid-area: side; }
+  .review-list { grid-area: reviews; }
+  /* Collapse the sidebar at the same width the home grid drops to 2-up
+     (880px) — between 720-880px the 260px sidebar squeezes the main
+     column under ~470px which is too tight for README markdown.
+     `minmax(0, 1fr)` (not bare `1fr`) is critical: a bare 1fr defaults
+     to minmax(auto, 1fr), which lets grid items grow past the
+     container when they contain horizontally-scrolling tracks like
+     the gallery/discovery carousels — that's how the whole detail
+     page used to overflow to ~990px wide inside a 375px iframe.
+
+     Single-column order on mobile: main → SIDEBAR → reviews. The
+     sidebar (stats, source chips, homepage link) is a more useful
+     handoff above the reviews than below them. */
+  @media (max-width: 880px) {
+    .content-grid {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "main"
+        "side"
+        "reviews";
+      gap: 1.5rem;
+    }
+  }
+  @media (max-width: 600px) {
+    /* Pull side padding in tight on phones so cards/text get edge-to-
+       edge breathing room. Hero stays icon-beside-title (no stack)
+       because the new layout is light enough to fit; smaller icon
+       gives the title more room. */
+    .detail { padding: 1rem 1rem 3rem; }
+    .hero { gap: 1rem; padding: 0.25rem 0 1rem; }
+    .hero-icon { flex-basis: 64px; width: 64px; height: 64px; border-radius: 14px; }
+    /* Override the clamp on phones too — title stays larger than
+       README's biggest heading (which sits around 1.6rem on mobile). */
+    .hero-text h1 { font-size: 1.7rem; }
+    .lede { font-size: 0.95rem; }
+  }
+
+  /* Source-chip row inside the hero — visible only on mobile so the
+     "Find it on" CTAs sit above the readme. Desktop relies on the
+     sidebar's chip card instead. Breakpoint matches .content-grid
+     collapse (880px). */
+  .hero-chips-mobile { display: none; margin-top: 0.7rem; }
+  .hero-chips-mobile :global(.card-sources) { justify-content: flex-start; }
+  @media (max-width: 880px) {
+    .hero-chips-mobile { display: block; }
+  }
+
+  /* ─── Sidebar ───────────────────────────────────────────────── */
+  /* min-width: 0 lets grid items shrink below their intrinsic min-content
+     size when the gallery / README contains wide elements (long code
+     lines, images with explicit width attributes). Without this the
+     "main-col" grid track refuses to shrink and pushes the whole page
+     wider than the viewport on narrow screens. */
+  .main-col { min-width: 0; }
+  .side-col { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+  .side-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+  .side-card h2 {
+    margin: 0 0 0.75rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .stats-list { margin: 0; display: grid; gap: 0.5rem; }
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 0.4rem;
+  }
+  .stat-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .stat-row dt { margin: 0; color: var(--muted); font-size: 0.85rem; }
+  .stat-row dd { margin: 0; font-weight: 600; }
+
+  .source-chips {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .source-chips a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-chips a:hover { text-decoration: underline; }
+  .homepage-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+    word-break: break-all;
+  }
+  .homepage-link:hover { text-decoration: underline; }
+
+  /* ─── Gallery section frame — visually distinguish the gallery as
+     a chapter of the page rather than a row of images embedded in
+     the flow. Horizontal padding gives the prev/next arrows room to
+     sit INSIDE the section's border. NO top margin — the section
+     starts at the top of .main-col so it lines up with the STATS
+     card in .side-col on the other side of the grid. */
+  .gallery-section {
+    margin: 0 0 2rem;
+    padding: 1.25rem 1.75rem 0.5rem;
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--card-bg), transparent 70%);
+    border-radius: 12px;
+  }
+  /* Single-item galleries have no pagination dots beneath the
+     image. Use a symmetric 1.25rem top/bottom padding so the image
+     sits visually centered in the section frame, and kill the
+     gallery div's 2rem dot-row margin so it doesn't add to it. */
+  .gallery-section--single { padding: 1.25rem 1.75rem 1.25rem; }
+  .gallery-section--single .gallery { margin-bottom: 0; }
+  .gallery-section-title {
+    margin: 0 0 1rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+  }
+  @media (max-width: 600px) {
+    /* Section pulls into the page gutter on phones to use the full
+       width, padding tightens so the gallery still fits nicely. */
+    .gallery-section { margin-left: -0.5rem; margin-right: -0.5rem; padding: 1rem 1.25rem 0.75rem; }
+  }
+
+  /* ─── Gallery (always shown when ≥2 screenshots) ───────────── */
+  .gallery {
+    position: relative;
+    margin: 0 0 2rem;
+  }
+  /* Edge fades — visual hint that more content sits off-screen.
+     Pseudo-elements positioned over the track edges, gradient
+     fade from the section's bg colour to transparent so a slide
+     scrolling past dissolves into the page rather than getting
+     hard-cut at the gallery boundary. Hidden when the carousel
+     is at the corresponding edge (no prev → no left fade; no
+     next → no right fade); setupGallery() in the script toggles
+     `at-start` / `at-end` classes on this wrapper. The fade
+     position uses inset 8px so it lines up with the
+     `padding-block: 8px` on .gallery-track (which leaves room
+     for the slide drop-shadow). */
+  .gallery::before,
+  .gallery::after {
+    content: '';
+    position: absolute;
+    /* Cover the full vertical extent of the gallery wrapper —
+       including the 8px track padding-block above + below the
+       slides — so a peeking slide's top/bottom corners + drop
+       shadow are dissolved cleanly. */
+    top: 0;
+    bottom: 0;
+    width: 12px;
+    pointer-events: none;
+    z-index: 3;
+    transition: opacity 0.2s ease;
+    /* Default invisible — clean first paint before the carousel JS
+       has measured scroll state. setupGallery() flips `has-prev` /
+       `has-next` classes on the wrapper to reveal the fade on the
+       corresponding side. */
+    opacity: 0;
+  }
+  .gallery::before {
+    left: 0;
+    background: linear-gradient(to right, var(--card-bg) 0%, transparent);
+  }
+  .gallery::after {
+    right: 0;
+    background: linear-gradient(to left, var(--card-bg) 0%, transparent);
+  }
+  .gallery.has-prev::before { opacity: 1; }
+  .gallery.has-next::after { opacity: 1; }
+  /* Single-image gallery never has anywhere to scroll — kill both
+     fades unconditionally so a lone slide doesn't get a chrome of
+     fade overlays around it. */
+  .gallery-section--single .gallery::before,
+  .gallery-section--single .gallery::after { display: none; }
+  .gallery-track {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0;
+    padding: 0;
+    /* Vertical breathing room so each slide's drop-shadow renders
+       without being clipped by the track's edges. */
+    padding-block: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-color: var(--border) transparent;
+    scrollbar-width: thin;
+    border-radius: 12px;
+    /* Trap horizontal-scroll gestures inside the track. Without this,
+       overscrolling past the first/last slide on mobile (Android
+       Chrome especially) bubbles up to the page level and triggers
+       the swipe-back navigation gesture — visitor scrolls the gallery,
+       hits the end, keeps swiping, and suddenly gets bounced back to
+       the previous page in history. `contain` stops the gesture at
+       the gallery boundary without breaking vertical page scroll. */
+    overscroll-behavior-x: contain;
+  }
+  .gallery-track:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .gallery-slide {
+    /* Width deliberately leaves room on either side of the centred
+       slide so the neighbouring slides peek in — visual hint that
+       there's more to swipe through. Snap-align centres each slide
+       in the track; the spare width on each side reveals (gap +
+       a sliver of the next slide).
+       Single-image galleries override this below — no neighbour
+       to peek means the spare margin would just look like dead
+       space. */
+    flex: 0 0 min(84%, 560px);
+    scroll-snap-align: center;
+    margin: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--card-bg);
+    /* Subtle outline so bright/dark screenshots have a defined edge
+       against the page bg in both colour schemes. */
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.10);
+    transition: transform 0.18s ease;
+  }
+  .gallery-slide:hover { transform: translateY(-2px); }
+  /* Slide is now a button that opens the viewer dialog — strip the
+     default button chrome so it reads as a tappable image.
+     position:relative + overflow:hidden establishes the stacking context
+     for the absolute-positioned blurred backdrop AND clips its scaled
+     edges so the blur fades cleanly at the slide's rounded corners.
+     Fallback #1e2024 keeps the slide non-empty while both the backdrop
+     image and the foreground image are still being fetched. */
+  .gallery-slide-btn {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    cursor: zoom-in;
+    line-height: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .gallery-slide-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  /* Video slide — positioned wrapper for the play-icon overlay. The
+     overlay sits at the center of the slide and uses pointer-events
+     none so the underlying button still gets the click. */
+  .gallery-slide-btn--video {
+    position: relative;
+    cursor: pointer;
+    /* Video slides override the button's #1e2024 fallback with #000
+       so the letterbox around a cached YouTube poster reads as
+       cinema-style black margins — same look the `<video>` poster
+       had before YouTube thumbnails landed. */
+    background: #000;
+  }
+  .gallery-slide-play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    color: #fff;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+  }
+  .gallery-slide-play svg {
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 999px;
+    padding: 12px;
+    transition: transform 0.18s ease, background-color 0.18s ease;
+  }
+  .gallery-slide-btn--video:hover .gallery-slide-play svg,
+  .gallery-slide-btn--video:focus-visible .gallery-slide-play svg {
+    transform: scale(1.08);
+    background: rgba(0, 0, 0, 0.7);
+  }
+  /* Placeholder tile for native-video items without a poster — same
+     dimensions as a real image slide so layout doesn't jump. Inherits
+     `--gallery-aspect-ratio` from the section (set by build-time
+     measurement of the project's screenshots, defaults to 16/9). */
+  .gallery-slide-placeholder {
+    display: block;
+    width: 100%;
+    aspect-ratio: var(--gallery-aspect-ratio, 16 / 9);
+    background: var(--card-bg);
+  }
+  /* Static-first-frame poster for cached MP4 thumbnails. Aspect-ratio
+     follows the section's `--gallery-aspect-ratio` (16/9 default) so
+     mixed image+video galleries keep uniform slide heights. Cached
+     MP4s are natively 16/9; if the screenshot-derived ratio differs
+     (e.g. 16/10 for a CWS project), the video letterboxes a few
+     pixels top+bottom — invisible against the poster's #000 bg.
+     preload="metadata" pulls only enough bytes to render the first
+     frame. */
+  .gallery-slide-video-poster {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: var(--gallery-aspect-ratio, 16 / 9);
+    object-fit: contain;
+    background: #000;
+    /* User shouldn't interact with the poster element — the surrounding
+       button is the click target that opens the viewer. */
+    pointer-events: none;
+  }
+  .gallery-slide img {
+    display: block;
+    width: 100%;
+    height: auto;
+    /* Envelope value comes from the section's
+       `--gallery-aspect-ratio` (set inline by lib/gallery-ratio.ts
+       at build time from a median of the project's screenshot
+       dimensions, snapped to a standard ratio: 16/9, 16/10, 4/3, …).
+       16/9 fallback for projects with no measurable screenshots
+       (manual entries pointing at external URLs we couldn't probe).
+       Applies to single-image galleries too — portrait/square
+       sources letterbox into the section envelope, the blurred
+       ambient backdrop fills the gap with a coordinated colour
+       wash instead of dead space. */
+    aspect-ratio: var(--gallery-aspect-ratio, 16 / 9);
+    /* contain so screenshots aren't cropped — the blurred backdrop
+       <img class="gallery-slide-bg"> behind this one fills any
+       letterbox gap with an ambient version of the same image
+       (Apple-Photos style). Loading spinner sits on top of the
+       transparent background so it stays visible while bytes are
+       being fetched; the button itself carries a #1e2024 fallback
+       beneath everything for the brief moment before any image
+       paints. */
+    object-fit: contain;
+    background: var(--img-loading-spinner) center / 40px no-repeat;
+    /* Stack above the absolutely-positioned backdrop so the contained
+       foreground image paints on top of the blurred ambient layer.
+       Without this the in-flow img would paint UNDER the positioned
+       backdrop (positioned siblings normally win at z-index: auto). */
+    position: relative;
+    z-index: 1;
+  }
+  /* Single-image gallery has no neighbour to peek — restore the
+     slide to the section's full width so it doesn't sit in a
+     too-narrow column with dead margins. */
+  .gallery-section--single .gallery-slide {
+    flex-basis: 100%;
+  }
+  /* Blurred ambient backdrop — same image as the foreground, scaled
+     up and blurred to fill the letterbox gap with a coordinated
+     colour wash. Selector deliberately bundles `.gallery-slide` so
+     Astro's scoped-attribute pass produces a higher specificity
+     than the bare `.gallery-slide img` foreground rule above —
+     otherwise the foreground's `object-fit: contain` /
+     `position: relative` / `z-index: 1` would override the
+     backdrop's positioning. Same `src` as the foreground means the
+     browser fetches once and decodes twice (bytes are cached). */
+  .gallery-slide img.gallery-slide-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    object-fit: cover;
+    /* scale(1.15) hides the soft-edged blur halo by pushing the
+       feathered boundary off-screen; the overflow: hidden on
+       .gallery-slide-btn clips the overshoot. */
+    transform: scale(1.15);
+    filter: blur(28px) saturate(1.3);
+    pointer-events: none;
+    background: none;
+    z-index: 0;
+  }
+  /* Play overlay must sit ABOVE the foreground img (z-index 1).
+     The element is already position:absolute, so an explicit
+     z-index works as expected. */
+  .gallery-slide-play { z-index: 2; }
+  /* Dot indicators — visual mirror of ReviewCarousel's .review-dot but
+     scoped so the gallery owns its own styling rather than reaching
+     into a global class. */
+  .gallery-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .gallery-dot {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: var(--border);
+    cursor: pointer;
+    transition: background 0.18s, width 0.18s;
+  }
+  .gallery-dot:hover { background: var(--muted); }
+  .gallery-dot[aria-current='true'] {
+    background: var(--accent);
+    width: 22px;
+  }
+  /* Gallery lives inside the main column (narrower than the page), so
+     pushing arrows fully out to the page gutter would land them over
+     the sidebar gap + next/prev slide peek. Straddle the gallery's
+     own edges instead — half on the visible slide, half overhanging.
+     Visuals come from .carousel-arrow in global.css; only positioning
+     belongs here. */
+  .gallery-prev { left: -20px; }
+  .gallery-next { right: -20px; }
+  /* Disabled state visuals come from .carousel-arrow:disabled in
+     global.css (opacity: 0.35 + no hover). We keep the button in
+     layout so the user gets a clear "you're at the edge" signal
+     instead of an arrow appearing/disappearing as they scroll. */
+  @media (max-width: 720px) {
+    .gallery-slide { flex-basis: 80%; }
+    .gallery-section--single .gallery-slide { flex-basis: 100%; }
+  }
+
+  /* ─── Markdown body shared between MDX / README / body tiers ── */
+  .readme-body, .mdx-body { line-height: 1.7; font-size: 1rem; color: var(--fg); }
+  .readme-body :global(h1), .mdx-body :global(h1) { font-size: 1.6rem; margin-top: 1.8rem; color: var(--fg); }
+  .readme-body :global(h2), .mdx-body :global(h2) {
+    font-size: 1.4rem; margin-top: 1.6rem; color: var(--fg);
+    border-bottom: 1px solid var(--border); padding-bottom: 0.3rem;
+  }
+  .readme-body :global(h3), .mdx-body :global(h3) { font-size: 1.15rem; margin-top: 1.3rem; color: var(--fg); }
+  .readme-body :global(a), .mdx-body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  .readme-body :global(p), .mdx-body :global(p) { color: var(--fg); }
+  .readme-body :global(img), .mdx-body :global(img) {
+    max-width: 100%; height: auto; border-radius: 6px;
+    /* Pull in the shared spinner from the rule below — every img on
+       the detail page shares the same loading state visual. */
+    background-color: var(--card-bg);
+    background-image: var(--img-loading-spinner);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 36px 36px;
+  }
+  /* --img-loading-spinner is defined in global.css (:root) — pulled in
+     here by each .hero / .gallery / .readme-body img rule. */
+  .readme-body :global(code), .mdx-body :global(code) {
+    font-size: 0.9em; background: var(--accent-soft); color: var(--fg);
+    padding: 0.1em 0.35em; border-radius: 4px;
+  }
+  .readme-body :global(pre), .mdx-body :global(pre) {
+    background: var(--card-bg); border: 1px solid var(--border); color: var(--fg);
+    padding: 1rem; overflow-x: auto; border-radius: 6px; font-size: 0.85rem; line-height: 1.5;
+  }
+  .readme-body :global(pre code), .mdx-body :global(pre code) {
+    background: transparent; padding: 0; border-radius: 0; color: inherit;
+  }
+  .readme-body :global(blockquote), .mdx-body :global(blockquote) {
+    border-left: 3px solid var(--border); margin-left: 0; padding-left: 1rem; color: var(--muted);
+  }
+  .readme-body :global(table), .mdx-body :global(table) {
+    border-collapse: collapse;
+    color: var(--fg);
+    /* Tables can be wider than the column on phones; make the table
+       itself a horizontal scroll container so the rest of the page
+       stays inside the viewport. */
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .readme-body :global(th), .readme-body :global(td),
+  .mdx-body :global(th), .mdx-body :global(td) {
+    border: 1px solid var(--border); padding: 0.4rem 0.7rem;
+  }
+  .readme-body :global(th), .mdx-body :global(th) { background: var(--card-bg); }
+  .readme-body :global(hr), .mdx-body :global(hr) {
+    border: none; border-top: 1px solid var(--border); margin: 2rem 0;
+  }
+
+  .empty, .muted { color: var(--muted); padding: 2rem 0; }
+
+  /* ─── Changelog disclosure ─────────────────────────────────── */
+  .changelog-block {
+    margin-top: 2.5rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card-bg);
+  }
+  .changelog-block summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--fg);
+    list-style-position: outside;
+  }
+  .changelog-block[open] summary { margin-bottom: 1rem; }
+  .changelog-more { margin-top: 1rem; color: var(--muted); font-size: 0.9rem; }
+
+  /* ─── First-child flush ─────────────────────────────────────
+     The first content section under the hero (gallery, readme,
+     description, etc.) lines up horizontally with the Stats card
+     in the sidebar — no top margin, no extra padding from the
+     first inner heading. */
+  .main-col > :first-child { margin-top: 0; }
+  .main-col > .readme-body:first-child :global(:first-child),
+  .main-col > .mdx-body:first-child :global(:first-child) {
+    margin-top: 0;
+  }
+
+  /* ─── About section (MDX / README / body wrapper) ──────────── */
+  .about-section { margin: 2rem 0 2.5rem; }
+  /* "About" reads as a real section header — default h2 size + a
+     bottom rule that visually separates it from the article body.
+     The other section headings on this page (gallery, reviews, more
+     projects) use .section-h, a smaller uppercase "kicker" style;
+     About is bigger and lives directly above flowing prose, so it
+     needs to anchor the section more confidently. */
+  .about-title {
+    /* Drop the bottom margin so the source indicator (when present)
+       sits close to the title; the indicator handles spacing below
+       itself. With no indicator, .about-title gets 1rem bottom via
+       the :only-child fallback. */
+    margin: 0 0 0.25rem;
+    font-weight: 700;
+    color: var(--fg);
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+  /* Source indicator under the About header. Reads as a small,
+     deferential subtitle — "where did this prose come from?" —
+     without competing with the heading or the body content. */
+  .about-source {
+    margin: 0 0 1rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .about-source a {
+    color: var(--accent);
+    text-decoration: none;
+    font-style: normal;
+  }
+  .about-source a:hover { text-decoration: underline; }
+  /* MDX bodies are React-rendered, so we can't strip a leading h1 at
+     markdown source like we do for README/body. CSS suppresses it
+     instead — same end result for the user. */
+  .mdx-body :global(> h1:first-child) { display: none; }
+
+  /* ─── Per-project reviews list ─────────────────────────────── */
+  .review-list { margin: 0; }
+  .review-more-wrap { margin-top: 1.25rem; text-align: center; }
+  .section-h {
+    margin: 0 0 1rem;
+    font-size: 1.2rem;
+    color: var(--fg);
+  }
+  .review-list ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 1rem;
+  }
+  .review-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+  .review-stars {
+    margin: 0 0 0.4rem;
+    color: var(--accent);
+    font-size: 1rem;
+    letter-spacing: 1px;
+  }
+  .review-stars-empty { color: var(--border); }
+  .review-body {
+    margin: 0 0 0.6rem;
+    color: var(--fg);
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+  .review-meta {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .review-date { font-variant-numeric: tabular-nums; }
+
+  /* ─── Screenshot viewer dialog ─────────────────────────────── */
+  .img-viewer {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: #fff;
+    /* 100dvh = the viewport's dynamic height — shrinks/grows with the
+       mobile browser chrome so the close button doesn't get pushed
+       under the address bar. Fallback to 100vh for older browsers. */
+    max-width: 100vw;
+    max-height: 100vh;
+    max-height: 100dvh;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  .img-viewer::backdrop {
+    background: rgba(8, 9, 11, 0.92);
+    backdrop-filter: blur(8px);
+  }
+  /* Horizontal-scroll carousel track holding every screenshot, one
+     viewport-width per slide, with native scroll-snap so swipe
+     gestures slide one image at a time. Browser handles the touch
+     swipe + smooth scroll natively — no JS swipe handler needed. */
+  .img-viewer-track {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    /* Allow horizontal pan (so swipe scrolls the track) + pinch zoom
+       on the image. Vertical pan disabled so the dialog doesn't
+       accidentally scroll-dismiss. */
+    touch-action: pan-x pinch-zoom;
+  }
+  .img-viewer-track::-webkit-scrollbar { display: none; }
+  .img-viewer-slide {
+    flex: 0 0 100%;
+    scroll-snap-align: center;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Padding gives the image breathing room from the top close button
+       and the bottom control pill — clicking that padding (the slide
+       chrome) dismisses. */
+    padding: 4.5rem 1rem 6rem;
+  }
+  .img-viewer-img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 6px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    background: rgba(255, 255, 255, 0.04) var(--img-loading-spinner) center / 48px no-repeat;
+    /* OS save-image / drag UI off, pointer events ON (so pinch-zoom
+       targets the image). */
+    user-select: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+  }
+  /* Video / iframe slides — same sizing envelope as the image so the
+     viewer feels uniform across kinds. 16:9 aspect-ratio keeps the
+     player from collapsing when the source URL is set late
+     (deferred-iframe trick); the surrounding padding from
+     .img-viewer-slide keeps it clear of the close button + pill. */
+  .img-viewer-iframe,
+  .img-viewer-video {
+    width: min(100%, calc((100vh - 12rem) * 16 / 9));
+    aspect-ratio: 16 / 9;
+    max-height: 100%;
+    border: 0;
+    border-radius: 6px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
+  }
+  /* Close button — top-right corner, well inset from the edge so it
+     doesn't crowd the device chrome on either platform. */
+  .img-viewer-close {
+    position: absolute;
+    top: 1rem;
+    right: 2rem;
+    z-index: 3;
+  }
+  /* Bottom-centre control pill with prev / counter / next — out of
+     the image's way, easy thumb reach on mobile. */
+  .img-viewer-controls {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(10px);
+    padding: 0.35rem;
+    border-radius: 999px;
+    z-index: 3;
+  }
+  .img-viewer-counter {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.9);
+    padding: 0 0.85rem;
+    font-variant-numeric: tabular-nums;
+    min-width: 3.5rem;
+    text-align: center;
+  }
+  /* Shared button look — circular, glassy, transparent ish */
+  .img-viewer-btn,
+  .img-viewer-nav {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+    transition: background 0.15s, transform 0.15s, border-color 0.15s;
+  }
+  .img-viewer-btn:hover,
+  .img-viewer-nav:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.32);
+    transform: scale(1.05);
+  }
+  .img-viewer-btn:focus-visible,
+  .img-viewer-nav:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+  .img-viewer-nav:disabled {
+    opacity: 0.35;
+    cursor: default;
+    transform: none;
+  }
+  /* Nav buttons inside the bottom-centre pill have no separate
+     background so they read as one cohesive control. */
+  .img-viewer-controls .img-viewer-nav {
+    background: transparent;
+    border: 0;
+    backdrop-filter: none;
+  }
+  .img-viewer-controls .img-viewer-nav:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  @media (max-width: 600px) {
+    .img-viewer-slide { padding: 3.5rem 0.5rem 5.5rem; }
+    .img-viewer-close { right: 1rem; }
+  }
+
+  /* ─── Discovery carousel ────────────────────────────────────── */
+  .discovery {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+  @media (max-width: 600px) {
+    .discovery { margin-top: 2rem; padding-top: 1.5rem; }
+  }
+  .discovery-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1.25rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .discovery-head .section-h { margin: 0; }
+  .discovery-all {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .discovery-all:hover { text-decoration: underline; }
+
+  /* Horizontal carousel — each "page" shows the same card count the
+     home grid does at the matching viewport width. The home grid uses
+     3-2-1 columns at ≥881 / 600–880 / ≤600px with a 28px gap and a
+     260px min-width per card; we replicate the same constants so a
+     visitor's mental model of "a row of cards" carries over verbatim. */
+  .discovery-carousel { position: relative; }
+  .discovery-track {
+    display: flex;
+    gap: 28px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 0.5rem 0;
+    scrollbar-color: var(--border) transparent;
+    scrollbar-width: thin;
+    border-radius: 12px;
+  }
+  .discovery-track:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .discovery-cell {
+    /* Desktop: 3 cards per page — (100% - 2 × 28px) / 3 */
+    flex: 0 0 calc((100% - 56px) / 3);
+    scroll-snap-align: start;
+    min-width: 260px;
+  }
+  /* The embedded card normally inherits its size from the grid
+     container; force it to fill its carousel cell instead. */
+  .discovery-cell :global(.card) {
+    width: 100%;
+    height: 100%;
+  }
+  /* 2 columns to match the home grid's 880-px breakpoint. */
+  @media (max-width: 880px) {
+    .discovery-cell { flex-basis: calc((100% - 28px) / 2); }
+  }
+  /* 1 column on phones. Drop the min-width so the card stretches edge-
+     to-edge inside the page padding (parity with .projects-grid). */
+  @media (max-width: 600px) {
+    .discovery-cell { flex-basis: 100%; min-width: 0; }
+  }
+
+  /* .discovery-dots / .discovery-dot rules live in global.css — the
+     buttons inside are created dynamically by JS at runtime (so the
+     pages reflect viewport width), and Astro's scoped styles only
+     attach to elements present in the source markup. Lifting them
+     globally lets the JS-built buttons pick up the same dot visuals. */
+  /* Arrow position glides smoothly with viewport width:
+     - When there's gutter outside the 1100-px page (viewport ≥ ~1212px),
+       arrows sit at -56px so they're fully in the gutter.
+     - As viewport shrinks past 1212px the arrows slide inward, reaching
+       -20px (centre-on-edge, half overlapping the cards) at viewport
+       ≈ 1100px and staying there for narrower screens.
+     Visuals (shadow, hover) come from .carousel-arrow in global.css —
+     only positioning + the touch-target-size override live here. */
+  .discovery-prev {
+    left: clamp(-56px, calc(-20px - max(0px, (100vw - 1100px) / 2)), -20px);
+  }
+  .discovery-next {
+    right: clamp(-56px, calc(-20px - max(0px, (100vw - 1100px) / 2)), -20px);
+  }
+  /* Disabled visuals come from .carousel-arrow:disabled (opacity 0.35).
+     Keeping the button in layout signals "you're at the edge" instead
+     of arrows popping in and out as the user scrolls. */
+</style>
+
+<script>
+  // Gallery wiring: prev/next buttons, position counter, keyboard
+  // arrows. One small block per page; binds against every [data-gallery]
+  // independently so the same code works whether the project has one
+  // gallery or — hypothetically — more than one in the future.
+  function indexOfNearestSlide(track: HTMLElement, slides: HTMLElement[]): number {
+    const trackRect = track.getBoundingClientRect();
+    const center = trackRect.left + trackRect.width / 2;
+    let bestI = 0;
+    let bestD = Infinity;
+    slides.forEach((s, i) => {
+      const r = s.getBoundingClientRect();
+      const d = Math.abs((r.left + r.width / 2) - center);
+      if (d < bestD) { bestD = d; bestI = i; }
+    });
+    return bestI;
+  }
+
+  function setupGallery(gallery: HTMLElement) {
+    const track = gallery.querySelector<HTMLElement>('.gallery-track');
+    const prev = gallery.querySelector<HTMLButtonElement>('.gallery-prev');
+    const next = gallery.querySelector<HTMLButtonElement>('.gallery-next');
+    const dots = Array.from(gallery.querySelectorAll<HTMLButtonElement>('.gallery-dot'));
+    if (!track || !prev || !next) return;
+    const slides = Array.from(track.children) as HTMLElement[];
+
+    const updateUi = () => {
+      const i = indexOfNearestSlide(track, slides);
+      // Use scroll position (not slide index) for prev/next disabled
+      // state — when the carousel can fit multiple items per page the
+      // user runs out of "next page" well before the leading slide
+      // hits the last index.
+      const atStart = track.scrollLeft <= 1;
+      // Tolerance >1 covers subpixel rounding from `scroll-snap-align:
+      // center` — the snap-aligned "last slide centered" position can
+      // land 0.5–2px short of (scrollWidth - clientWidth), so the
+      // strict -1 threshold lets atEnd fail to fire. 4 is comfortably
+      // below any visible scroll gap, comfortably above subpixel
+      // jitter from devicePixelRatio / browser zoom.
+      const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+      prev.disabled = atStart;
+      next.disabled = atEnd;
+      // Edge-fade classes — drives the ::before/::after gradient
+      // visibility on .gallery. Positive semantics: `has-prev`
+      // shows the left fade, `has-next` shows the right fade.
+      // Default (before this fires) is no class → both fades
+      // hidden, which gives a clean first paint.
+      gallery.classList.toggle('has-prev', !atStart);
+      gallery.classList.toggle('has-next', !atEnd);
+      // Active dot follows the edge cell when at the boundary of
+      // scroll — otherwise the dot row reads "you're somewhere in the
+      // middle" even when the user can clearly see they're at the end.
+      const activeIdx = atEnd ? slides.length - 1 : atStart ? 0 : i;
+      dots.forEach((d, j) => d.setAttribute('aria-current', j === activeIdx ? 'true' : 'false'));
+    };
+
+    const scrollToIndex = (i: number) => {
+      const target = slides[Math.max(0, Math.min(slides.length - 1, i))];
+      if (target) target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    };
+
+    prev.addEventListener('click', () => scrollToIndex(indexOfNearestSlide(track, slides) - 1));
+    next.addEventListener('click', () => scrollToIndex(indexOfNearestSlide(track, slides) + 1));
+    // Dot clicks jump straight to the corresponding slide.
+    dots.forEach((dot) => {
+      dot.addEventListener('click', () => {
+        const j = parseInt(dot.dataset.jump ?? '0', 10);
+        scrollToIndex(j);
+      });
+    });
+    // Keyboard nav on the focused track (Tab in to use). Left/Right
+    // arrows drive the same one-slide-at-a-time scroll the buttons do.
+    track.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); scrollToIndex(indexOfNearestSlide(track, slides) - 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); scrollToIndex(indexOfNearestSlide(track, slides) + 1); }
+    });
+    // Throttle the scroll updates with rAF — scroll events fire fast.
+    let raf = 0;
+    track.addEventListener('scroll', () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; updateUi(); });
+    }, { passive: true });
+
+    updateUi();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-gallery]').forEach(setupGallery);
+
+  // Discovery carousel uses the same prev/next + dots pattern but on
+  // project cards instead of images. Cells snap to start (not centre)
+  // so we track which cell's left edge is closest to the track's
+  // scroll origin — that's the "leading" cell, the natural index for
+  // a "start" snap.
+  function indexOfLeadingCell(track: HTMLElement, cells: HTMLElement[]): number {
+    const trackLeft = track.getBoundingClientRect().left;
+    let bestI = 0;
+    let bestD = Infinity;
+    cells.forEach((c, i) => {
+      const d = Math.abs(c.getBoundingClientRect().left - trackLeft);
+      if (d < bestD) { bestD = d; bestI = i; }
+    });
+    return bestI;
+  }
+
+  function setupDiscovery(root: HTMLElement) {
+    const track = root.querySelector<HTMLElement>('.discovery-track');
+    const prev = root.querySelector<HTMLButtonElement>('.discovery-prev');
+    const next = root.querySelector<HTMLButtonElement>('.discovery-next');
+    const dotsContainer = root.querySelector<HTMLElement>('.discovery-dots');
+    if (!track || !prev || !next || !dotsContainer) return;
+    const cells = Array.from(track.children) as HTMLElement[];
+
+    // Page math. A "page" is one viewport-width of horizontal scroll;
+    // each click on prev/next advances by exactly one page. Number of
+    // pages depends on viewport width (more cards per page on desktop,
+    // fewer on mobile), so this is recomputed on every resize.
+    const pageCount = (): number => {
+      const cellW = cells[0]?.getBoundingClientRect().width || 1;
+      const gap = parseFloat(getComputedStyle(track).gap || '0');
+      const perPage = Math.max(1, Math.round((track.clientWidth + gap) / (cellW + gap)));
+      return Math.max(1, Math.ceil(cells.length / perPage));
+    };
+
+    const activePage = (): number => {
+      const maxScroll = track.scrollWidth - track.clientWidth;
+      if (maxScroll <= 0) return 0;
+      if (track.scrollLeft >= maxScroll - 1) return pageCount() - 1;
+      return Math.min(pageCount() - 1, Math.round(track.scrollLeft / track.clientWidth));
+    };
+
+    // Rebuild the dot row to match the current page count. Server-side
+    // markup gave us one dot per cell as a no-JS fallback; we replace
+    // it with one dot per page so the count tracks the user's actual
+    // "next click" affordance.
+    const rebuildDots = () => {
+      const n = pageCount();
+      const current = activePage();
+      dotsContainer.innerHTML = '';
+      for (let i = 0; i < n; i++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'discovery-dot';
+        btn.dataset.page = String(i);
+        btn.setAttribute('aria-current', i === current ? 'true' : 'false');
+        btn.setAttribute('aria-label', `Go to page ${i + 1} of ${n}`);
+        btn.addEventListener('click', () => scrollToPage(i));
+        dotsContainer.appendChild(btn);
+      }
+    };
+
+    const updateUi = () => {
+      const atStart = track.scrollLeft <= 1;
+      // Tolerance >1 covers subpixel rounding from `scroll-snap-align:
+      // center` — the snap-aligned "last slide centered" position can
+      // land 0.5–2px short of (scrollWidth - clientWidth), so the
+      // strict -1 threshold lets atEnd fail to fire. 4 is comfortably
+      // below any visible scroll gap, comfortably above subpixel
+      // jitter from devicePixelRatio / browser zoom.
+      const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+      prev.disabled = atStart;
+      next.disabled = atEnd;
+      const current = activePage();
+      Array.from(dotsContainer.children).forEach((d, j) => {
+        (d as HTMLElement).setAttribute('aria-current', j === current ? 'true' : 'false');
+      });
+    };
+
+    const scrollPage = (delta: number) => {
+      track.scrollBy({ left: delta * track.clientWidth, behavior: 'smooth' });
+    };
+
+    const scrollToPage = (i: number) => {
+      const maxScroll = track.scrollWidth - track.clientWidth;
+      const target = Math.min(maxScroll, Math.max(0, i * track.clientWidth));
+      track.scrollTo({ left: target, behavior: 'smooth' });
+    };
+
+    prev.addEventListener('click', () => scrollPage(-1));
+    next.addEventListener('click', () => scrollPage(1));
+    track.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); scrollPage(-1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); scrollPage(1); }
+    });
+
+    let raf = 0;
+    track.addEventListener('scroll', () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; updateUi(); });
+    }, { passive: true });
+
+    let resizeRaf = 0;
+    window.addEventListener('resize', () => {
+      if (resizeRaf) return;
+      resizeRaf = requestAnimationFrame(() => { resizeRaf = 0; rebuildDots(); updateUi(); });
+    });
+
+    rebuildDots();
+    updateUi();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-discovery]').forEach(setupDiscovery);
+
+  // Screenshot viewer dialog — clicking any gallery image opens a
+  // modal with prev/next + fullscreen. Uses the native <dialog>
+  // element so backdrop dismiss + ESC come for free.
+  function setupImageViewer() {
+    const dialog = document.querySelector<HTMLDialogElement>('[data-img-viewer]');
+    if (!dialog) return;
+    const track = dialog.querySelector<HTMLElement>('[data-img-track]');
+    const prevBtn = dialog.querySelector<HTMLButtonElement>('[data-img-prev]');
+    const nextBtn = dialog.querySelector<HTMLButtonElement>('[data-img-next]');
+    const closeBtn = dialog.querySelector<HTMLButtonElement>('[data-img-close]');
+    const idxEl = dialog.querySelector<HTMLElement>('[data-img-idx]');
+    const totalEl = dialog.querySelector<HTMLElement>('[data-img-total]');
+    if (!track || !prevBtn || !nextBtn || !closeBtn || !idxEl || !totalEl) return;
+    const slides = Array.from(track.children) as HTMLElement[];
+    if (slides.length === 0) return;
+
+    const slideWidth = () => track.clientWidth;
+
+    const currentIndex = (): number => {
+      const w = slideWidth();
+      if (w <= 0) return 0;
+      const maxScroll = track.scrollWidth - w;
+      if (track.scrollLeft >= maxScroll - 1) return slides.length - 1;
+      return Math.round(track.scrollLeft / w);
+    };
+
+    // Track which slide is currently "active" (in view) so we can
+    // boot a deferred iframe on entry and pause/kill media on exit.
+    // -1 means none is active (dialog closed).
+    let activeIdx = -1;
+    const activateSlide = (i: number) => {
+      const slide = slides[i];
+      if (!slide) return;
+      const iframe = slide.querySelector<HTMLIFrameElement>('iframe[data-embed-src]');
+      if (iframe && !iframe.src) {
+        // Append `autoplay=1` to the YouTube embed URL so playback starts
+        // immediately when the slide opens (or the user swipes onto it).
+        // The embed URL already has query params; tack on autoplay with
+        // `&` and let the browser dedup if it's already there.
+        const src = iframe.dataset.embedSrc ?? '';
+        iframe.src = src + (src.includes('?') ? '&' : '?') + 'autoplay=1';
+      }
+      const vid = slide.querySelector<HTMLVideoElement>('video');
+      if (vid) {
+        // .play() returns a promise that rejects when the browser
+        // blocks autoplay (no prior user gesture). Inside the viewer
+        // dialog the click that opened it IS the user gesture, so
+        // this resolves normally — but swallow rejections defensively
+        // in case the slide is reached via keyboard arrow keys on a
+        // touch device with stricter policy.
+        vid.play().catch(() => {});
+      }
+    };
+    const deactivateSlide = (i: number) => {
+      const slide = slides[i];
+      if (!slide) return;
+      // Hard-stop iframe playback by clearing src. Pausing isn't
+      // possible without postMessage to the YouTube player API.
+      const iframe = slide.querySelector<HTMLIFrameElement>('iframe[data-embed-src]');
+      if (iframe && iframe.src) iframe.src = '';
+      const vid = slide.querySelector<HTMLVideoElement>('video');
+      if (vid) vid.pause();
+    };
+
+    const updateUi = () => {
+      const i = currentIndex();
+      prevBtn.disabled = track.scrollLeft <= 1;
+      nextBtn.disabled = track.scrollLeft + slideWidth() >= track.scrollWidth - 1;
+      idxEl.textContent = String(i + 1);
+      totalEl.textContent = String(slides.length);
+      if (i !== activeIdx) {
+        if (activeIdx >= 0) deactivateSlide(activeIdx);
+        activateSlide(i);
+        activeIdx = i;
+      }
+    };
+
+    const scrollToIndex = (i: number, smooth = true) => {
+      const clamped = Math.max(0, Math.min(slides.length - 1, i));
+      const target = clamped * slideWidth();
+      track.scrollTo({ left: target, behavior: smooth ? 'smooth' : 'instant' });
+    };
+
+    const open = (startIdx: number) => {
+      dialog.showModal();
+      // Use rAF so the dialog's actual rendered width is available
+      // before we measure for the initial scrollIntoView; otherwise
+      // scrollTo can land on a clientWidth of 0 and stick at 0.
+      requestAnimationFrame(() => {
+        scrollToIndex(startIdx, false);
+        updateUi();
+      });
+    };
+
+    prevBtn.addEventListener('click', () => scrollToIndex(currentIndex() - 1));
+    nextBtn.addEventListener('click', () => scrollToIndex(currentIndex() + 1));
+    closeBtn.addEventListener('click', () => dialog.close());
+
+    // Whenever the dialog is dismissed (ESC, backdrop click, close
+    // button), deactivate the current slide so any iframe stops
+    // phoning home and any <video> pauses.
+    dialog.addEventListener('close', () => {
+      if (activeIdx >= 0) deactivateSlide(activeIdx);
+      activeIdx = -1;
+    });
+
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); scrollToIndex(currentIndex() - 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); scrollToIndex(currentIndex() + 1); }
+    });
+
+    // Click on the dark area outside the image closes the dialog.
+    // Slides have padding around the image so the figure background
+    // is the "outside" region.
+    track.addEventListener('click', (e) => {
+      const target = e.target as Element;
+      // Real content (image / video / iframe) → keep viewer open so
+      // the user can interact with the media. Closest() covers the
+      // case where the click lands on an inner element of the video
+      // controls toolbar (e.g. a path inside the timeline icon).
+      if (target.closest('img, video, iframe')) return;
+      // Anything else inside a slide (its padding / background) is
+      // the surrounding chrome → dismiss.
+      if (target.closest('.img-viewer-slide')) dialog.close();
+    });
+
+    // Throttled scroll listener — updates counter + disabled state
+    // as the user swipes through the track.
+    let raf = 0;
+    track.addEventListener('scroll', () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; updateUi(); });
+    }, { passive: true });
+
+    // Recompute layout if the viewport changes while the dialog is
+    // open (orientation flip, etc.) — re-align the current slide so
+    // it stays centred.
+    window.addEventListener('resize', () => {
+      if (dialog.open) scrollToIndex(currentIndex(), false);
+    });
+
+    // Wire every gallery slide button to open the viewer at that index.
+    const slideButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('.gallery-slide-btn'));
+    slideButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.imgIdx ?? '0', 10);
+        open(idx);
+      });
+    });
+  }
+  setupImageViewer();
+
+  // Reviews show-more — reveals reviews past the first 3. One-shot:
+  // click expands, button removes itself. Cheaper than a real toggle
+  // since collapsing back has no UX value (users came to see them).
+  function setupReviewsMore(): void {
+    const section = document.querySelector<HTMLElement>('[data-reviews]');
+    if (!section) return;
+    const btn = section.querySelector<HTMLButtonElement>('[data-reviews-more]');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      section.querySelectorAll<HTMLElement>('.review-card[hidden]').forEach((el) => {
+        el.removeAttribute('hidden');
+      });
+      btn.parentElement?.remove();
+    });
+  }
+  setupReviewsMore();
+</script>

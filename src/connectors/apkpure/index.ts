@@ -7,6 +7,7 @@ import { defineConnector } from '../_define';
 import { loadFixture } from '../../lib/fixtures';
 import { readJsonCache, writeJsonCache } from '../../lib/json-cache';
 import { detectContentLanguage } from '../../lib/content-language';
+import { scrubEmails } from '../../lib/scrub-emails';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const run = promisify(execFile);
@@ -29,12 +30,12 @@ type ApkpureApp = {
   videos?: string[];
 };
 
-type ApkpureCache = { version: 1; _generated: string; apps: Record<string, ApkpureApp> };
+type ApkpureCache = { version: 2; _generated: string; apps: Record<string, ApkpureApp> };
 
 const NOTE =
   'Auto-generated APKPure cache. Removed apps have frozen stats — fetched once, never refetched.';
 
-const emptyCache = (): ApkpureCache => ({ version: 1, _generated: NOTE, apps: {} });
+const emptyCache = (): ApkpureCache => ({ version: 2, _generated: NOTE, apps: {} });
 
 // Like AppBrain, APKPure is behind Cloudflare and blocks Node's fetch; curl
 // gets through. Fetch-once cache, so curl is only needed the first time.
@@ -71,10 +72,8 @@ function decodeEntities(s: string): string {
     .replace(/&#39;/g, "'");
 }
 
-/** Defense-in-depth: these pages embed a support email — never let one through. */
-function scrubEmails(s: string): string {
-  return s.replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '').trim();
-}
+// `scrubEmails` is in src/lib/scrub-emails.ts so AppBrain + APKPure
+// share the same config-driven logic. Imported below.
 
 function meta(doc: string, prop: string): string | undefined {
   const m = doc.match(new RegExp(`property="${prop}"[^>]+content="([^"]+)"`, 'i'));
@@ -198,7 +197,7 @@ export const fetchApkpureProjects = async (
   if (options?.fixtureMode) return { projects: await loadFixture('apkpure') };
 
   const cache = readJsonCache<ApkpureCache>(CACHE_PATH, emptyCache());
-  if (cache.version !== 1 || !cache.apps) Object.assign(cache, emptyCache());
+  if (cache.version !== 2 || !cache.apps) Object.assign(cache, emptyCache());
   cache._generated = NOTE;
 
   // One-time migration: earlier scrapes stored the ld+json `?h=200`

@@ -10,12 +10,16 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const CACHE_PATH = 'generated/.cache/extpose/data.json';
 
-type ExtposeCache = { version: 1; _generated: string; apps: Record<string, ExtposeApp> };
+// Bump `version` whenever the ExtposeApp shape gains a field that
+// callers depend on — the cache skips entries already keyed by ext-id,
+// so old entries stay around forever until invalidated en masse.
+// v2: added `body` (long-form description from <div itemprop="description">).
+type ExtposeCache = { version: 2; _generated: string; apps: Record<string, ExtposeApp> };
 
 const NOTE =
   'Auto-generated extpose.com cache. Fetched once per extension id; delete the file to refresh.';
 
-const emptyCache = (): ExtposeCache => ({ version: 1, _generated: NOTE, apps: {} });
+const emptyCache = (): ExtposeCache => ({ version: 2, _generated: NOTE, apps: {} });
 
 export const fetchExtposeProjects = async (
   config: ProjectsConfig,
@@ -27,7 +31,7 @@ export const fetchExtposeProjects = async (
   if (options?.fixtureMode) return { projects: await loadFixture('extpose') };
 
   const cache = readJsonCache<ExtposeCache>(CACHE_PATH, emptyCache());
-  if (cache.version !== 1 || !cache.apps) Object.assign(cache, emptyCache());
+  if (cache.version !== 2 || !cache.apps) Object.assign(cache, emptyCache());
   cache._generated = NOTE;
 
   let attempted = 0;
@@ -59,6 +63,7 @@ export const fetchExtposeProjects = async (
         asOf: a.lastUpdate,
         title: a.name,
         description: a.description,
+        body: a.body,
         tags: ['chrome-extension'],
         kind: 'extension',
         icon: a.icon,

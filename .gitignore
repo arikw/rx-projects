@@ -23,5 +23,15 @@ docs/private/
 # Local-only Claude Code context (personal/sensitive notes)
 CLAUDE.local.md
 
+# Claude Code session state (project-scoped lock + local settings)
+.claude/
+
+# Local scratch + dev-only preview artefacts. Not part of the published
+# dashboard surface; kept out of the upstream template so cloners
+# don't inherit one-off notes / mobile-iframe harnesses.
+tbd.txt
+public/_mobile-preview.html
+src/pages/test-readme.astro
+
 .DS_Store
 *.log

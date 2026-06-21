@@ -264,6 +264,23 @@ export type ProjectsConfig = {
      *  or `'all'` for no filter. Default `undefined` → "All". URL hash
      *  `lang=` overrides this when present. */
     defaultLanguage?: string;
+    /** Whether connector body / description text should have email
+     *  addresses scrubbed before being cached. Defaults to `true` —
+     *  AppBrain / APKPure listings often embed the developer's email
+     *  at the end of the description ("Please submit bugs to
+     *  foo@example.com"), and republishing those would (a) violate
+     *  the anonymity rules the dashboard's other code follows and
+     *  (b) expose a third-party developer's contact info that you
+     *  don't have permission to surface. */
+    scrubEmails?: boolean;
+    /** What to substitute when `scrubEmails` removes an address.
+     *  Default: empty string (email vanishes; downstream cleanup
+     *  drops the orphan "Please submit bugs to " prefix). Set to
+     *  something like `/contact` to keep the contact CTA intact
+     *  while pointing at a page on this dashboard instead. The
+     *  value is inserted literally — supply markdown if you want a
+     *  styled link (e.g. `'[contact me](/contact)'`). */
+    contactReplacement?: string;
   };
   user: {
     name: string;
@@ -313,6 +330,21 @@ export type ProjectsConfig = {
   origins?: Record<string, ManualOrigin>;
   /** Project slugs to pin at the top of the page. */
   featured: string[];
+  /** Per-project URL-slug overrides — keyed by project id, value is the
+   *  slug used in `/projects/<slug>/`. Default URL slug for any project
+   *  is its `id`; this map only exists to give friendly URLs to projects
+   *  whose connector-supplied id is opaque (e.g. the 32-character Chrome
+   *  Web Store extension ids: set
+   *  `{ 'jmjbmlfmmendpkpiggcfpjcpbbpedhha': 'popper-stopper-pro' }`).
+   *
+   *  Manual entries get their friendly URL automatically from the `slug`
+   *  field they already declare (kebab-case identifier doubles as URL),
+   *  so this map is rarely needed for them.
+   *
+   *  When you change a value, the OLD URL stops resolving. Bookmarks /
+   *  external links break. Only flip after a project has been
+   *  deployed if you're prepared to take that breakage. */
+  urlSlugs?: Record<string, string>;
   /** Projects without an online source (closed-source, retired, etc.). */
   manual: ManualProject[];
   ui: {
@@ -324,5 +356,13 @@ export type ProjectsConfig = {
       /** Show the "Active users" stat (Chrome current users). */
       showUsers: boolean;
     };
+    /** Initial colour scheme when the visitor has no stored override.
+     *   - `'auto'` (default) — follow the OS `prefers-color-scheme` media query.
+     *   - `'light'` — always render light by default.
+     *   - `'dark'` — always render dark by default.
+     *  In every mode the in-page toggle still works and writes to
+     *  localStorage; once a visitor has clicked the toggle their choice
+     *  wins on every subsequent page load until they clear it. */
+    defaultTheme?: 'auto' | 'light' | 'dark';
   };
 };

@@ -48,6 +48,13 @@ export type ChromeStatsApp = {
   /** YouTube videos chrome-stats lists for the extension. Stored as the
    *  watch/embed URLs the SSR hydration data exposes. */
   videos?: string[];
+  /** Promo screenshots from the CWS listing, mirrored on chrome-stats.
+   *  Extracted from the page's `application/ld+json` MobileApplication
+   *  block (`screenshot: [...]` array). googleusercontent.com URLs
+   *  served as 1280×800 promo tiles — same shape Chrome Web Store
+   *  always set. Present even for delisted extensions: chrome-stats'
+   *  archive keeps the URLs alive after the listing is removed. */
+  screenshots?: string[];
 };
 
 // chrome-stats sits behind Cloudflare, which gates by TLS fingerprint
@@ -272,6 +279,7 @@ export async function scrapeOne(extId: string): Promise<ChromeStatsApp | null> {
     // record window. The fetched script describes only this extension, so
     // the YouTube URLs found anywhere in it belong to this listing.
     videos: extractVideos(script),
+    screenshots: extractScreenshots(doc),
   };
   return app;
 }
@@ -283,4 +291,32 @@ function extractVideos(script: string): string[] | undefined {
   let m: RegExpExecArray | null;
   while ((m = re.exec(script))) out.add(m[2]);
   return out.size ? [...out] : undefined;
+}
+
+/** Extract promo screenshots from chrome-stats's JSON-LD block.
+ *  Schema seen in the wild:
+ *    <script type="application/ld+json">[{"@type":"SoftwareApplication",
+ *      "screenshot":["https://lh3.googleusercontent.com/...", ...]}]</script>
+ *  The block may be a single object OR an array of entries; the
+ *  `@type` is sometimes `SoftwareApplication`, sometimes
+ *  `MobileApplication`. We accept any LD entry whose `screenshot` is
+ *  a non-empty array of strings — chrome-stats only emits the
+ *  `screenshot` field on the per-extension entry, so the false-
+ *  positive risk (a wrapping `@type`, a related-listing array) is
+ *  effectively zero here. */
+function extractScreenshots(doc: string): string[] | undefined {
+  const blocks = doc.match(/<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g) ?? [];
+  for (const block of blocks) {
+    const json = block.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '');
+    let parsed: unknown;
+    try { parsed = JSON.parse(json); } catch { continue; }
+    const entries = Array.isArray(parsed) ? parsed : [parsed];
+    for (const entry of entries) {
+      const ss = (entry as { screenshot?: unknown }).screenshot;
+      if (!Array.isArray(ss)) continue;
+      const urls = ss.filter((s): s is string => typeof s === 'string' && /^https?:\/\//.test(s));
+      if (urls.length) return urls;
+    }
+  }
+  return undefined;
 }

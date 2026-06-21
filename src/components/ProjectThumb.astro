@@ -41,6 +41,10 @@ const tint = `linear-gradient(135deg, ${bgA}, ${bgB})`;
 const banner = p.banner;
 const icon = p.icon;
 const screenshot = p.screenshots?.[0];
+// JPG icons can't carry transparency, so the icon-only layout needs an
+// explicit white frame (matches the hero-icon treatment on detail pages
+// — see src/pages/[slug].astro `iconNeedsSolidBg`).
+const iconNeedsSolidBg = /\.jpe?g(?:[?#].*)?$/i.test(icon ?? '');
 
 // Brand-mark fallback for image-less cards (github / npm / docker projects).
 // The "what it ships as" identity wins: a github+npm project shows the npm
@@ -88,27 +92,33 @@ const shortTitle =
   {banner ? (
     p.thumbFit === 'contain' ? (
       <div class="thumb-banner thumb-banner--contain" style={`background: ${p.thumbBg ?? 'transparent'}`}>
-        <img src={banner} alt="" loading="lazy" />
+        <img src={banner} alt="" loading="lazy" onload="this.dataset.loaded=1" />
       </div>
     ) : (
-      <img class="thumb-banner" src={banner} alt="" loading="lazy" />
+      <img class="thumb-banner" src={banner} alt="" loading="lazy" onload="this.dataset.loaded=1" />
     )
   ) : screenshot && icon ? (
     <div class="thumb-stack" style={`background: ${stackTint}`}>
-      <img class="thumb-bg" src={screenshot} alt="" loading="lazy" />
-      <img class="thumb-icon-overlay" src={icon} alt="" loading="lazy" />
+      <img class="thumb-bg" src={screenshot} alt="" loading="lazy" onload="this.dataset.loaded=1" />
+      <img class="thumb-icon-overlay" src={icon} alt="" loading="lazy" onload="this.dataset.loaded=1" />
     </div>
   ) : icon ? (
+    // Icon-only thumb keeps its gradient backplate behind a small
+    // hero-icon-style box that contains the icon — the inner box
+    // matches the framing on the detail page's hero icon (border +
+    // rounded corners + white bg only for JPG sources).
     <div class="thumb-iconframe" style={`background: ${iconTint}`}>
-      <img class="thumb-icon-centered" src={icon} alt="" loading="lazy" />
+      <div class="thumb-icon-tile">
+        <img class="thumb-icon-centered" src={icon} alt="" loading="lazy" onload="this.dataset.loaded=1" />
+      </div>
     </div>
   ) : screenshot ? (
     p.thumbFit === 'contain' ? (
       <div class="thumb-banner thumb-banner--contain" style={`background: ${p.thumbBg ?? 'transparent'}`}>
-        <img src={screenshot} alt="" loading="lazy" />
+        <img src={screenshot} alt="" loading="lazy" onload="this.dataset.loaded=1" />
       </div>
     ) : (
-      <img class="thumb-banner" src={screenshot} alt="" loading="lazy" />
+      <img class="thumb-banner" src={screenshot} alt="" loading="lazy" onload="this.dataset.loaded=1" />
     )
   ) : brand ? (
     <div

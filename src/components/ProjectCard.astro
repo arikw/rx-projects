@@ -1,6 +1,7 @@
 ---
 import type { Project } from '../types/project';
-import { formatStat } from '../lib/aggregate-stats';
+import { formatStat, formatRating } from '../lib/aggregate-stats';
+import { resolveDisplayTitle } from '../lib/display-title';
 import { featuredScore } from '../lib/featured-score';
 import { resolveTitleHref } from '../lib/title-href';
 import ProjectThumb from './ProjectThumb.astro';
@@ -112,8 +113,8 @@ if (st.installs && st.installs.value > 0)
 if (st.rating)
   stats.push({
     text: st.rating.count
-      ? `${st.rating.average.toFixed(1)}★ (${formatStat(st.rating.count)})`
-      : `${st.rating.average.toFixed(1)}★`,
+      ? `${formatRating(st.rating.average)}★ (${formatStat(st.rating.count)})`
+      : `${formatRating(st.rating.average)}★`,
     title: st.rating.count ? 'Store rating (number of ratings)' : 'Store rating',
   });
 if (p.year && yearStyle === 'inline')
@@ -125,7 +126,7 @@ if (p.year && yearStyle === 'inline')
 // dedup-by-source-group, the homepage-chip resolver, and the markup.
 const titleHref = resolveTitleHref(p);
 
-const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
+const detailHref = p.hasDetail ? `${base}${p.routeSlug}/` : null;
 
 ---
 <article
@@ -142,10 +143,26 @@ const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
   data-year-style={yearStyle}
 >
   <span class="card-new-ribbon" hidden>NEW</span>
-  <div class="card-thumb-frame">
-    <ProjectThumb project={p} />
-    <span class="card-updated-chip" hidden></span>
-  </div>
+  {/* Thumb is wrapped in the same detail-page link as the title when
+      a detail page exists. Falls through to a plain non-interactive
+      frame otherwise — never the external sourceUrl, since opening
+      an off-site link from a *background* image is surprising UX.
+      `tabindex="-1"` keeps focus order on the title link only (no
+      duplicate keyboard stop per card), but the thumb anchor stays
+      mouse/touch-clickable — and stays a real `<a>` so mobile
+      browsers treat the tap as a plain in-tab navigation that
+      pushes history normally. */}
+  {detailHref ? (
+    <a class="card-thumb-frame" href={detailHref} tabindex="-1" aria-label={`Open ${p.title} detail page`}>
+      <ProjectThumb project={p} />
+      <span class="card-updated-chip" hidden></span>
+    </a>
+  ) : (
+    <div class="card-thumb-frame">
+      <ProjectThumb project={p} />
+      <span class="card-updated-chip" hidden></span>
+    </div>
+  )}
   <header class="card-head">
     {yearStyle === 'kicker' && yearLabel && (
       <p class="card-year-kicker" aria-label={p.retired && lastYear && lastYear > (p.year ?? 0)
@@ -156,9 +173,19 @@ const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
         </svg>{yearLabel}
       </p>
     )}
-    <a class="card-title" href={titleHref} rel="noopener" target="_blank">
-      <h3>{p.title}</h3>
-    </a>
+    {/* Card title links to the project detail page when one exists;
+        otherwise falls back to the external source URL. Internal
+        navigation stays in-tab; the external-URL fallback opens in
+        a new tab as before. */}
+    {detailHref ? (
+      <a class="card-title" href={detailHref}>
+        <h3>{resolveDisplayTitle(p)}</h3>
+      </a>
+    ) : (
+      <a class="card-title" href={titleHref} rel="noopener" target="_blank">
+        <h3>{resolveDisplayTitle(p)}</h3>
+      </a>
+    )}
     {chipsLayout === 'title' && <CardSources project={p} layout="title" />}
   </header>
 
@@ -214,8 +241,4 @@ const detailHref = p.hasDetail ? `${base}${p.id}/` : null;
   )}
 
   {chipsLayout === 'footer' && <CardSources project={p} layout="footer" />}
-
-  {detailHref && (
-    <a class="card-detail-link" href={detailHref}>Details →</a>
-  )}
 </article>

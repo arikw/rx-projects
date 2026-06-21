@@ -32,16 +32,25 @@ const swEnabled = config.meta.serviceWorker !== false && import.meta.env.PROD;
 <meta name="generator" content={Astro.generator} />
 
 <!-- Apply stored theme before CSS paints to avoid a flash of the wrong
-     scheme on reload. Runs synchronously; safe to fail. -->
-<script is:inline>
+     scheme on reload. Visitor's stored override (localStorage) always
+     wins. When no override exists, fall back to config.ui.defaultTheme
+     (`'auto'`/`'light'`/`'dark'`) — `'auto'` defers to the OS
+     `prefers-color-scheme` (no `data-theme` attribute set; CSS picks
+     the scheme from `:root`). Runs synchronously; safe to fail. -->
+<script is:inline define:vars={{ siteDefaultTheme: config.ui.defaultTheme ?? 'auto' }}>
   (function () {
+    var theme = null;
     try {
-      var t = localStorage.getItem('theme');
-      if (t === 'dark' || t === 'light') {
-        document.documentElement.setAttribute('data-theme', t);
-      }
+      var stored = localStorage.getItem('theme');
+      if (stored === 'dark' || stored === 'light') theme = stored;
     } catch (e) {
-      /* storage blocked — fall back to system preference */
+      /* storage blocked — no override available */
+    }
+    if (!theme && (siteDefaultTheme === 'dark' || siteDefaultTheme === 'light')) {
+      theme = siteDefaultTheme;
+    }
+    if (theme) {
+      document.documentElement.setAttribute('data-theme', theme);
     }
   })();
 </script>

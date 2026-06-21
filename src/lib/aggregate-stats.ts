@@ -183,3 +183,9 @@ export function formatStat(n: number): string {
   if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
   return String(n);
 }
+
+/** Format a rating value: trims trailing .0 so "5.0" displays as "5"
+ *  but keeps one decimal for non-integer ratings ("4.5"). */
+export function formatRating(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}

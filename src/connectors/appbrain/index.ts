@@ -7,6 +7,7 @@ import { defineConnector } from '../_define';
 import { loadFixture } from '../../lib/fixtures';
 import { readJsonCache, writeJsonCache } from '../../lib/json-cache';
 import { detectContentLanguage } from '../../lib/content-language';
+import { scrubEmails } from '../../lib/scrub-emails';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const run = promisify(execFile);
@@ -37,14 +38,19 @@ type AppbrainApp = {
   iconUrl?: string;
   /** Positive review snippets surfaced by AppBrain's `commentInsights`. */
   positiveQuotes?: string[];
+  /** Long-form description from the visible page (vs the short
+   *  `shortDescription` from the JSONRPC endpoint). Extracted from
+   *  the `data-contents` attribute on `#descLink` — the developer's
+   *  original Play Store copy preserved by AppBrain. */
+  body?: string;
 };
 
-type AppbrainCache = { version: 2; _generated: string; apps: Record<string, AppbrainApp> };
+type AppbrainCache = { version: 5; _generated: string; apps: Record<string, AppbrainApp> };
 
 const NOTE =
-  'Auto-generated AppBrain cache (GetIntelligenceDataRequest + Play tier). Frozen removed apps — fetched once.';
+  'Auto-generated AppBrain cache (GetIntelligenceDataRequest + Play tier + long description). Frozen removed apps — fetched once.';
 
-const emptyCache = (): AppbrainCache => ({ version: 2, _generated: NOTE, apps: {} });
+const emptyCache = (): AppbrainCache => ({ version: 5, _generated: NOTE, apps: {} });
 
 // AppBrain is behind Cloudflare, which blocks Node's fetch (undici) regardless
 // of headers; curl's TLS handshake passes, so we shell out. Fetch-once cache,
@@ -58,10 +64,11 @@ async function curlRun(args: string[]): Promise<string | null> {
   }
 }
 
-/** Defense-in-depth: never let a stray email through into stored data. */
-function scrubEmails(s: string): string {
-  return s.replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '').trim();
-}
+// `scrubEmails` lives in src/lib/scrub-emails.ts so AppBrain + APKPure
+// (and any future body-scraping connector) share the same logic.
+// The shared helper reads `config.meta.scrubEmails` /
+// `config.meta.contactReplacement` at fetch time.
+// (Imported below alongside the rest.)
 
 /** Google Play install tier, e.g. "10,000+" → 10000 (the honest floor). */
 function parseInstalls(bucket: unknown): number | undefined {
@@ -140,9 +147,11 @@ async function fetchIntel(pkg: string): Promise<Intel | null> {
   }
 }
 
-/** The official Google Play install tier lives only on the HTML page. Read just
- * the `downloads` field — never the rest of appData (it embeds an email). */
-async function fetchPlayInstalls(pkg: string): Promise<number | undefined> {
+/** The HTML page carries two pieces we need: the Play install tier
+ *  (`appData.downloads`) AND the long-form developer description
+ *  (in `data-contents` on `#descLink`). We pull both with a single
+ *  fetch to halve the per-package CF cost vs separate calls. */
+async function fetchPlayPage(pkg: string): Promise<{ installs?: number; body?: string }> {
   const doc = await curlRun([
     '-sL',
     '--max-time',
@@ -153,21 +162,76 @@ async function fetchPlayInstalls(pkg: string): Promise<number | undefined> {
     'Accept-Language: en-US,en;q=0.9',
     `https://www.appbrain.com/app/${encodeURIComponent(pkg)}`,
   ]);
-  if (!doc) return undefined;
+  if (!doc) return {};
+  let installs: number | undefined;
   const blob = doc.match(/"APP_PAGE_DATA"\s*:\s*(\{.*?\})\};window\.pageDataProto/s);
-  if (!blob) return undefined;
-  try {
-    const appData = (JSON.parse(blob[1]) as { appData?: { downloads?: unknown } }).appData;
-    return parseInstalls(appData?.downloads);
-  } catch {
-    return undefined;
+  if (blob) {
+    try {
+      const appData = (JSON.parse(blob[1]) as { appData?: { downloads?: unknown } }).appData;
+      installs = parseInstalls(appData?.downloads);
+    } catch { /* fall through */ }
   }
+  // Long description — the user-visible `#descContents` div only carries
+  // the first paragraph; `#descLink data-contents` carries the full
+  // text with `<br>` separators, kept verbatim from the original Play
+  // Store listing.
+  let body: string | undefined;
+  const descMatch = doc.match(/<a[^>]+id="descLink"[^>]+data-contents="([^"]+)"/);
+  if (descMatch) {
+    const text = dropEmptyContactLines(scrubEmails(appbrainDescriptionToMarkdown(descMatch[1])));
+    if (text.length > 20) body = text;
+  }
+  return { installs, body };
+}
+
+/** After `scrubEmails` removes the email itself, a leading prefix like
+ *  "Please submit bugs to" / "Contact us at" / "Email to" remains
+ *  pointing at nothing. Strip any line whose contact-verb tail ends
+ *  with a "to" / "at" / "via" that has no following word — typical
+ *  shape of these orphans. Plain non-contact sentences (e.g. "Walk
+ *  to the store") aren't affected because they don't start with a
+ *  contact verb. */
+function dropEmptyContactLines(s: string): string {
+  return s
+    .split('\n')
+    .filter((line) => {
+      const t = line.trim();
+      return !/^(?:please\s+)?(?:contact|email|write|reach\s+out|submit|report|send|reply|message)\b[^.\n]*\b(?:to|at|via)\s*[:.\s]*$/i.test(t);
+    })
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/** Convert AppBrain's `data-contents` attribute (HTML-entity-encoded
+ *  text with `<br>` line breaks) into clean markdown. */
+function appbrainDescriptionToMarkdown(raw: string): string {
+  // Decode the attribute-level encoding first (so &lt;br&gt; → <br>),
+  // then convert <br>s to newlines (paragraph break for double-br),
+  // then strip any remaining tags and decode body entities.
+  const decoded = decodeHtmlEntities(raw);
+  const lined = decoded
+    .replace(/<br\s*\/?>\s*<br\s*\/?>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '');
+  return decodeHtmlEntities(lined).trim();
+}
+
+function decodeHtmlEntities(s: string): string {
+  return s
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'");
 }
 
 async function scrapeApp(pkg: string): Promise<AppbrainApp | null> {
   const intel = await fetchIntel(pkg);
   if (!intel) return null; // the endpoint is the source of truth
-  const installs = await fetchPlayInstalls(pkg);
+  const page = await fetchPlayPage(pkg);
   return {
     packageName: pkg,
     title: intel.title,
@@ -176,11 +240,12 @@ async function scrapeApp(pkg: string): Promise<AppbrainApp | null> {
     rating: intel.rating,
     ratingCount: intel.ratingCount,
     ratingHistogram: intel.histogram,
-    installs,
+    installs: page.installs,
     year: intel.year,
     lastSeen: intel.lastSeen,
     iconUrl: intel.iconUrl,
     positiveQuotes: intel.positiveQuotes,
+    body: page.body,
   };
 }
 
@@ -194,7 +259,7 @@ export const fetchAppbrainProjects = async (
   if (options?.fixtureMode) return { projects: await loadFixture('appbrain') };
 
   const cache = readJsonCache<AppbrainCache>(CACHE_PATH, emptyCache());
-  if (cache.version !== 2 || !cache.apps) Object.assign(cache, emptyCache());
+  if (cache.version !== 5 || !cache.apps) Object.assign(cache, emptyCache());
   cache._generated = NOTE;
 
   // Track fresh-fetch attempts vs failures so we can signal ok:false when
@@ -202,11 +267,26 @@ export const fetchAppbrainProjects = async (
   let attempted = 0;
   let failed = 0;
   for (const pkg of packages) {
-    if (cache.apps[pkg]) continue; // frozen — removed-app stats never change
+    const existing = cache.apps[pkg];
+    // Re-attempt when the cached entry is incomplete: missing `body`
+    // is the most common shape, caused by a transient Cloudflare blip
+    // during the original fetch. Don't re-attempt entries that already
+    // have body (or genuinely have no description on the source page);
+    // distinguishing those would require a separate "tried but empty"
+    // marker which we don't keep.
+    if (existing && existing.body) continue; // frozen, complete
     attempted++;
     const app = await scrapeApp(pkg);
-    if (app) cache.apps[pkg] = app;
-    else failed++;
+    if (app) {
+      // If the new fetch found a body but the existing entry was used
+      // for other fields, prefer the merged shape so we don't lose
+      // anything (rare — fetch returns a full record).
+      cache.apps[pkg] = { ...existing, ...app };
+    } else {
+      failed++;
+      // Keep whatever we had before; don't blank out a partial entry
+      // because of a transient failure.
+    }
     await sleep(300);
   }
   writeJsonCache(CACHE_PATH, cache);
@@ -232,6 +312,7 @@ export const fetchAppbrainProjects = async (
         asOf: a.lastSeen,
         title: a.title,
         description: a.description ?? '',
+        body: a.body,
         firstReleased: a.year,
         contentLanguage: detectContentLanguage(a.title) ?? undefined,
         tags: ['android'],
