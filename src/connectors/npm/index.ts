@@ -13,8 +13,43 @@ import {
   type PackageDownloads,
 } from '../../lib/npm-downloads-cache';
 import iconSvg from './icon.svg?raw';
+import { readJsonCache, writeJsonCache } from '../../lib/json-cache';
 
 const runCurl = promisify(execFile);
+
+// ── Per-package README cache ──────────────────────────────────────────
+// Pulled from the registry's full package document; surfaced as the
+// project's `body` when no other source supplies a long-form body. For
+// projects that ALSO have a GitHub source, the cached GitHub README
+// wins at tier-resolution time — this only fills the gap for npm-only
+// packages whose detail page would otherwise be description-only.
+
+type NpmReadmeEntry = { version: string; readme: string };
+type NpmReadmeCache = {
+  version: 1;
+  _generated: string;
+  readmes: Record<string, NpmReadmeEntry>;
+};
+const README_CACHE_PATH = 'generated/.cache/npm/readmes.json';
+const README_NOTE =
+  'Auto-generated npm README cache. Key = package name; value = { version, readme }. ' +
+  'Re-fetched when the latest version on the registry differs from the cached version.';
+
+function readReadmeCache(): NpmReadmeCache {
+  const c = readJsonCache<NpmReadmeCache>(README_CACHE_PATH, {
+    version: 1,
+    _generated: README_NOTE,
+    readmes: {},
+  });
+  if (c.version !== 1 || !c.readmes) {
+    return { version: 1, _generated: README_NOTE, readmes: {} };
+  }
+  return c;
+}
+function writeReadmeCache(cache: NpmReadmeCache): void {
+  cache._generated = README_NOTE;
+  writeJsonCache(README_CACHE_PATH, cache);
+}
 
 export const urlExtractors: UrlIdExtractor[] = [
   {
@@ -165,30 +200,71 @@ async function fetchYearDownloads(pkg: string, year: number, created: Date, now:
   return (data.downloads ?? []).reduce((sum, d) => sum + d.downloads, 0);
 }
 
-/** Fetch first-publish date from registry metadata. */
-async function fetchCreated(pkg: string): Promise<string | null> {
+/** Fetch first-publish date + latest-version + README from registry
+ *  metadata in a single round-trip. The registry's package document
+ *  serves all this at one URL — bundling avoids paying the HTTP cost
+ *  twice for the same data. */
+async function fetchRegistryMeta(
+  pkg: string,
+): Promise<{ created: string | null; latestVersion: string | null; readme: string | null }> {
   try {
-    const data = await fetchJson<{ time?: { created?: string } }>(
-      `https://registry.npmjs.org/${encodeURIComponent(pkg)}`,
-    );
-    return data.time?.created ?? null;
+    const data = await fetchJson<{
+      time?: { created?: string };
+      'dist-tags'?: { latest?: string };
+      readme?: string;
+      versions?: Record<string, { readme?: string }>;
+    }>(`https://registry.npmjs.org/${encodeURIComponent(pkg)}`);
+    const created = data.time?.created ?? null;
+    const latestVersion = data['dist-tags']?.latest ?? null;
+    // Top-level `readme` reflects the latest version in most cases.
+    // Fall back to the latest version's own `readme` when the top
+    // level is empty (older packages sometimes only have it nested).
+    let readme = typeof data.readme === 'string' && data.readme.trim().length > 0 ? data.readme : null;
+    if (!readme && latestVersion && data.versions?.[latestVersion]?.readme) {
+      const v = data.versions[latestVersion].readme;
+      if (typeof v === 'string' && v.trim().length > 0) readme = v;
+    }
+    return { created, latestVersion, readme };
   } catch {
-    return null;
+    return { created: null, latestVersion: null, readme: null };
   }
 }
 
-/** Ensure the cache has accurate per-year data for a package; returns it. */
+/** Ensure the cache has accurate per-year data for a package; returns it.
+ *  Also returns the README cached for this package (or freshly fetched
+ *  when the latest version differs from what's cached). */
 async function refreshPackage(
   cache: NpmDownloadsCache,
+  readmeCache: NpmReadmeCache,
   pkg: string,
   fallbackDate: string,
   now: Date,
-): Promise<PackageDownloads> {
+): Promise<{ data: PackageDownloads; readme: string | null }> {
   let entry = cache.packages[pkg];
-  if (!entry) {
-    const created = (await fetchCreated(pkg)) ?? fallbackDate;
-    entry = { created, years: {} };
-    cache.packages[pkg] = entry;
+  let readme: string | null = readmeCache.readmes[pkg]?.readme ?? null;
+  // Trigger a registry fetch when EITHER (a) we don't have created date,
+  // OR (b) the cached README is for an unknown / out-of-date version.
+  // The registry document carries both, so one fetch covers both needs.
+  const needCreated = !entry;
+  const needReadme = !readmeCache.readmes[pkg];
+  if (needCreated || needReadme) {
+    const meta = await fetchRegistryMeta(pkg);
+    if (!entry) {
+      entry = { created: meta.created ?? fallbackDate, years: {} };
+      cache.packages[pkg] = entry;
+    }
+    if (meta.readme && meta.latestVersion) {
+      // Refresh README only when the latest version differs from what's
+      // cached — keeps the cache stable on re-runs (most packages don't
+      // publish between builds).
+      const cached = readmeCache.readmes[pkg];
+      if (!cached || cached.version !== meta.latestVersion) {
+        readmeCache.readmes[pkg] = { version: meta.latestVersion, readme: meta.readme };
+        readme = meta.readme;
+      } else {
+        readme = cached.readme;
+      }
+    }
   }
 
   const firstYear = new Date(entry.created).getUTCFullYear();
@@ -212,7 +288,7 @@ async function refreshPackage(
     }
     await sleep(100); // gentle gap between calls; cheap, keeps the cron quick
   }
-  return entry;
+  return { data: entry, readme };
 }
 
 export const fetchNpmProjects: Connector = async (config, options) => {
@@ -227,6 +303,7 @@ export const fetchNpmProjects: Connector = async (config, options) => {
   const picked = explicit.size > 0 ? matches.filter((m) => explicit.has(m.package.name)) : matches;
 
   const cache = readNpmCache();
+  const readmeCache = readReadmeCache();
   const now = new Date();
 
   // Single gentle stream (with a small gap between calls) trips npm's rate
@@ -235,18 +312,19 @@ export const fetchNpmProjects: Connector = async (config, options) => {
   const enriched = await mapLimit(picked, 1, async (m) => {
     const name = m.package.name;
     const fetched = await fetchPointDownloads(name, 'last-month');
-    const dl = await refreshPackage(cache, name, m.package.date, now);
+    const { data: dl, readme } = await refreshPackage(cache, readmeCache, name, m.package.date, now);
     if (fetched != null) dl.lastMonth = fetched; // persist last-good monthly
     const monthly = fetched ?? dl.lastMonth ?? null; // reuse cached when fetch failed
     const fetchedDependents = await fetchDependents(name);
     if (fetchedDependents != null) dl.dependents = fetchedDependents; // persist last-good
     const dependents = fetchedDependents ?? dl.dependents ?? null;
-    return { entry: m, monthly, dependents, allTime: sumAllTime(dl), firstYear: new Date(dl.created).getUTCFullYear() };
+    return { entry: m, monthly, dependents, allTime: sumAllTime(dl), firstYear: new Date(dl.created).getUTCFullYear(), readme };
   });
 
   writeNpmCache(cache);
+  writeReadmeCache(readmeCache);
 
-  return enriched.map<ConnectorResult>(({ entry, monthly, dependents, allTime, firstYear }) => ({
+  return enriched.map<ConnectorResult>(({ entry, monthly, dependents, allTime, firstYear, readme }) => ({
     // npm registry is the origin. All-time → canonical `downloads`.
     origin: {
       platform: 'npm',
@@ -255,6 +333,12 @@ export const fetchNpmProjects: Connector = async (config, options) => {
       asOf: entry.package.date,
       title: entry.package.name,
       description: entry.package.description ?? '',
+      // Long-form README from the registry, surfaced as the project's
+      // `body` so the detail page renders it through the standard
+      // markdown pipeline. Reconciler prefers a cached GitHub README
+      // over this whenever both are present (the build-projects
+      // `firstField` walks reps in priority order).
+      body: readme ?? undefined,
       firstReleased: firstYear,
       tags: entry.package.keywords ?? [],
       kind: 'package',

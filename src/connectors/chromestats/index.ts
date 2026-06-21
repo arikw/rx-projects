@@ -10,12 +10,12 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const CACHE_PATH = 'generated/.cache/chromestats/data.json';
 
-type ChromeStatsCache = { version: 1; _generated: string; apps: Record<string, ChromeStatsApp> };
+type ChromeStatsCache = { version: 2; _generated: string; apps: Record<string, ChromeStatsApp> };
 
 const NOTE =
   'Auto-generated chrome-stats.com cache. Fetched once per extension id; delete the file to refresh. PII (email, authorId) is intentionally omitted.';
 
-const emptyCache = (): ChromeStatsCache => ({ version: 1, _generated: NOTE, apps: {} });
+const emptyCache = (): ChromeStatsCache => ({ version: 2, _generated: NOTE, apps: {} });
 
 export const fetchChromestatsProjects = async (
   config: ProjectsConfig,
@@ -29,7 +29,7 @@ export const fetchChromestatsProjects = async (
   if (options?.fixtureMode) return { projects: await loadFixture('chromestats') };
 
   const cache = readJsonCache<ChromeStatsCache>(CACHE_PATH, emptyCache());
-  if (cache.version !== 1 || !cache.apps) Object.assign(cache, emptyCache());
+  if (cache.version !== 2 || !cache.apps) Object.assign(cache, emptyCache());
   cache._generated = NOTE;
 
   // Track fresh-fetch attempts vs failures so we can signal ok:false when
@@ -97,6 +97,7 @@ export const fetchChromestatsProjects = async (
         // mirror is the only icon source for deleted extensions.
         icon: a.logo,
         videos: a.videos,
+        screenshots: a.screenshots,
         reviews: a.reviews,
         stats: {
           // Once an extension is removed from CWS, the cached userCount is a

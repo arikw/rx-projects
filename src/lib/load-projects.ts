@@ -30,6 +30,28 @@ let lastProfiles: ProfileFact[] = [];
 let lastHidden: Array<{ id: string; reason: string }> = [];
 
 /** Collect every image / video URL a connector's results + profile reference. */
+/** Match `youtubeId()` in media-items.ts. Tiny duplicate so the loader
+ *  doesn't depend on a build-time-only Astro module. */
+function youtubeIdFromUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, '');
+    if (host === 'youtu.be') {
+      const id = u.pathname.slice(1).split('/')[0];
+      return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+    }
+    if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
+      const m = u.pathname.match(/\/(?:embed|v|shorts)\/([^/?#]+)/);
+      if (m && /^[A-Za-z0-9_-]{11}$/.test(m[1])) return m[1];
+      const v = u.searchParams.get('v');
+      if (v && /^[A-Za-z0-9_-]{11}$/.test(v)) return v;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function collectMediaUrls(results: ConnectorResult[], profile?: ProfileFact): string[] {
   const out: string[] = [];
   for (const r of results) {
@@ -38,7 +60,23 @@ function collectMediaUrls(results: ConnectorResult[], profile?: ProfileFact): st
       if (rep.banner) out.push(rep.banner);
       if (rep.icon) out.push(rep.icon);
       if (rep.screenshots) out.push(...rep.screenshots);
-      if (rep.videos) out.push(...rep.videos);
+      if (rep.videos) {
+        for (const v of rep.videos) {
+          out.push(v);
+          // For YouTube video URLs, queue both poster sizes:
+          //  - maxresdefault.jpg (1280×720) — preferred for the gallery
+          //    thumbnail, only available for HD source videos
+          //  - hqdefault.jpg (480×360) — always available; serves as
+          //    the fallback when maxres 404s during the build fetch
+          // media-items.ts uses lookupCached() at render time to pick
+          // whichever one ended up in the url-map.
+          const id = youtubeIdFromUrl(v);
+          if (id) {
+            out.push(`https://i.ytimg.com/vi/${id}/maxresdefault.jpg`);
+            out.push(`https://i.ytimg.com/vi/${id}/hqdefault.jpg`);
+          }
+        }
+      }
     }
   }
   if (profile?.avatar) out.push(profile.avatar);
@@ -167,6 +205,26 @@ async function loadOnce(): Promise<Project[]> {
 
   const built = buildProjects(all);
 
+  // Apply per-project routeSlug overrides from config.urlSlugs. The map
+  // is keyed by project id, value is the slug used in /projects/<slug>/.
+  // Default behaviour (no entry in the map) keeps routeSlug = id.
+  // Validation: warn at build time if a value collides with an existing
+  // id or another override — silent collisions would 404 one of them.
+  const overrides = config.urlSlugs ?? {};
+  const claimedSlugs = new Set<string>();
+  for (const p of built) claimedSlugs.add(p.id);
+  for (const [id, override] of Object.entries(overrides)) {
+    if (!claimedSlugs.has(override) || override === id) continue;
+    console.warn(
+      `[load-projects] urlSlugs override "${id}" → "${override}" collides ` +
+      `with an existing project id; the override will be ignored.`,
+    );
+  }
+  for (const p of built) {
+    const override = overrides[p.id];
+    if (override) p.routeSlug = override;
+  }
+
   // Extract a dominant colour for each card that has an icon — the backplate
   // (icon-only frame, screenshot+icon stack) pulls a pastel version of this
   // colour. Banner-only cards skip extraction since the foreground art owns
@@ -207,19 +265,107 @@ async function loadOnce(): Promise<Project[]> {
       if (p.icon) p.icon = rewrite(p.icon);
       if (p.screenshots) p.screenshots = p.screenshots.map((u) => rewrite(u) ?? u);
       if (p.videos) p.videos = p.videos.map((u) => rewrite(u) ?? u);
+      // Apply the same rewrite to the platform-tagged screenshot list so
+      // the perceptual dedup pass (below) sees local cache paths instead
+      // of upstream URLs.
+      if (p._sourcedScreenshots) {
+        p._sourcedScreenshots = p._sourcedScreenshots.map((s) => ({
+          url: rewrite(s.url) ?? s.url,
+          platform: s.platform,
+        }));
+      }
     }
     for (const pf of lastProfiles) {
       if (pf.avatar) pf.avatar = rewrite(pf.avatar);
     }
   }
 
-  // Which slugs have a matching MDX detail page?
+  // Perceptual cross-source dedup — collapse screenshots that look the
+  // same when they came from DIFFERENT connectors (e.g. one image
+  // shipped via chromestats AND a manual Wayback entry). Same-source
+  // near-duplicates are left alone because the source listed both
+  // intentionally. Cheap (~5 ms per uncached image; hash cache makes
+  // re-runs free).
+  {
+    const { dedupAcrossSourcesPerceptually, flushDhashCache } = await import('./perceptual-dedup');
+    for (const p of built) {
+      if (p._sourcedScreenshots && p._sourcedScreenshots.length >= 2) {
+        const after = await dedupAcrossSourcesPerceptually(p._sourcedScreenshots);
+        if (after.length !== p._sourcedScreenshots.length) {
+          p.screenshots = after.map((s) => s.url);
+        }
+      }
+      // Always strip the internal handoff field — even when we didn't
+      // run dedup — so it doesn't leak into `dist/data.json`.
+      delete p._sourcedScreenshots;
+    }
+    flushDhashCache();
+  }
+
+  // Populate / refresh the README + CHANGELOG cache for every GitHub-backed
+  // project. Three-tier short-circuit (ETag → content-hash → image diff)
+  // keeps the steady-state daily build at ~1s for ~30 repos; only a real
+  // README change does any image work. Image fetch failures are silent and
+  // retried next build, so a flaky CDN doesn't hang the pipeline.
+  const { updateReadmeCache: refreshReadme, updateChangelogCache: refreshChangelog } = await import('./readme-cache');
+  const githubProjects = built.filter((p) => /github\.com\//.test(p.sourceUrl ?? ''));
+  const READMES_CONCURRENT = 5;
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(READMES_CONCURRENT, githubProjects.length) }, async () => {
+    while (true) {
+      const i = cursor++;
+      if (i >= githubProjects.length) return;
+      const p = githubProjects[i];
+      const m = p.sourceUrl!.match(/github\.com\/([^/]+)\/([^/]+)/);
+      if (!m) continue;
+      const owner = m[1];
+      const repo = m[2].replace(/\.git$/, '');
+      const slug = `${owner}__${repo}`;
+      const token = process.env.GITHUB_TOKEN || process.env.GH_API_TOKEN;
+      let branch = 'main';
+      try {
+        const r = await refreshReadme({ owner, repo, slug, githubToken: token });
+        // Pick up the resolved branch from the readme-cache meta for the
+        // changelog fetch, so it doesn't have to redo the API lookup.
+        const { getReadmeMeta } = await import('./readme-cache');
+        branch = getReadmeMeta(slug)?.branch ?? branch;
+        // Only chase the changelog when the README itself was reachable —
+        // a repo that 404s on README isn't going to have a changelog either.
+        if (r.kind !== 'gone-404' && r.kind !== 'error') {
+          await refreshChangelog({ owner, repo, slug, branch, githubToken: token });
+        }
+      } catch (err) {
+        console.warn(`[readme-cache] ${owner}/${repo} update failed:`, err);
+      }
+    }
+  });
+  await Promise.all(workers);
+
+  // Which slugs have any kind of detail content? The dynamic route
+  // (src/pages/[slug].astro) picks one of four tiers per slug —
+  // MDX override > cached README > screenshot gallery > description-only.
+  // hasDetail is true when *any* tier would resolve to content.
   const detailEntries = await getCollection('projects').catch(() => []);
-  const detailSlugs = new Set(detailEntries.map((e) => e.id.replace(/\.mdx?$/, '')));
+  const mdxDetailSlugs = new Set(detailEntries.map((e) => e.id.replace(/\.mdx?$/, '')));
   const featuredSlugs = new Set([
     ...config.featured,
     ...config.manual.filter((m) => m.featured).map((m) => m.slug),
   ]);
+
+  // Every project gets a detail page now. We previously gated this
+  // behind tier criteria (MDX exists / cached README / ≥2 screenshots
+  // / ≥40-char description) so a sparse project wouldn't render an
+  // empty "page with hero only" — but the hero alone (icon + title +
+  // lede + chips + stats sidebar) IS a legitimate page, and having
+  // every project routable keeps internal links (card thumb, card
+  // title, More projects) consistent.
+  //
+  // Disk-existence check for cached READMEs stays in the dynamic
+  // route — it picks the BEST tier for each project; this flag only
+  // controls whether the project IS routable.
+  function computeHasDetail(_p: Project): boolean {
+    return true;
+  }
 
   // Drop unrenderable stubs (e.g. removed Chrome extensions where chromestats
   // wasn't reachable on the build runner, so the only data we have is the
@@ -242,7 +388,7 @@ async function loadOnce(): Promise<Project[]> {
   return visible.map((p) => ({
     ...p,
     featured: featuredSlugs.has(p.id),
-    hasDetail: detailSlugs.has(p.id),
+    hasDetail: computeHasDetail(p),
   }));
 }
 

@@ -18,6 +18,7 @@ type DockerRepo = {
   name: string;
   namespace: string;
   description: string | null;
+  full_description?: string | null;
   pull_count: number;
   star_count: number;
   last_updated: string;
@@ -44,6 +45,25 @@ async function fetchAllDockerRepos(user: string): Promise<DockerRepo[]> {
   return all;
 }
 
+/** Fetch the full markdown description for one repo. The list endpoint above
+ *  only returns the short tagline; the per-repo endpoint includes the
+ *  multi-paragraph README-equivalent that Docker Hub renders. Failures are
+ *  non-fatal — we still surface the project with whatever short description
+ *  the list call returned. */
+async function fetchFullDescription(namespace: string, name: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://hub.docker.com/v2/repositories/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/`, {
+      headers: { 'User-Agent': 'live-dev-portfolio' },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { full_description?: string | null };
+    const body = data.full_description?.trim();
+    return body && body.length > 0 ? body : null;
+  } catch {
+    return null;
+  }
+}
+
 export const fetchDockerProjects: Connector = async (config, options) => {
   const handle = config.user.docker;
   if (isPlaceholderHandle(handle)) return [];
@@ -55,7 +75,11 @@ export const fetchDockerProjects: Connector = async (config, options) => {
   const all = await fetchAllDockerRepos(handle);
   const picked = explicit.size > 0 ? all.filter((r) => explicit.has(r.name)) : all;
 
-  return picked.map<ConnectorResult>((r) => ({
+  // Fetch the per-repo full_description (long markdown body) for the picked
+  // set. Done in parallel since the list is small (≤10 typical).
+  const bodies = await Promise.all(picked.map((r) => fetchFullDescription(r.namespace, r.name)));
+
+  return picked.map<ConnectorResult>((r, i) => ({
     // Docker Hub is the origin. "pulls" → canonical `downloads`; Docker stars
     // → canonical `stars` (summed with GitHub stars if merged).
     origin: {
@@ -65,6 +89,7 @@ export const fetchDockerProjects: Connector = async (config, options) => {
       asOf: r.last_updated,
       title: `${r.namespace}/${r.name}`,
       description: r.description ?? '',
+      ...(bodies[i] ? { body: bodies[i]! } : {}),
       firstReleased: r.date_registered ? new Date(r.date_registered).getUTCFullYear() : undefined,
       tags: ['docker'],
       kind: 'image',

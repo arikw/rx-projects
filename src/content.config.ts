@@ -19,6 +19,14 @@ const projects = defineCollection({
     cover: z.string().optional(),
     /** Author for this detail page. Defaults to the site author. */
     author: z.string().default('Arik W.'),
+    /** Where the MDX content lives relative to the auto-derived body
+     *  (cached README, Docker `full_description`, CWS extpose body, …).
+     *  - `'replace'` (default) — the MDX entirely replaces the auto body.
+     *  - `'prepend'` — the MDX is rendered FIRST, followed by the auto
+     *    body underneath. Use when your MDX adds context (a foreword,
+     *    a screenshot, a personal note) on top of upstream prose
+     *    rather than substituting for it. */
+    mode: z.enum(['replace', 'prepend']).default('replace'),
   }),
 });
 

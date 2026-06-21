@@ -24,6 +24,7 @@ type ChromeExtension = {
   rating?: number;
   ratingCount?: number;
   image?: string;
+  screenshots?: string[];
 };
 
 function decodeEntities(s: string): string {
@@ -44,6 +45,11 @@ async function scrapeOne(id: string): Promise<ChromeExtension | null> {
       headers: {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) live-dev-portfolio/0.1',
         'Accept-Language': 'en-US,en;q=0.9',
+        // The CWS page is served gzipped only when Accept-Encoding announces
+        // it; without this the server returns an empty body. Without
+        // --compressed-equivalent decoding, Node's fetch would also decode
+        // automatically, so requesting gzip is enough.
+        'Accept-Encoding': 'gzip',
       },
     });
     if (!res.ok) return null;
@@ -110,6 +116,39 @@ async function scrapeOne(id: string): Promise<ChromeExtension | null> {
 
   const ogImage = html.match(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/)?.[1];
 
+  // Screenshots — CWS marks the extension's own gallery items with
+  // `<div role="button" aria-label="Item media N (screenshot) for <title>"
+  // data-media-url="https://lh3.googleusercontent.com/...">`. The
+  // data-media-url is the base; we append `=s550-w550-h350` for a sensible
+  // gallery resolution. Anchoring on `Item media (screenshot)` confines
+  // the extraction to THIS extension — earlier `=s550-w550-h350` heuristic
+  // also matched marquees from related-extension cards on the same page.
+  //
+  // Sort by the `aria-label="Item media N"` index — the CWS HTML
+  // emits buttons in (preview-strip → thumbnail row) order, NOT the
+  // intended display order. `N` is what the listing actually shows.
+  const itemMediaButton = new RegExp('<div\\b([^>]+role="button"[^>]+)>', 'g');
+  const seen = new Map<string, number>();
+  for (const m of html.matchAll(itemMediaButton)) {
+    const attrs = m[1];
+    const nMatch = attrs.match(/aria-label="Item media (\d+) \(screenshot\)/);
+    if (!nMatch) continue;
+    const urlMatch = attrs.match(/data-media-url="([^"]+)"/);
+    if (!urlMatch) continue;
+    // Reject anything that didn't come from googleusercontent — defensive
+    // against future CWS markup tweaks that might point at video or other
+    // hosts.
+    if (!/^https:\/\/lh\d+\.googleusercontent\.com\//.test(urlMatch[1])) continue;
+    const url = urlMatch[1];
+    const n = parseInt(nMatch[1], 10);
+    // Same URL appears multiple times (preview + thumbnail row).
+    // Keep the lowest N so dedup-by-URL leaves the display position.
+    if (!seen.has(url) || n < seen.get(url)!) seen.set(url, n);
+  }
+  const screenshotUrls = [...seen.entries()]
+    .sort((a, b) => a[1] - b[1])
+    .map(([url]) => url);
+
   return {
     id,
     title,
@@ -119,6 +158,7 @@ async function scrapeOne(id: string): Promise<ChromeExtension | null> {
     rating,
     ratingCount,
     image: ogImage ? decodeEntities(ogImage) : undefined,
+    screenshots: screenshotUrls.length ? screenshotUrls.map((u) => `${u}=s550-w550-h350`) : undefined,
   };
 }
 
@@ -146,6 +186,7 @@ export const fetchChromeProjects: Connector = async (config, options) => {
       // exist the banner layout wins, when only this one does the icon layout
       // renders the icon at a sane size instead of stretching it into a banner.
       icon: ext.image,
+      ...(ext.screenshots?.length ? { screenshots: ext.screenshots } : {}),
       stats: {
         ...(ext.users != null ? { users: ext.users } : {}),
         ...(ext.rating != null && ext.ratingCount != null

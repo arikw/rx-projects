@@ -13,6 +13,54 @@ const ALL_EXTRACTORS: UrlIdExtractor[] = getAllUrlExtractors();
 const EXTRACTOR_BY_HOST = new Map<string, UrlIdExtractor>();
 for (const ex of ALL_EXTRACTORS) for (const h of ex.hostnames) EXTRACTOR_BY_HOST.set(h, ex);
 
+/** Canonical identity key for a screenshot URL. For
+ *  googleusercontent.com URLs (CWS / AppBrain / Play Store images),
+ *  the path can carry an `=<size-spec>` suffix that re-sizes the
+ *  same underlying asset (`=s550-w550-h350`, `=w640-h400-e365-rj`,
+ *  etc.); two different connectors emit the same image with
+ *  different size specs and the naïve URL-string dedup misses them.
+ *  Stripping the suffix collapses the variants to one key. */
+function canonicalImageKey(url: string): string {
+  try {
+    const u = new URL(url);
+    if (/(?:^|\.)googleusercontent\.com$/i.test(u.hostname)) {
+      const path = u.pathname;
+      const eq = path.indexOf('=');
+      return `${u.hostname}${eq >= 0 ? path.slice(0, eq) : path}`;
+    }
+    return `${u.hostname}${u.pathname}${u.search}`;
+  } catch {
+    return url;
+  }
+}
+
+/** A screenshot URL annotated with the connector platform that emitted
+ *  it. Carried through dedup so the perceptual pass downstream can
+ *  apply "skip within-source" semantics. */
+export type SourcedScreenshot = { url: string; platform: string };
+
+/** Dedupe by canonical identity. Prefers the URL without a size suffix
+ *  (full-resolution original) when both exist; first-seen wins
+ *  otherwise. Platform is preserved on the kept entry — so within-source
+ *  exact-URL duplicates collapse but the surviving copy still remembers
+ *  which connector contributed it (used by the perceptual pass). */
+function dedupByCanonicalImage(items: SourcedScreenshot[]): SourcedScreenshot[] {
+  const groups = new Map<string, SourcedScreenshot>();
+  for (const item of items) {
+    const key = canonicalImageKey(item.url);
+    const existing = groups.get(key);
+    if (!existing) {
+      groups.set(key, item);
+      continue;
+    }
+    // No-suffix URLs (full resolution) win over sized variants.
+    const existingHasSize = /=/.test(existing.url);
+    const newHasSize = /=/.test(item.url);
+    if (existingHasSize && !newHasSize) groups.set(key, item);
+  }
+  return [...groups.values()];
+}
+
 function tryExtractId(rawUrl?: string): { platform: string; id: string } | null {
   if (!rawUrl) return null;
   try {
@@ -393,6 +441,11 @@ function buildProject(group: ConnectorResult[]): Project {
   }
 
   const tags = [...new Set(allReps.flatMap((r) => r.tags ?? []))];
+  // Source-aware screenshot pre-dedup (canonical URL only; perceptual
+  // dedup runs later in load-projects.ts after URL rewrite).
+  const screenshotsWithSource = dedupByCanonicalImage(
+    allReps.flatMap((r) => (r.screenshots ?? []).map((url) => ({ url, platform: r.platform }))),
+  );
   const years = allReps.map((r) => r.firstReleased).filter((y): y is number => typeof y === 'number');
   const updatedAts = allReps.map((r) => r.asOf).filter((u): u is string => !!u);
   const retiredAts = allReps.map((r) => r.retiredAt).filter((u): u is string => !!u);
@@ -407,6 +460,10 @@ function buildProject(group: ConnectorResult[]): Project {
 
   return {
     id: slug,
+    // Default route slug = id. load-projects.ts may overwrite this from
+    // config.urlSlugs for projects whose connector id is opaque (e.g.
+    // 32-char Chrome Web Store hashes).
+    routeSlug: slug,
     sources: [...livePlatforms],
     sourceUrls,
     title: firstField(orderedForTitle, (r) => r.title) ?? slug,
@@ -421,8 +478,17 @@ function buildProject(group: ConnectorResult[]): Project {
     homepage: homepage ?? undefined,
     banner: firstField(ordered, (r) => r.banner),
     icon: firstField(ordered, (r) => r.icon),
-    screenshots: [...new Set(allReps.flatMap((r) => r.screenshots ?? []))],
+    // First-pass dedup by canonical URL (cheap, lossless). The
+    // perceptual cross-source pass runs LATER in load-projects.ts,
+    // after the URL rewriter has swapped upstream URLs for local
+    // `/_cache/...` paths that dhash can actually read. We stash the
+    // platform-per-screenshot mapping on a non-public Project field
+    // here for the perceptual pass to consume; load-projects.ts
+    // strips it before the Project is published.
+    screenshots: screenshotsWithSource.map((s) => s.url),
+    _sourcedScreenshots: screenshotsWithSource,
     videos: [...new Set(allReps.flatMap((r) => r.videos ?? []))],
+    body: firstField(ordered, (r) => r.body),
     thumbFit: firstField(ordered, (r) => r.thumbFit),
     thumbBg: firstField(ordered, (r) => r.thumbBg),
     reviews: allReps.flatMap((r) => r.reviews ?? []),

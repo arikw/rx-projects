@@ -24,6 +24,13 @@ export type ExtposeApp = {
   icon?: string;
   /** 640×400 promo banner, from og:image. */
   banner?: string;
+  /** Long-form description copy carried verbatim from the CWS listing —
+   *  Extpose renders it inside `<div itemprop="description"><p>…</p>…</div>`
+   *  on the detail page. Joined paragraphs separated by a blank line so
+   *  Marked renders them as separate `<p>`s. Unlike chrome-stats's
+   *  `<div class="meta-summary">` (an AI-generated summary), this is
+   *  the original developer copy. */
+  body?: string;
 };
 
 // extpose sits behind Cloudflare like chrome-stats and appbrain; curl with
@@ -83,6 +90,38 @@ function pickItempropText(doc: string, name: string): string | undefined {
   return undefined;
 }
 
+/** Extract the long-form description body from Extpose's
+ *  `<div itemprop="description"><p>…</p>…</div>` block. Returns a
+ *  blank-line-separated paragraph string ready for Marked, or
+ *  undefined when the listing has no body (rare). */
+function pickItempropBody(doc: string, name: string): string | undefined {
+  // Anchor on `itemprop="<name>">` directly — the opening tag preceding
+  // it on Extpose carries Tailwind classes like
+  // `class="[&>p]:mb-4 [&>p:last-child]:mb-0"` whose literal `>` would
+  // break a naive `<div[^>]+itemprop=…>` match (the `[^>]+` stops at
+  // the FIRST `>`, inside the class string, never reaching itemprop).
+  // Skip the opening tag entirely, capture until the next closing
+  // `</div>` or `</section>`.
+  const re = new RegExp(`itemprop="${name}"\\s*>([\\s\\S]*?)</(?:div|section)>`);
+  const m = doc.match(re);
+  if (!m) return undefined;
+  const inner = m[1];
+  // Pull every <p>…</p> inside. Each block becomes one paragraph in
+  // the output markdown; non-<p> stray whitespace/elements are dropped.
+  const paragraphs: string[] = [];
+  const pre = /<p[^>]*>([\s\S]*?)<\/p>/g;
+  let pm: RegExpExecArray | null;
+  while ((pm = pre.exec(inner))) {
+    // Strip any nested tags (Extpose sometimes wraps URLs in <a>) and
+    // collapse the result to a single line so paragraph breaks are
+    // controlled by the join below, not by embedded \n.
+    const text = decodeEntities(pm[1].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+    if (text) paragraphs.push(text);
+  }
+  if (!paragraphs.length) return undefined;
+  return paragraphs.join('\n\n');
+}
+
 export async function scrapeOne(extId: string): Promise<ExtposeApp | null> {
   const url = `https://extpose.com/ext/${encodeURIComponent(extId)}`;
   const doc = await fetchHtml(url);
@@ -125,6 +164,8 @@ export async function scrapeOne(extId: string): Promise<ExtposeApp | null> {
 
   const banner = pickMetaContent(doc, 'property', 'og:image');
 
+  const body = pickItempropBody(doc, 'description');
+
   return {
     id: extId,
     url,
@@ -137,5 +178,6 @@ export async function scrapeOne(extId: string): Promise<ExtposeApp | null> {
     isDeleted: /\bDelisted on\s+\d{4}-\d{2}-\d{2}/.test(doc),
     icon,
     banner,
+    body,
   };
 }

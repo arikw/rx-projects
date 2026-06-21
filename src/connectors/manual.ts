@@ -36,6 +36,7 @@ export function manualToResults(config: ProjectsConfig): ConnectorResult[] {
       asOf: m.asOf,
       title: m.title,
       description: m.description,
+      body: m.body,
       firstReleased: m.year,
       tags: m.tags ?? [],
       language: m.language,

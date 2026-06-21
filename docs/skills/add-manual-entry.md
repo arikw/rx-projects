@@ -53,7 +53,14 @@ If the user has already populated `projects.config.local.ts`, append to its exis
 
 ```ts
 type ManualProject = {
-  slug: string;            // REQUIRED. Stable id, used as the card id. kebab-case.
+  slug: string;            // REQUIRED. Stable id, used as the card id AND the
+                           // default URL slug (`/projects/<slug>/`). kebab-case.
+                           // To give this entry a different URL slug while
+                           // keeping `slug` stable as the internal id, use
+                           // the top-level `urlSlugs` map (see "URL slugs"
+                           // below) — DON'T rename `slug`, since featured-pin
+                           // matching and `relatesToProjectId` references
+                           // would break.
   title: string;           // REQUIRED. Display name.
   description: string;     // REQUIRED. One sentence. Used in the card body.
   url?: string;            // Outbound link (live demo, docs, marketing page).
@@ -284,6 +291,98 @@ A manual entry can supply `icon`, `banner`, `screenshots`, and/or `videos` — s
 
 - The new entry's image fields in `dist/data.json` either start with `/<base>/_cache/manual/…` (when cached) or are the verbatim URL/path you wrote (when caching is off or for `/public/`-path entries).
 - The corresponding files exist under `public/_cache/manual/` when the cache caught them.
+
+## URL slugs
+
+Every project gets a detail page at `/projects/<slug>/`. The slug is the project's `id` by default — for manual entries that's the `slug` field you declared; for connector-emitted projects it's the connector-supplied id (the npm package name, the GitHub repo name, the Chrome Web Store extension id, the Docker `owner/image`, etc.).
+
+You almost never need to think about this. The two cases where you DO are:
+
+### Case 1: the connector id is unfriendly
+
+Some connector ids are opaque — most commonly the **32-character Chrome Web Store extension ids** like `jmjbmlfmmendpkpiggcfpjcpbbpedhha`. The default URL would carry that hash. To give it a friendly URL, add an entry to the top-level `urlSlugs` map in the config:
+
+```ts
+const config: ProjectsConfig = {
+  // ...
+  urlSlugs: {
+    jmjbmlfmmendpkpiggcfpjcpbbpedhha: 'popper-stopper-pro',
+    mcdpnidfhfjfbafmpppcplcejgepadbo: 'auto-replay-for-youtube',
+  },
+  // ...
+};
+```
+
+The map is keyed by **project id** (whatever the connector emitted), value is the URL slug. The project's `id` is unchanged — only the route path changes. Internal references (`featured`, `relatesToProjectId`, MDX file matching) continue to work against `id`, not the slug.
+
+### Case 2: a manual entry needs a different URL than its `slug`
+
+This is rare. Manual `slug` is already kebab-case and almost always works fine as the URL. If you ever DO need to decouple them (e.g. you want `slug: 'rx-projects'` for internal stability but `/projects/my-projects/` as the public URL), add the same `urlSlugs` entry: `urlSlugs: { 'rx-projects': 'my-projects' }`.
+
+### When to set one
+
+| Situation | Action |
+|---|---|
+| New manual entry | Pick a `slug` you'd be happy as a URL. **Skip `urlSlugs`.** |
+| Manual entry's `slug` is fine as URL but you want a different display URL | Add `urlSlugs[entry.slug] = '<url-slug>'`. |
+| Connector-emitted project whose id is opaque (CWS hash, opaque manual code) | Add `urlSlugs[id] = '<url-slug>'`. |
+| Connector-emitted project whose id is fine (`flat-promise`, `back-to-google`) | Do nothing. |
+
+### Stability warnings
+
+- The slug is a **URL**. Changing one breaks any external link / bookmark to the old path. The loader doesn't emit redirect stubs — once a path is gone, it 404s. Only flip after deployment if you're prepared for that.
+- Collisions are caught at build time with a console.warn — the override gets dropped if its target conflicts with an existing project's id. If you see that warning in the build log, the override didn't take effect.
+- DO NOT rename `slug` on an existing manual entry to "give it a friendlier URL". That breaks `featured` matching, `relatesToProjectId` references, MDX file lookups, and reconcile across builds. Use `urlSlugs` instead.
+
+## Custom detail-page content (MDX override)
+
+Every project gets an auto-derived detail page at `/projects/<slug>/`. The page picks the best content tier the project supports — in order: MDX file → cached README → manual `body` field → screenshot gallery only → description-only hero.
+
+The **MDX tier** is the highest-priority override: drop a file at `src/content/projects/<project.id>.mdx` and it replaces the auto-derived body section entirely while still inheriting the hero, sidebar, gallery, reviews list, and "More projects" carousel from the dynamic route.
+
+When to reach for MDX:
+- The auto-derived body (README h1-stripped markdown / Docker `full_description` / CWS extpose body) doesn't tell the story you want to tell.
+- You want hand-written prose, embedded screenshots, code blocks, custom asides, or anything richer than plain markdown coming from an upstream connector.
+- You want to embed images that live in `src/content/projects/<slug>/` so `astro:assets` can optimise them.
+
+### How to add MDX content
+
+1. **Identify the project's `id`** — match the file name to it. (NOT the URL slug — Astro's content collection routes by `id` matching, and the slug-vs-id distinction matters for projects whose URL was renamed via `config.urlSlugs`.) Look in `generated/snapshot.json` if unsure, or check the corresponding card's `data-id` on the home grid.
+
+2. **Create** `src/content/projects/<project.id>.mdx`:
+
+   ```mdx
+   ---
+   title: Optional override — defaults to the project's resolved display title.
+   description: Optional override — defaults to the project's description.
+   author: Optional override — defaults to the site author from BaseHead.
+   ---
+
+   The body markdown / MDX goes here. Drop the project's own leading
+   `# h1` — the page already renders the title in the hero. Heading
+   levels are demoted by 2 at render time (your `# h1` → `<h3>` on
+   the page) so the body sits cleanly under the "About" section
+   header.
+
+   Embed a screenshot:
+
+   import shot from './my-project/screenshot.png';
+   <img src={shot.src} alt="A screenshot" loading="lazy" />
+
+   Regular markdown also works: **bold**, _italic_, `code`,
+   - bullet
+   - lists
+   ```
+
+3. **Colocated media**: drop image files alongside in `src/content/projects/<project.id>/<file.png>` so `astro:assets` can optimise them. Public URLs work too if you don't need that optimisation.
+
+4. **Test**: `npm run dev` and visit `http://localhost:4321<base>/<urlSlug>/`. The MDX content should appear under the "About" header instead of the auto-derived body.
+
+### Common pitfalls
+
+- **Match the project `id`, not the URL slug.** For the three CWS extensions with friendly slugs (`feed-cleaner`, `popper-stopper-pro`, `auto-replay-for-youtube`), the MDX filename must use the 32-char extension ID (`jdmiahadpnljimfcnfaebjggbfkjkgan.mdx`, etc.), NOT the slug.
+- **Drop your own h1.** The page already has the project title as `<h1>` in the hero, and the "About" section title as `<h2>`. A body-level `# h1` would render as `<h3>` (after demotion) — fine if you actually wanted that level, but for a project name it's redundant. Start with `## Section heading` or paragraphs.
+- **Don't include media in `public/`** for MDX-rendered images. Use the colocated `src/content/projects/<slug>/` pattern — `astro:assets` rewrites the URLs and generates optimised variants at build time.
 
 ## Featured pinning
 

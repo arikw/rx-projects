@@ -123,6 +123,11 @@ export type Representation = {
   asOf?: string;
   title?: string;
   description?: string;
+  /** Long-form markdown body for this representation — Docker Hub's
+   *  full_description, npm's README excerpt, etc. Surfaced on the detail
+   *  page below the README cache tier (or instead of it for non-GitHub
+   *  sources). Should be valid Markdown. */
+  body?: string;
   /** First-publication year. */
   firstReleased?: number;
   /** Wide promotional art (e.g. Chrome Web Store marquee). One per rep. */
@@ -191,8 +196,15 @@ export type ConnectorResult = {
 
 /** The merged, rendered project card the UI consumes. */
 export type Project = {
-  /** Canonical slug, stable across builds. */
+  /** Canonical id — stable across builds, used everywhere internally
+   *  (reconcile, featured-pin matching, MDX slug matching, manual entry
+   *  references via `relatesToProjectId`). */
   id: string;
+  /** URL path segment under `/projects/`. Equals `id` for most projects;
+   *  differs only when `config.urlSlugs[id]` provides an explicit
+   *  override (used to give friendly URLs to opaque connector ids like
+   *  the 32-character Chrome Web Store extension hashes). */
+  routeSlug: string;
   /** Distinct platforms the project lives on (for source chips) — origin +
    * native platforms, e.g. ['github'] or ['google-play','apkpure']. */
   sources: string[];
@@ -228,6 +240,16 @@ export type Project = {
   /** All screenshots collected across origins/mirrors/natives. */
   screenshots?: string[];
   videos?: string[];
+  /** Internal handoff: same length / order as `screenshots`, carrying
+   *  the platform that emitted each one. Used by the perceptual cross-
+   *  source dedup pass in load-projects.ts and stripped before the
+   *  Project is written to `dist/data.json` — visitors never see it. */
+  _sourcedScreenshots?: Array<{ url: string; platform: string }>;
+  /** Long-form markdown body picked from the most authoritative source
+   *  rep (typically Docker Hub's full_description when there's no GitHub
+   *  README). Auto-rendered on the detail page as a fallback when the
+   *  readme-cache has nothing for this slug. */
+  body?: string;
   /** Thumb-image fit (`'cover'` or `'contain'`). See `Representation.thumbFit`. */
   thumbFit?: 'cover' | 'contain';
   /** Backplate colour for `thumbFit: 'contain'`. See `Representation.thumbBg`. */

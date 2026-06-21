@@ -60,6 +60,10 @@ button {
   --card-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.04);
   --delta-positive: #2f6b3e;
   --delta-positive-bg: rgba(74, 138, 93, 0.16);
+  /* Inline animated SVG spinner used as background-image on <img>
+     elements while their bytes are still being fetched. Once the image
+     finishes loading its pixels paint over this background and hide it. */
+  --img-loading-spinner: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'><circle cx='25' cy='25' r='18' fill='none' stroke='%23999' stroke-width='4' stroke-linecap='round' stroke-dasharray='40 100' opacity='0.6'><animateTransform attributeName='transform' type='rotate' from='0 25 25' to='360 25 25' dur='1.2s' repeatCount='indefinite'/></circle></svg>");
 }
 
 /* Dark tokens — applied when:
@@ -845,12 +849,96 @@ span.card-source {
   .review-arrow-next { right: -16px; }
 }
 
+/* ─── Shared carousel arrow ──────────────────────────────────────────
+   Single source of truth for circular prev/next arrows used by the
+   review carousel, the screenshot gallery, and the discovery row on
+   detail pages. Visuals only — positioning (-Npx left/right) lives in
+   the caller's scoped style so each carousel can tuck its arrows
+   appropriately for its container width. */
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  /* Stay above carousel cards (which create their own stacking context
+     via shadows / transforms). 4 matches the legacy gallery-btn rule
+     this class replaced. */
+  z-index: 4;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--fg);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 1px 2px rgba(15, 17, 21, 0.04),
+    0 4px 14px rgba(15, 17, 21, 0.08);
+  transition: background 0.15s, color 0.15s, transform 0.15s, border-color 0.15s;
+}
+.carousel-arrow:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  transform: translateY(-50%) scale(1.05);
+}
+.carousel-arrow:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.carousel-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+  transform: translateY(-50%);
+}
+.carousel-arrow:disabled:hover {
+  background: var(--card-bg);
+  color: var(--fg);
+  border-color: var(--border);
+  transform: translateY(-50%);
+}
+.carousel-arrow svg {
+  width: 18px;
+  height: 18px;
+}
+/* Note: no mobile shrink here. Touch targets stay full-size on phones
+   because fingers don't get smaller. The review carousel on the home
+   page opts back into the shrink via its own `.review-arrow` rule
+   below — that one sits between paragraphs of body copy and isn't
+   the user's primary scroll handle, so it's allowed to slim down. */
+
 /* Dots */
 .review-dots {
   display: flex;
   justify-content: center;
   gap: 8px;
   margin-top: 20px;
+}
+/* Discovery row dots — JS-built at runtime (count tracks viewport
+   page count), so they need global (un-scoped) styling to pick up. */
+.discovery-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.discovery-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--border);
+  cursor: pointer;
+  transition: background 0.18s, width 0.18s;
+}
+.discovery-dot:hover { background: var(--muted); }
+.discovery-dot[aria-current='true'] {
+  background: var(--accent);
+  width: 22px;
 }
 .review-dot {
   width: 8px;
@@ -1229,6 +1317,20 @@ hr.section-divider {
   height: 100%;
   object-fit: cover;
 }
+/* Loading spinner on every <img> inside a project card thumb (banner,
+   icon stack, contained banner, etc.) — kicks in while bytes are being
+   fetched, hidden once the real image renders on top. Single rule
+   covers home grid + discovery row + any other place ProjectCard is
+   used. */
+.thumb img {
+  background-image: var(--img-loading-spinner);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 36px 36px;
+}
+.thumb img[data-loaded] {
+  background-image: none;
+}
 /* `thumbFit: 'contain'` mode — wraps the image in a div carrying the
    thumbBg colour, with the image scaled to fit (no crop). Used for
    already-letterboxed art (e.g. J2ME phone screenshots, app-store hero
@@ -1249,7 +1351,13 @@ hr.section-divider {
   display: block;
 }
 
-/* Icon-only: square logo centered on a tinted backplate. */
+/* Icon-only: a gradient-tinted backplate (`thumb-iconframe`) framing
+   a hero-icon-style square tile (`thumb-icon-tile`) that holds the
+   actual icon. The tile mirrors the detail page's hero icon — small
+   rounded square, transparent by default, white when the source is
+   JPG (no transparency). The outer iconframe gradient comes from the
+   icon's dominant colour so each card's backdrop reflects its own
+   art. */
 .thumb-iconframe {
   width: 100%;
   height: 100%;
@@ -1257,13 +1365,22 @@ hr.section-divider {
   align-items: center;
   justify-content: center;
 }
+.thumb-icon-tile {
+  height: 70%;
+  aspect-ratio: 1;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .thumb-icon-centered {
-  max-height: 50%;
-  min-height: 48px;
-  width: auto;
-  max-width: 38%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-  border-radius: 10px;
+  /* Same proportions as the hero icon (8px on an 84px frame ≈ 10%).
+     Padding scales with the tile size so the breathing room around
+     the icon stays consistent across card sizes. */
+  padding: 10%;
 }
 
 /* Brand-mark fallback: github/npm/docker mark on a brand-tinted backplate.
@@ -1461,6 +1578,19 @@ a.card-source:hover {
    corner of the thumb, straddling the thumb/content boundary. */
 .card-thumb-frame {
   position: relative;
+}
+/* When .card-thumb-frame is rendered as an <a>, strip default link
+   chrome so the thumb still looks like a thumb. Hover state lifts
+   the cursor to signal interactivity. */
+a.card-thumb-frame {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+a.card-thumb-frame:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* J / "editorial" card layout — kicker year + bold title + accent rule.
@@ -2048,7 +2178,6 @@ a.filter-chip {
 
 .site-about-body p {
   margin: 0 0 1em;
-  text-align: justify;
   /* Soften the gappiest cases — let the browser hyphenate so it
      doesn't have to stretch single-word lines into deserts of space. */
   hyphens: auto;
