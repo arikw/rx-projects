@@ -42,6 +42,24 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
+      - name: Install yt-dlp + ffmpeg (YouTube → MP4 caching)
+        # The build's media cache transcodes any YouTube URL surfaced by
+        # a connector into a local MP4 (one file per video id, shared
+        # across connectors and across builds). yt-dlp downloads;
+        # ffmpeg muxes when YouTube only serves separate video / audio
+        # streams. Skipping this step is non-fatal — the cache module
+        # logs a warning and falls back to <iframe> embeds — but the
+        # whole point of the workflow is to commit the MP4s back, so
+        # the install runs unconditionally.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          # Pin to a recent yt-dlp via pipx — apt's package lags
+          # YouTube format changes by months, which causes silent
+          # download failures.
+          pipx install yt-dlp
+          yt-dlp --version
+          ffmpeg -version | head -1
       - run: npm ci
       - run: npm run build
         env:
