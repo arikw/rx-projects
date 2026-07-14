@@ -151,6 +151,12 @@
           "body": "並非一般的F11鍵調用，只針對像是有播放框的內容，按下擴展按鈕以全螢幕顯示，但會最大畫面\n\n經測試的網站：Yahoo留言區、IG（FB）限動/或有影片播放處",
           "ts": "2024-08-27",
           "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "no se como funciona.",
+          "ts": "2024-07-31",
+          "source": "chrome-stats"
         }
       ]
     },
@@ -200,6 +206,30 @@
           "rating": 5,
           "body": "Awesome, works well for Jira comments",
           "ts": "2025-04-22",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "جربت واجد اضافات هذي الوحيدة الي اتشغلت معي",
+          "ts": "2025-02-11",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "it works, ChatGPT forsed me to write Arabic from left to right, This was very annoying especially when you try to mix it with English words, This extension is a life saver.",
+          "ts": "2024-09-19",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "This extension is great, thank you very much to its creator",
+          "ts": "2024-01-03",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 4,
+          "body": "The WriteRight extension currently works only on Google.com. If you could add support for chat.bing.com, it would be more useful.",
+          "ts": "2023-04-30",
           "source": "chrome-stats"
         }
       ]
