@@ -148,14 +148,20 @@
       "reviews": [
         {
           "rating": 5,
-          "body": "並非一般的F11鍵調用，只針對像是有播放框的內容，按下擴展按鈕以全螢幕顯示，但會最大畫面\n\n經測試的網站：Yahoo留言區、IG（FB）限動/或有影片播放處",
-          "ts": "2024-08-27",
+          "body": "Unlike 90% of extensions on the chrome store IT WORKS and IT DOESN'T ASK FOR UNNECECARY CRAZY PERMISSIONS. Thank you!! 💕🎸💕🎸",
+          "ts": "2024-09-05",
           "source": "chrome-stats"
         },
         {
           "rating": 5,
-          "body": "no se como funciona.",
-          "ts": "2024-07-31",
+          "body": "Great piece of work but can you make a shortcut of the extension to on/off the extension. Highly appreciated.",
+          "ts": "2024-08-12",
+          "source": "chrome-stats"
+        },
+        {
+          "rating": 5,
+          "body": "Only one of these i could find that actually works on third party websites",
+          "ts": "2024-05-27",
           "source": "chrome-stats"
         }
       ]
