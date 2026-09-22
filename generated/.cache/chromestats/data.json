@@ -10,8 +10,8 @@
       "version": "2.0",
       "userCount": 10000,
       "rating": {
-        "value": 4.364285714285714,
-        "count": 140
+        "value": 4.3776223776223775,
+        "count": 143
       },
       "ratingHistogram": [
         7,
@@ -70,7 +70,7 @@
       "name": "Popper Stopper Pro",
       "description": "No more annoying popups and popunders. Period.",
       "version": "1.1.4",
-      "userCount": 8000,
+      "userCount": 7000,
       "rating": {
         "value": 4.486725663716814,
         "count": 113
@@ -126,7 +126,7 @@
       "userCount": 1000,
       "rating": {
         "value": 5,
-        "count": 7
+        "count": 8
       },
       "category": "productivity/workflow",
       "itemCategory": "extension",
