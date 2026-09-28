@@ -108,3 +108,20 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      # Optional: POST to a URL once the deploy is live — e.g. a Cloudflare
+      # Pages / Netlify deploy hook for another site that clones + rebuilds
+      # this repo, so it picks up the update right away. By this point the
+      # build job has already pushed the refreshed caches, so that site's clone
+      # gets them. No-op until the POST_DEPLOY_HOOK repo secret is set.
+      - name: Ping post-deploy hook (optional)
+        env:
+          HOOK: ${{ secrets.POST_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$HOOK" ]; then
+            echo 'Pinging post-deploy hook…'
+            curl -fsS -X POST "$HOOK" > /dev/null
+            echo 'Done.'
+          else
+            echo 'POST_DEPLOY_HOOK not set — skipping.'
+          fi
