@@ -26,6 +26,7 @@ This pulls every project — wherever it lives — onto one page that updates it
 - ✅ **"Since last visit" diff layer** — NEW ribbons, per-card stat-move chips (`▲ +250 downloads`), hero summary, one-click hide. State in `localStorage`, no backend
 - ✅ **Profile cards** — GitHub (public repos · ★ total · followers) and Stack Overflow (reputation · 🥇🥈🥉 badges)
 - ✅ **Hero stat tiles** — sublabels enumerate only the sources that actually contributed (`cumulative install events across npm and Docker`)
+- ✅ **Stats as JSON** — `/stats.json` exposes the hero numbers (exact `value` + ready-to-show `display` like `1.2M+`) for embedding on another site
 - ✅ **Reviews carousel** — auto-rotating testimonials from CWS, AppBrain, and manual entries
 - ✅ **Mobile-first responsive** — tooltips clamp to viewport, dark + light mode (system + manual toggle), sticky scroll-aware header
 - ✅ **PWA-installable** — sitemap, robots.txt, manifest, service worker
