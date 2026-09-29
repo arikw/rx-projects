@@ -190,6 +190,12 @@ The [`docs/skills/`](docs/skills/) folder ships short, agent-readable walkthroug
 The workflow uses the auto-injected `GITHUB_TOKEN` by default — 1,000 requests/hour, enough for typical accounts. If you have a large account or hit rate limits, create a personal access token with `public_repo` read access and add it as a repo secret named `GH_API_TOKEN`. The workflow prefers it over the auto-injected token when present (bumps to 5,000 req/hr).
 </details>
 
+<details>
+<summary><strong>Rebuild another site after each deploy (optional)</strong></summary>
+
+If another site pulls this dashboard in at its own build time (e.g. a Cloudflare Pages or Netlify site that clones this repo into a sub-path), add that site's deploy-hook URL as a repo secret named `POST_DEPLOY_HOOK`. After every deploy — pushes and the daily refresh — the workflow POSTs to it, so the other site rebuilds with the latest data right away. Unset, the step is skipped.
+</details>
+
 ## Commands
 
 ```bash
