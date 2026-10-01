@@ -34,6 +34,33 @@ const localCfg = existsSync(localPath)
   : undefined;
 const deployment = { ...baseCfg.deployment, ...localCfg?.deployment };
 
+/**
+ * Themes live in src/themes/<name>/. `ui.theme` in the config picks one
+ * (default: 'default'). Imports of `theme:<file>` resolve to the chosen
+ * theme's file, or to src/themes/default/<file> when the theme doesn't
+ * provide it — so a theme only contains the parts it changes.
+ */
+const themeName = localCfg?.ui?.theme ?? baseCfg.ui?.theme ?? 'default';
+function themeResolver() {
+  const themesDir = resolve(here, 'src/themes');
+  if (!existsSync(resolve(themesDir, themeName))) {
+    throw new Error(`ui.theme is "${themeName}", but src/themes/${themeName}/ does not exist`);
+  }
+  return {
+    name: 'theme-resolver',
+    enforce: 'pre',
+    resolveId(id) {
+      if (!id.startsWith('theme:')) return null;
+      const file = id.slice('theme:'.length);
+      for (const dir of [themeName, 'default']) {
+        const path = resolve(themesDir, dir, file);
+        if (existsSync(path)) return path;
+      }
+      return null;
+    },
+  };
+}
+
 export default defineConfig({
   site: deployment.site,
   base: deployment.base,
@@ -42,6 +69,9 @@ export default defineConfig({
     format: deployment.format ?? 'directory',
   },
   integrations: [mdx(), sitemap(), copyMediaCache()],
+  vite: {
+    plugins: [themeResolver()],
+  },
   markdown: {
     syntaxHighlight: 'shiki',
     shikiConfig: {

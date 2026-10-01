@@ -1,0 +1,71 @@
+/* Default theme — colours, fonts and shadows for every page.
+   Another theme (src/themes/<name>/theme.css) is loaded after this file
+   and overrides only what it changes. See src/themes/README.md. */
+@import '@fontsource-variable/fraunces';
+
+:root {
+  /* Declare both schemes so light-dark() in component CSS resolves correctly
+     (used to switch brand-mark tints between light/dark modes without
+     duplicating rules everywhere). */
+  color-scheme: light dark;
+  --bg: #fafaf7;
+  --fg: #1a1a1a;
+  --muted: #6a6a6a;
+  --border: #e8e3da;
+  --accent: #2e4f6f;
+  --accent-soft: #e5edf4;
+  --card-bg: #ffffff;
+  --card-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.04);
+  --delta-positive: #2f6b3e;
+  --delta-positive-bg: rgba(74, 138, 93, 0.16);
+  /* Fonts. --font-quote is the review carousel's quotation face. */
+  --font-body: 'Fraunces Variable', Georgia, serif;
+  --font-quote: Georgia, 'Times New Roman', serif;
+  /* Text on an --accent background (pressed chips, hovered arrows). */
+  --on-accent: #fff;
+  --on-accent-muted: rgba(255, 255, 255, 0.7);
+  /* Review star rating — fixed amber so it always reads as stars. */
+  --star: #f5a623;
+  /* Soft UI shadows, as "r, g, b" for rgba(var(--shadow-rgb), alpha). */
+  --shadow-rgb: 15, 17, 21;
+  /* Inline animated SVG spinner used as background-image on <img>
+     elements while their bytes are still being fetched. Once the image
+     finishes loading its pixels paint over this background and hide it. */
+  --img-loading-spinner: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'><circle cx='25' cy='25' r='18' fill='none' stroke='%23999' stroke-width='4' stroke-linecap='round' stroke-dasharray='40 100' opacity='0.6'><animateTransform attributeName='transform' type='rotate' from='0 25 25' to='360 25 25' dur='1.2s' repeatCount='indefinite'/></circle></svg>");
+}
+
+/* Dark tokens — applied when:
+   1. system prefers dark AND user hasn't overridden to light, OR
+   2. user has explicitly chosen dark via the header toggle.
+   `data-theme="light"` always wins back to the :root defaults above. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #0c0d0f;
+    --fg: #ecebe5;
+    --muted: #a8a39a;
+    --border: #3a3c41;
+    --accent: #94bcdb;
+    --accent-soft: #243246;
+    --card-bg: #1e2024;
+    --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 8px 24px rgba(0, 0, 0, 0.45);
+    --delta-positive: #8fcf99;
+    --delta-positive-bg: rgba(143, 207, 153, 0.20);
+  }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0c0d0f;
+  --fg: #ecebe5;
+  --muted: #a8a39a;
+  --border: #3a3c41;
+  --accent: #94bcdb;
+  --accent-soft: #243246;
+  --card-bg: #1e2024;
+  --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 8px 24px rgba(0, 0, 0, 0.45);
+  --delta-positive: #8fcf99;
+  --delta-positive-bg: rgba(143, 207, 153, 0.20);
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+}
