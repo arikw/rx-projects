@@ -1,0 +1,265 @@
+/* wzmn.net theme — the look of the Amstrad home page carried into the
+   projects pages: light paper for reading, the PC-MM badge's dark navy and
+   light blue as accents, the computer's own font for headings and numbers,
+   and a screen-lit top bar (Header.astro). Light only, like the design it
+   comes from (Head.astro pins the light scheme).
+
+   Fonts, served from this folder:
+   - Amstrad PC 2y: the PC1512's tall 8x16 font, from VileR's Ultimate
+     Oldschool PC Font Pack (int10h.org), CC BY-SA 4.0.
+   - IBM Plex Sans / Mono, SIL Open Font License 1.1 (latin subset). */
+
+@font-face { font-family: 'Amstrad PC 2y'; src: url('./fonts/WebPlus_Amstrad_PC-2y.woff') format('woff'); font-display: swap; }
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 400; src: url('./fonts/ibm-plex-sans-latin-400-normal.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 400; font-style: italic; src: url('./fonts/ibm-plex-sans-latin-400-italic.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 500; src: url('./fonts/ibm-plex-sans-latin-500-normal.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 600; src: url('./fonts/ibm-plex-sans-latin-600-normal.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 400; src: url('./fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 500; src: url('./fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); font-display: swap; }
+
+/* ---- Tokens -------------------------------------------------------------- */
+:root,
+:root[data-theme] {
+  color-scheme: light;
+  --dos: 'Amstrad PC 2y', 'IBM Plex Mono', ui-monospace, monospace;
+  --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
+  --navy: #1f2b45;
+  --blue: #8fb2d0;
+  --blue-ink: #2e5d86;
+  --paper2: #ece7dc;
+  --phosphor: #c9cfc6;
+  --phosphor-hi: #e3e8df;
+  --glass: #0b0e0c;
+
+  --bg: #f5f2eb;
+  --fg: #1d1c1a;
+  --muted: #6b665c;
+  --border: #d9d3c6;
+  --accent: var(--navy);
+  --accent-soft: #e4e9ef;
+  --card-bg: #fffdf8;
+  --card-shadow: 4px 4px 0 var(--paper2);
+  --on-accent: #f1efe8;
+  --on-accent-muted: rgba(241, 239, 232, 0.7);
+  --font-body: var(--sans);
+  --font-quote: var(--sans);
+}
+
+html { font-feature-settings: normal; }
+body { font-feature-settings: normal; }
+
+/* ---- Top bar: the screen -------------------------------------------------
+   The bar itself is the screen: dark glass across the full width, phosphor
+   text with a soft glow, scanlines (one per pixel row of the 8x16 font at
+   24px: 3px), slightly darker top and bottom edges. Plain CSS. */
+.wz-top {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(ellipse 80% 160% at 50% 50%, #1a1f1c, var(--glass) 80%);
+  box-shadow: inset 0 6px 10px -6px rgba(0, 0, 0, 0.9), inset 0 -6px 10px -6px rgba(0, 0, 0, 0.9);
+}
+.wz-top::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.3) 2px 3px);
+}
+.wz-bar {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--phosphor);
+}
+.wz-path {
+  font: 400 24px/1 var(--dos);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--phosphor-hi);
+  text-shadow: 0 0 5px rgba(214, 222, 208, 0.45);
+}
+/* The path is a breadcrumb: A:\WZMN goes home, \PROJECTS to the list; the
+   last part, this page, isn't a link. On hover they look like the buttons. */
+.wz-path a { color: inherit; text-decoration: none; }
+.wz-path a:hover,
+.wz-path a:focus-visible {
+  background: var(--phosphor);
+  color: var(--glass);
+  box-shadow: 0 0 0 3px var(--phosphor);
+  text-shadow: none;
+  outline: none;
+}
+.wz-caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 0.14em;
+  background: currentColor;
+  vertical-align: -0.05em;
+  margin-left: 2px;
+  animation: wz-blink 0.32s steps(1) infinite;
+}
+@keyframes wz-blink { 50% { opacity: 0; } }
+.wz-nav { display: flex; flex-wrap: wrap; gap: 2px; }
+.wz-nav a {
+  font: 400 24px/1 var(--dos);
+  color: var(--phosphor);
+  padding: 2px 10px;
+  text-decoration: none;
+  text-shadow: 0 0 5px rgba(214, 222, 208, 0.4);
+}
+.wz-nav a:hover,
+.wz-nav a[aria-current] {
+  background: var(--phosphor);
+  color: var(--glass);
+  text-shadow: none;
+}
+@media (max-width: 620px) {
+  .wz-bar { padding: 12px 20px; row-gap: 8px; }
+  .wz-path, .wz-nav a { font-size: 20px; }
+  /* Wrapped, the links are the next line on the screen, under a faint line
+     across the bar; their text lines up under the path's. */
+  .wz-nav {
+    flex: 1 0 100%;
+    margin: 0 -20px;
+    padding: 8px 10px 0;
+    border-top: 1px solid rgba(201, 207, 198, 0.2);
+  }
+}
+
+/* ---- Page ------------------------------------------------------------------ */
+.eyebrow {
+  font: 500 13px/1.3 var(--sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--blue-ink);
+}
+.eyebrow-mark { display: none; }
+.hero-title {
+  font: 400 clamp(42px, 6.5vw, 72px)/1 var(--dos);
+  letter-spacing: 0;
+  color: var(--navy);
+}
+
+/* Section labels: inverse-video tabs, as on a DOS screen. */
+.section-divider--labeled > span,
+.section-label {
+  background: var(--navy);
+  color: var(--on-accent);
+  font: 400 17px/1 var(--dos);
+  letter-spacing: 0.04em;
+  text-transform: none;
+  padding: 5px 10px 4px;
+}
+
+/* Stats: separate boxes with a light-blue top edge, numbers in the DOS font. */
+.hero-stats { gap: 14px; background: none; border: 0; border-radius: 0; }
+.hero-stats .stat,
+.hero-stats .stat:first-child,
+.hero-stats .stat:last-child {
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--blue);
+  border-radius: 0;
+}
+.stat-value {
+  font: 400 44px/1 var(--dos);
+  letter-spacing: 0;
+  color: var(--navy);
+  margin-bottom: 10px;
+}
+.stat-label { font-weight: 600; }
+
+.profile-chip { border-radius: 0; }
+.profile-chip-headline-value { font: 400 30px/1 var(--dos); color: var(--navy); }
+
+/* Filters: square chips; the chosen one in inverse video. */
+.filter-chip,
+.tag-chip { border-radius: 0; font: 500 13px/1.2 var(--sans); }
+.filter-label { font-family: var(--sans); }
+
+/* Cards: square, a hard offset shadow like printed paper, blue on hover. */
+.card,
+.card-thumb-frame,
+.card .thumb { border-radius: 0; }
+.card { border-color: var(--border); box-shadow: var(--card-shadow); }
+.card:hover { box-shadow: 4px 4px 0 var(--blue); }
+.card-title h3 { font-family: var(--sans); font-weight: 600; letter-spacing: 0; }
+.card-year-kicker,
+.card-stats { font-family: var(--mono); font-size: 13px; }
+.card-source { border-radius: 0; font-family: var(--sans); }
+
+.show-more,
+.carousel-arrow,
+.author-bio { border-radius: 0; }
+
+@media (max-width: 620px) {
+  .hero-stats .stat { flex-basis: 140px; padding: 18px 16px; }
+  .stat-value { font-size: 34px; }
+}
+
+/* A project's page: its name and section headings in the computer's font. */
+.detail .hero-text h1 { font: 400 clamp(34px, 5vw, 48px)/1.05 var(--dos); color: var(--navy); letter-spacing: 0; }
+.detail .about-title,
+.detail .section-h { font: 400 28px/1.1 var(--dos); color: var(--navy); letter-spacing: 0; }
+
+/* ---- Footer (Footer.astro) ------------------------------------------------- */
+.wz-foot {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px 40px;
+}
+.wz-foot-inner {
+  border-top: 2px solid var(--navy);
+  padding-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--muted);
+}
+.wz-foot a { color: var(--blue-ink); }
+
+/* ---- Arriving ---------------------------------------------------------------
+   From the computer (html.from-crt, set in Head.astro): it dived into its
+   screen, which went dark, so this page opens from the same darkness and
+   brightens. On every visit: the bar settles into place, the path types
+   itself, and the page rises from under the bar. Everything waits for
+   html.wz-arrive, set when the page is actually shown, so a page built ahead
+   in the background (prerender) doesn't play its opening unseen. */
+html.from-crt body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background: var(--glass);
+  opacity: var(--dark-from, 1);
+}
+html.wz-arrive.from-crt body::before { animation: wz-undark 0.55s ease-out both; }
+/* --dark-from: how dark the computer's dive had got when it left. */
+@keyframes wz-undark { from { opacity: var(--dark-from, 1); } to { opacity: 0; visibility: hidden; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html.from-crt body::before { display: none; }
+  .wz-caret { animation: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* (.wz-js is set by Head.astro, so without scripts nothing stays hidden.) */
+  html.wz-js:not(.wz-arrive) .wz-bar,
+  html.wz-js:not(.wz-arrive) .page { opacity: 0; }
+  html.wz-arrive .wz-bar { animation: wz-settle 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  html.wz-arrive .wz-path { clip-path: inset(0 100% 0 0); animation: wz-type 0.5s steps(20, end) 0.15s forwards; }
+  html.wz-arrive .page { animation: wz-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s both; }
+  html.wz-arrive.from-crt .wz-bar { animation-delay: 0.15s; }
+  html.wz-arrive.from-crt .wz-path { animation-delay: 0.35s; }
+  html.wz-arrive.from-crt .page { animation-delay: 0.25s; }
+}
+@keyframes wz-type { to { clip-path: inset(0 0 0 0); } }
+@keyframes wz-settle { from { transform: scale(1.06); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes wz-rise { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }

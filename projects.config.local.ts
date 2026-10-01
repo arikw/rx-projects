@@ -51,6 +51,9 @@ const config: ProjectsConfig = {
     /* Site loads light-first for new visitors. Their toggle override
        still wins on every subsequent visit. */
     defaultTheme: 'light',
+    /* wzmn.net look: src/themes/wzmn/ (the Amstrad home page's colours,
+       font and screen-lit top bar). */
+    theme: 'wzmn',
   },
   sources: {
     ...baseConfig.sources,
