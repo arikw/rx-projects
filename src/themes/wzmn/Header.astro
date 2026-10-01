@@ -4,7 +4,9 @@
 // page the last part is its name as a DOS 8.3 file name (POPER-~1), which
 // isn't a link. Blog and Contact live outside this site.
 const base = import.meta.env.BASE_URL;
-const home = 'https://wzmn.net/';
+// The site's own pages by path, so the bar works on any deployment of the
+// site (wzmn.net, or a Cloudflare preview).
+const home = '/';
 const rest = Astro.url.pathname.startsWith(base)
   ? Astro.url.pathname.slice(base.length).replace(/\/$/, '')
   : '';
@@ -22,7 +24,7 @@ function dosName(slug: string): string {
     <div class="wz-path"><a href={home} title="Home: the Amstrad">A:\WZMN</a>{rest ? <><a href={base} title="All projects">\PROJECTS</a><span>\{dosName(rest)}</span></> : <span>\PROJECTS</span>}&gt;<span class="wz-caret" aria-hidden="true"></span></div>
     <nav class="wz-nav" aria-label="Main">
       <a href={base} aria-current={rest ? undefined : 'page'}>Projects</a>
-      <a href={`${home}blog/`}>Blog</a>
+      <a href="/blog/">Blog</a>
       <a href="https://contact.wzmn.net/" target="_blank" rel="noopener">Contact</a>
     </nav>
   </div>
@@ -32,10 +34,19 @@ function dosName(slug: string): string {
   // The opening starts when the page is actually shown: now, or, for a page
   // built ahead in the background (prerender), when it's switched to.
   const root = document.documentElement;
+  // The computer is the site's home page (/), or one of its drafts.
+  function fromComputer() {
+    try {
+      const ref = new URL(document.referrer);
+      return ref.origin === location.origin && (ref.pathname === '/' || ref.pathname.startsWith('/drafts/crt'));
+    } catch (e) {
+      return false;
+    }
+  }
   function arrive() {
     try {
       if (sessionStorage.getItem('wzmn-from-crt')) root.classList.add('from-crt');
-      else if (!/\/drafts\/crt|wzmn\.net\/$/.test(document.referrer)) root.classList.remove('from-crt');
+      else if (!fromComputer()) root.classList.remove('from-crt');
       sessionStorage.removeItem('wzmn-from-crt');
       sessionStorage.removeItem('wzmn-dark');
     } catch (e) {}
