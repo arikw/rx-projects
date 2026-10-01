@@ -1,10 +1,25 @@
 ---
-// A closing line on every page, and the way back to the computer.
+// The page closes the way it opens: a screen strip like the top bar, with a
+// DIR-style summary line. It replaces the template's footer (hidden in
+// theme.css), so the "Built with" credit and the update date live here.
+import { loadProjects, getSnapshot } from '../../lib/load-projects';
+
+const projects = await loadProjects();
+// "Updated" = the last time any source was fetched, as the template's own
+// footer does; the build time when there is no snapshot yet.
+const attempts = Object.values(getSnapshot()?.connectors ?? {})
+  .map((c) => c?.lastAttempt?.at)
+  .filter((s): s is string => !!s)
+  .sort();
+const updated = new Date(attempts.at(-1) ?? Date.now());
+const pad = (n: number) => String(n).padStart(2, '0');
+// DD-MM-YY, as the Amstrad's DIR listing printed dates.
+const updatedDos = `${pad(updated.getUTCDate())}-${pad(updated.getUTCMonth() + 1)}-${pad(updated.getUTCFullYear() % 100)}`;
 ---
 
 <footer class="wz-foot">
-  <div class="wz-foot-inner">
-    <span>© Arik · wzmn.net</span>
-    <a href="https://wzmn.net/">Back to the Amstrad</a>
+  <div class="wz-foot-bar">
+    <span>{projects.length} Project(s) · Updated <time datetime={updated.toISOString()}>{updatedDos}</time> · (c){updated.getUTCFullYear()} <a href="https://wzmn.net/">Arik</a></span>
+    <span class="wz-foot-credit">Built with <a href="https://github.com/arikw/live-dev-portfolio" target="_blank" rel="noopener">live-dev-portfolio</a></span>
   </div>
 </footer>
