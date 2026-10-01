@@ -23,3 +23,10 @@ const updatedDos = `${pad(updated.getUTCDate())}-${pad(updated.getUTCMonth() + 1
     <span class="wz-foot-credit">Built with <a href="https://github.com/arikw/live-dev-portfolio" target="_blank" rel="noopener">live-dev-portfolio</a></span>
   </div>
 </footer>
+
+<script>
+  // Lives here because the footer is on every page; it does nothing on pages
+  // without the headline numbers.
+  import { countUpOnArrive } from './count-up';
+  countUpOnArrive();
+</script>
