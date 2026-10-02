@@ -62,6 +62,7 @@ const config: ProjectsConfig = {
         'jmjbmlfmmendpkpiggcfpjcpbbpedhha', // Popper Stopper Pro
         'agpmfmfpldoabkmhjanenelnnplfcidm', // Fullscreen Magic
         'gleiglfcmildnecmodgoeijleblhobjk', // WriteRight
+        'nlfgdelijjamoelpmcafdomkbjjkbhhg', // Yamina – auto RTL for Hebrew
         // Taken down — only the chromestats mirror returns data for these:
         'jdmiahadpnljimfcnfaebjggbfkjkgan', // Feed Cleaner
         'mcdpnidfhfjfbafmpppcplcejgepadbo', // Auto Replay for YouTube
