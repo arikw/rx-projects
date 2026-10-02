@@ -19,6 +19,8 @@ const config: ProjectsConfig = {
     siteTitle: 'My Projects',
     // Browser tab: "My Projects · WZMN", like the blog's "WZMN Tech Blog".
     titleSuffix: ' · WZMN',
+    // The site-wide icon at wzmn.net's root (the A>_ prompt), not the avatar.
+    favicon: '/favicon.svg',
     siteDescription: "RX (Arik's) Projects — My dev projects, packages, and tooling",
     siteTagline: "Things I've built — with the live numbers",
     siteAbout: `Almost everything below started the same way: I went looking for something, couldn't find it, and built it myself. Most are solo from first commit to last; a smaller group are ones where I came in as a meaningful contributor and shaped where they went. Scratching that itch is still what keeps me shipping — and if you spot something worth a comment, send it my way.`,
