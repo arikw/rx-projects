@@ -1,0 +1,28 @@
+---
+// Runs before the first paint:
+// - pins the light scheme (this theme has no dark version), over a visitor's
+//   stored choice from the default theme's toggle;
+// - marks that scripts run (.wz-js), so the opening may hide the page until
+//   it starts (theme.css);
+// - coming from the computer (its dive ended in the dark), or being built
+//   ahead in the background (only the computer asks for that), starts dark
+//   (.from-crt) and brightens when shown. Decided here, not at the end of
+//   loading, or the light paper flashes between the darkness and the page.
+---
+
+<script is:inline>
+  (function () {
+    var root = document.documentElement;
+    root.setAttribute('data-theme', 'light');
+    root.classList.add('wz-js');
+    try {
+      if (document.prerendering || sessionStorage.getItem('wzmn-from-crt')) root.classList.add('from-crt');
+      var d = parseFloat(sessionStorage.getItem('wzmn-dark'));
+      if (d >= 0 && d <= 1) root.style.setProperty('--dark-from', String(Math.max(0.5, d)));
+    } catch (e) {}
+  })();
+</script>
+<!-- The rest of the site-wide icon set at wzmn.net's root (the SVG comes from
+     meta.favicon): for browsers without SVG icons, and iPhones. -->
+<link rel="icon" href="/favicon.ico" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />

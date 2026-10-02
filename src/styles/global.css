@@ -6,7 +6,7 @@
 }
 
 html {
-  font-family: 'Fraunces Variable', Georgia, serif;
+  font-family: var(--font-body);
   -webkit-text-size-adjust: 100%;
   /* Suppress horizontal scrollbar caused by transient overflow (e.g. the
      review carousel's slide-in animation starts at translateX(48px),
@@ -44,63 +44,8 @@ button {
   cursor: pointer;
 }
 
-/* Color tokens */
-:root {
-  /* Declare both schemes so light-dark() in component CSS resolves correctly
-     (used to switch brand-mark tints between light/dark modes without
-     duplicating rules everywhere). */
-  color-scheme: light dark;
-  --bg: #fafaf7;
-  --fg: #1a1a1a;
-  --muted: #6a6a6a;
-  --border: #e8e3da;
-  --accent: #2e4f6f;
-  --accent-soft: #e5edf4;
-  --card-bg: #ffffff;
-  --card-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.04);
-  --delta-positive: #2f6b3e;
-  --delta-positive-bg: rgba(74, 138, 93, 0.16);
-  /* Inline animated SVG spinner used as background-image on <img>
-     elements while their bytes are still being fetched. Once the image
-     finishes loading its pixels paint over this background and hide it. */
-  --img-loading-spinner: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'><circle cx='25' cy='25' r='18' fill='none' stroke='%23999' stroke-width='4' stroke-linecap='round' stroke-dasharray='40 100' opacity='0.6'><animateTransform attributeName='transform' type='rotate' from='0 25 25' to='360 25 25' dur='1.2s' repeatCount='indefinite'/></circle></svg>");
-}
-
-/* Dark tokens — applied when:
-   1. system prefers dark AND user hasn't overridden to light, OR
-   2. user has explicitly chosen dark via the header toggle.
-   `data-theme="light"` always wins back to the :root defaults above. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-    --bg: #0c0d0f;
-    --fg: #ecebe5;
-    --muted: #a8a39a;
-    --border: #3a3c41;
-    --accent: #94bcdb;
-    --accent-soft: #243246;
-    --card-bg: #1e2024;
-    --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 8px 24px rgba(0, 0, 0, 0.45);
-    --delta-positive: #8fcf99;
-    --delta-positive-bg: rgba(143, 207, 153, 0.20);
-  }
-}
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --bg: #0c0d0f;
-  --fg: #ecebe5;
-  --muted: #a8a39a;
-  --border: #3a3c41;
-  --accent: #94bcdb;
-  --accent-soft: #243246;
-  --card-bg: #1e2024;
-  --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 8px 24px rgba(0, 0, 0, 0.45);
-  --delta-positive: #8fcf99;
-  --delta-positive-bg: rgba(143, 207, 153, 0.20);
-}
-:root[data-theme='light'] {
-  color-scheme: light;
-}
+/* Colour, font and shadow tokens live in the active theme:
+   src/themes/<name>/theme.css (see src/themes/README.md). */
 
 /* Page chrome */
 .page {
@@ -125,7 +70,7 @@ button {
 }
 .site-header.is-scrolled {
   border-bottom-color: var(--border);
-  box-shadow: 0 2px 8px rgba(15, 17, 21, 0.05);
+  box-shadow: 0 2px 8px rgba(var(--shadow-rgb), 0.05);
 }
 .site-header nav {
   max-width: 1100px;
@@ -471,7 +416,7 @@ body.changes-hidden .visit-summary {
   background: color-mix(in srgb, var(--delta-positive) 22%, var(--card-bg));
   color: var(--delta-positive);
   border: 1px solid var(--card-bg);
-  box-shadow: 0 1px 4px rgba(15, 17, 21, 0.12);
+  box-shadow: 0 1px 4px rgba(var(--shadow-rgb), 0.12);
   cursor: help;
 }
 .card-updated-chip.is-negative {
@@ -700,8 +645,8 @@ span.card-source {
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow:
-    0 1px 2px rgba(15, 17, 21, 0.04),
-    0 12px 28px rgba(15, 17, 21, 0.06);
+    0 1px 2px rgba(var(--shadow-rgb), 0.04),
+    0 12px 28px rgba(var(--shadow-rgb), 0.06);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -735,7 +680,7 @@ span.card-source {
   to   { opacity: 0; transform: translateX(-48px); }
 }
 .review-slide-mark {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-quote);
   font-size: 5.5rem;
   line-height: 0.5;
   color: var(--fg);
@@ -748,7 +693,7 @@ span.card-source {
   margin: 0;
   padding: 0;
   border: 0;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-quote);
   font-style: italic;
   font-size: 1.2rem;
   line-height: 1.55;
@@ -765,10 +710,10 @@ span.card-source {
   /* Fixed amber across all reviews so the star row always reads as a
      star rating, regardless of the project's iconColor (which previously
      made some star rows render in black, blue, etc.). */
-  color: #f5a623;
+  color: var(--star);
 }
 .review-slide-rating-empty {
-  color: #f5a623;
+  color: var(--star);
   opacity: 0.18;
 }
 .review-slide-foot {
@@ -844,15 +789,15 @@ span.card-source {
   align-items: center;
   justify-content: center;
   box-shadow:
-    0 1px 2px rgba(15, 17, 21, 0.04),
-    0 4px 14px rgba(15, 17, 21, 0.08);
+    0 1px 2px rgba(var(--shadow-rgb), 0.04),
+    0 4px 14px rgba(var(--shadow-rgb), 0.08);
   transition: background 0.15s, color 0.15s, transform 0.15s, border-color 0.15s;
   z-index: 2;
 }
 .review-arrow:hover {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   transform: translateY(-50%) scale(1.05);
 }
 .review-arrow:focus-visible {
@@ -885,8 +830,8 @@ span.card-source {
     background: color-mix(in srgb, var(--card-bg) 90%, transparent);
     backdrop-filter: blur(6px);
     box-shadow:
-      0 1px 2px rgba(15, 17, 21, 0.06),
-      0 2px 6px rgba(15, 17, 21, 0.10);
+      0 1px 2px rgba(var(--shadow-rgb), 0.06),
+      0 2px 6px rgba(var(--shadow-rgb), 0.10);
   }
   .review-arrow svg { width: 14px; height: 14px; }
   .review-arrow-prev { left: -16px; }
@@ -919,14 +864,14 @@ span.card-source {
   align-items: center;
   justify-content: center;
   box-shadow:
-    0 1px 2px rgba(15, 17, 21, 0.04),
-    0 4px 14px rgba(15, 17, 21, 0.08);
+    0 1px 2px rgba(var(--shadow-rgb), 0.04),
+    0 4px 14px rgba(var(--shadow-rgb), 0.08);
   transition: background 0.15s, color 0.15s, transform 0.15s, border-color 0.15s;
 }
 .carousel-arrow:hover {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   transform: translateY(-50%) scale(1.05);
 }
 .carousel-arrow:focus-visible {
@@ -1151,7 +1096,7 @@ hr.section-divider {
 }
 .profile-chip:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(15, 17, 21, 0.08);
+  box-shadow: 0 8px 18px rgba(var(--shadow-rgb), 0.08);
 }
 .profile-chip-mark {
   flex-shrink: 0;
@@ -1309,8 +1254,8 @@ hr.section-divider {
   position: relative;
   /* Subtle persistent shadow so the cards feel grounded on the page, then
      lift on hover. */
-  box-shadow: 0 1px 2px rgba(15, 17, 21, 0.04),
-              0 4px 12px rgba(15, 17, 21, 0.04);
+  box-shadow: 0 1px 2px rgba(var(--shadow-rgb), 0.04),
+              0 4px 12px rgba(var(--shadow-rgb), 0.04);
   transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
 }
 
@@ -1341,8 +1286,8 @@ hr.section-divider {
 .card:hover {
   border-color: var(--accent);
   transform: translateY(-3px);
-  box-shadow: 0 2px 4px rgba(15, 17, 21, 0.06),
-              0 12px 24px rgba(15, 17, 21, 0.08);
+  box-shadow: 0 2px 4px rgba(var(--shadow-rgb), 0.06),
+              0 12px 24px rgba(var(--shadow-rgb), 0.08);
 }
 
 .thumb {
@@ -1583,7 +1528,7 @@ hr.section-divider {
 }
 a.card-source:hover {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   transform: translateY(-1px);
 }
 .card-source-arrow {
@@ -1864,10 +1809,10 @@ a.filter-chip {
 .filter-chip[aria-pressed='true'] {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 .filter-chip[aria-pressed='true'] .filter-count {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--on-accent-muted);
 }
 .filter-count {
   font-size: 0.72rem;
@@ -2079,11 +2024,11 @@ a.filter-chip {
 .tag-chip[aria-pressed='true'] {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 
 .tag-chip[aria-pressed='true'] .tag-count {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--on-accent-muted);
 }
 
 .tag-count {

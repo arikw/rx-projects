@@ -211,6 +211,10 @@ export type ProjectsConfig = {
   media?: MediaConfig;
   meta: {
     siteTitle: string;
+    /** Appended to the browser tab title on every page, e.g. `' · My Site'`
+     *  → "My Projects · My Site", "Some Project | My Projects · My Site".
+     *  Only the <title>; share previews (og:title) keep the plain title. */
+    titleSuffix?: string;
     siteDescription: string;
     /** Short kicker shown above the hero. */
     siteTagline?: string;
@@ -372,5 +376,11 @@ export type ProjectsConfig = {
      *  localStorage; once a visitor has clicked the toggle their choice
      *  wins on every subsequent page load until they clear it. */
     defaultTheme?: 'auto' | 'light' | 'dark';
+    /** Visual theme: the name of a folder under `src/themes/`. Its files
+     *  (theme.css, Header.astro, Head.astro, Footer.astro) replace the
+     *  default theme's, and any file it lacks falls back to the default.
+     *  Not to be confused with `defaultTheme` above, which is only the
+     *  light/dark colour scheme. Default: `'default'`. See src/themes/README.md. */
+    theme?: string;
   };
 };

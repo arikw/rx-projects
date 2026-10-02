@@ -1,0 +1,58 @@
+---
+// The screen-lit top bar: where you are, in the computer's own words.
+// A:\WZMN goes home to the Amstrad; \PROJECTS to the list. On a project's
+// page the last part is its name as a DOS 8.3 file name (POPER-~1), which
+// isn't a link. Blog and Contact live outside this site.
+const base = import.meta.env.BASE_URL;
+// The site's own pages by path, so the bar works on any deployment of the
+// site (wzmn.net, or a Cloudflare preview).
+const home = '/';
+const rest = Astro.url.pathname.startsWith(base)
+  ? Astro.url.pathname.slice(base.length).replace(/\/$/, '')
+  : '';
+
+// "poper-blocker" → "POPER-~1", as DOS 3.x would show a long name.
+function dosName(slug: string): string {
+  const name = slug.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  return name.length <= 8 ? name : `${name.slice(0, 6)}~1`;
+}
+---
+
+<header class="wz-top">
+  <div class="wz-bar">
+    {/* One line on purpose: any whitespace between the parts shows as a gap. */}
+    <div class="wz-path"><a href={home} title="Home: the Amstrad">A:\WZMN</a>{rest ? <><a href={base} title="All projects">\PROJECTS</a><span>\{dosName(rest)}</span></> : <span>\PROJECTS</span>}&gt;<span class="wz-caret" aria-hidden="true"></span></div>
+    <nav class="wz-nav" aria-label="Main">
+      <a href={base} aria-current={rest ? undefined : 'page'}>Projects</a>
+      <a href="/blog/">Blog</a>
+      <a href="https://contact.wzmn.net/" target="_blank" rel="noopener">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<script>
+  // The opening starts when the page is actually shown: now, or, for a page
+  // built ahead in the background (prerender), when it's switched to.
+  const root = document.documentElement;
+  // The computer is the site's home page (/), or one of its drafts.
+  function fromComputer() {
+    try {
+      const ref = new URL(document.referrer);
+      return ref.origin === location.origin && (ref.pathname === '/' || ref.pathname.startsWith('/drafts/crt'));
+    } catch (e) {
+      return false;
+    }
+  }
+  function arrive() {
+    try {
+      if (sessionStorage.getItem('wzmn-from-crt')) root.classList.add('from-crt');
+      else if (!fromComputer()) root.classList.remove('from-crt');
+      sessionStorage.removeItem('wzmn-from-crt');
+      sessionStorage.removeItem('wzmn-dark');
+    } catch (e) {}
+    root.classList.add('wz-arrive');
+  }
+  const doc = document as Document & { prerendering?: boolean };
+  if (doc.prerendering) document.addEventListener('prerenderingchange', arrive, { once: true });
+  else arrive();
+</script>
