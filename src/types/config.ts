@@ -211,6 +211,10 @@ export type ProjectsConfig = {
   media?: MediaConfig;
   meta: {
     siteTitle: string;
+    /** Appended to the browser tab title on every page, e.g. `' · My Site'`
+     *  → "My Projects · My Site", "Some Project | My Projects · My Site".
+     *  Only the <title>; share previews (og:title) keep the plain title. */
+    titleSuffix?: string;
     siteDescription: string;
     /** Short kicker shown above the hero. */
     siteTagline?: string;
