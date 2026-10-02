@@ -6,7 +6,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import type { ConnectorResult, ProjectSource } from '../types/project';
+import type { ConnectorResult, ProfileFact, ProjectSource } from '../types/project';
 
 export type ConnectorKey = Exclude<ProjectSource, 'manual'>;
 
@@ -18,6 +18,10 @@ export type ConnectorSnapshot = {
   /** Results from the most recent SUCCESSFUL fetch. Preserved when the
    *  next attempt fails so a transient block doesn't blank out the source. */
   results: ConnectorResult[];
+  /** Profile card from the same successful fetch (dual-output connectors such
+   *  as github / stackoverflow). Preserved alongside `results` so a failed
+   *  attempt keeps the card instead of dropping it. */
+  profile?: ProfileFact;
   /** Observability for the MOST RECENT attempt (success or failure) —
    *  refreshed on every build. Separated from `lastScrapedAt`/`results`
    *  so it's unambiguous which fields describe the data being shown vs.

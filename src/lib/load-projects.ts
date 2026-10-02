@@ -110,9 +110,10 @@ async function runConnector(
     snapshot.connectors[key] = {
       lastScrapedAt: cached?.lastScrapedAt ?? now,
       results: cached?.results ?? [],
+      ...(cached?.profile ? { profile: cached.profile } : {}),
       lastAttempt: { at: now, ok: false, error },
     };
-    if (cached) return { status: 'cached', results: cached.results };
+    if (cached) return { status: 'cached', results: cached.results, profile: cached.profile };
     return { status: 'empty' };
   };
   let out;
@@ -124,7 +125,7 @@ async function runConnector(
     const result = recordFailure(msg);
     if (result.status === 'cached') {
       console.warn(`[loader] falling back to cached "${key}" data from ${cached!.lastScrapedAt}`);
-      await maybeCache(key, collectMediaUrls(cached!.results));
+      await maybeCache(key, collectMediaUrls(cached!.results, cached!.profile));
     }
     return result;
   }
@@ -134,7 +135,7 @@ async function runConnector(
     const result = recordFailure(msg);
     if (result.status === 'cached') {
       console.warn(`[loader] falling back to cached "${key}" data from ${cached!.lastScrapedAt}`);
-      await maybeCache(key, collectMediaUrls(cached!.results));
+      await maybeCache(key, collectMediaUrls(cached!.results, cached!.profile));
     }
     return result;
   }
@@ -149,6 +150,7 @@ async function runConnector(
   snapshot.connectors[key] = {
     lastScrapedAt: now,
     results,
+    ...(out.profile ? { profile: out.profile } : {}),
     lastAttempt: {
       at: now,
       ok: partial ? 'partial' : true,
