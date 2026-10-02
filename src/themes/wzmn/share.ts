@@ -57,6 +57,26 @@ export function addShareButton() {
     } catch { /* nothing to do */ }
   });
 
+  // The change indicators' toggle (Header.astro), on the same line, before
+  // Share, and on phones still there (near the markers it hides) when Share
+  // moves to the end. The count comes from the template's tooltip text
+  // ("3 changes since last visit"); "change" for one.
+  const actions = document.createElement('div');
+  actions.className = 'wz-actions';
+  row.appendChild(actions);
+  const eye = document.querySelector<HTMLButtonElement>('.wz-eye[data-delta-toggle]');
+  if (eye && main) {
+    actions.appendChild(eye);
+    const n = eye.querySelector('.n')!, word = n.nextElementSibling!;
+    const sync = () => {
+      const count = parseInt(eye.dataset.tooltip || '', 10);
+      n.textContent = isNaN(count) ? '' : String(count);
+      word.textContent = count === 1 ? 'change' : 'changes';
+    };
+    new MutationObserver(sync).observe(eye, { attributes: true, attributeFilter: ['data-tooltip'] });
+    sync();
+  }
+
   // Where it goes on a phone.
   const phoneSpot = main ? document.querySelector('.author-bio') : document.querySelector('.detail .hero');
   const mq = window.matchMedia(PHONE);
@@ -66,7 +86,7 @@ export function addShareButton() {
       if (main) phoneSpot.before(btn); else phoneSpot.after(btn);
     } else {
       btn.classList.remove('wz-share--wide');
-      row.appendChild(btn);
+      actions.appendChild(btn);
     }
   };
   place();
