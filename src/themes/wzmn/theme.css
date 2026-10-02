@@ -213,6 +213,35 @@ body { font-feature-settings: normal; }
 .detail .about-title,
 .detail .section-h { font: 400 28px/1.1 var(--dos); color: var(--navy); letter-spacing: 0; }
 
+/* More room between the page heading and the first section label. */
+.hero-title { margin-bottom: 44px; }
+
+/* Share (share.ts): on the line above the heading, at its right; on phones
+   full width, near the end of the main page or under a project's top. */
+.wz-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.wz-top-row > .eyebrow,
+.wz-top-row > .back { margin-top: 0; margin-bottom: 0; }
+.hero > .wz-top-row,
+.detail > .wz-top-row { margin-bottom: 12px; }
+.wz-share {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 500 14px/1 var(--sans);
+  color: var(--navy);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: 3px 3px 0 var(--paper2);
+  padding: 9px 12px;
+  cursor: pointer;
+}
+.wz-share svg { width: 16px; height: 16px; fill: currentColor; }
+.wz-share:hover,
+.wz-share:focus-visible { background: var(--navy); color: var(--on-accent); border-color: var(--navy); box-shadow: 3px 3px 0 var(--blue); outline: none; }
+.wz-share.is-done { background: var(--navy); color: var(--on-accent); border-color: var(--navy); }
+.wz-share--wide { display: flex; width: 100%; justify-content: center; padding: 12px; margin: 22px 0 40px; }
+
 /* ---- Footer (Footer.astro) -------------------------------------------------
    A screen strip like the top bar closes the page. It replaces the
    template's own footer. */
