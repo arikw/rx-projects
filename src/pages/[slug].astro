@@ -322,6 +322,9 @@ function formatNumber(n: number): string {
   }
   return String(n);
 }
+// Downloads card — config keyed by project id, or by its URL slug.
+const downloads = config.downloads?.[project.id] ?? config.downloads?.[project.routeSlug];
+const downloadFiles = downloads?.files ?? [];
 const stats: StatChip[] = [];
 if (project.stats.stars) stats.push({ label: '★ Stars', value: formatNumber(project.stats.stars) });
 if (project.stats.forks) stats.push({ label: 'Forks', value: formatNumber(project.stats.forks) });
@@ -731,6 +734,24 @@ function projectGroups(p: Project): string[] {
           </section>
         )}
 
+        {downloadFiles.length > 0 && (
+          <section class="side-card">
+            <h2>Downloads</h2>
+            {downloads?.note && <p class="downloads-note">{downloads.note}</p>}
+            <ul class="downloads-list">
+              {downloadFiles.map((f) => (
+                <li>
+                  <a href={f.url} rel="noopener">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" /></svg>
+                    <span>{f.label}</span>
+                  </a>
+                  {f.note && <p class="downloads-note">{f.note}</p>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {sourceChips.length > 0 && (
           <section class="side-card">
             <h2>Find it on</h2>
@@ -1117,6 +1138,34 @@ function projectGroups(p: Project): string[] {
     word-break: break-all;
   }
   .homepage-link:hover { text-decoration: underline; }
+
+  .downloads-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .downloads-list a {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+    word-break: break-word;
+  }
+  .downloads-list a:hover span { text-decoration: underline; }
+  .downloads-list svg { width: 1em; height: 1em; flex: none; margin-top: 0.15em; }
+  .downloads-note {
+    margin: 0.2rem 0 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+  .downloads-list .downloads-note { padding-left: 1.35rem; }
+  .side-card > .downloads-note { margin: -0.4rem 0 0.75rem; }
 
   /* ─── Gallery section frame — visually distinguish the gallery as
      a chapter of the page rather than a row of images embedded in

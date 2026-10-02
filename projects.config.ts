@@ -127,6 +127,20 @@ const config: ProjectsConfig = {
     // },
   },
 
+  // Files to offer for download on a project's detail page, keyed by project
+  // id (or its URL slug). Shown as a "Downloads" card in the sidebar, under
+  // Stats. `note` on the card shows once under its heading; `note` on a file
+  // shows under that file only.
+  downloads: {
+    // Example:
+    // 'my-extension': {
+    //   note: 'Archived builds. Current browsers won\'t install them.',
+    //   files: [
+    //     { label: 'Firefox add-on v1.2', url: 'https://example.com/my-extension-1.2.xpi' },
+    //   ],
+    // },
+  },
+
   // Project slugs to pin at the top of the page. Works for any source:
   // match by GitHub repo name, npm package name, docker image, chrome slug,
   // or manual entry slug.

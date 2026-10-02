@@ -205,6 +205,24 @@ export type MediaConfig = {
   cache?: boolean;
 };
 
+/** One downloadable file on a project's detail page. */
+export type DownloadFile = {
+  /** Link text, e.g. "Firefox add-on v1.62". */
+  label: string;
+  /** Absolute URL of the file (the dashboard doesn't host it). */
+  url: string;
+  /** Optional line shown under this file only. */
+  note?: string;
+};
+
+/** The "Downloads" sidebar card for one project. */
+export type ProjectDownloads = {
+  /** Optional line shown once under the card heading — for anything that
+   *  applies to every file (e.g. "Archived builds — no longer installable"). */
+  note?: string;
+  files: DownloadFile[];
+};
+
 export type ProjectsConfig = {
   deployment: DeploymentConfig;
   /** Build-time media handling. Optional — sensible defaults apply when omitted. */
@@ -340,6 +358,10 @@ export type ProjectsConfig = {
    * representation that wins reconciliation over scraped mirrors — e.g. an
    * exact Play Console install total. See {@link ManualOrigin}. */
   origins?: Record<string, ManualOrigin>;
+  /** Files offered for download on a project's detail page, keyed by
+   *  project id (or its URL slug). Rendered as a "Downloads" card in the
+   *  sidebar, under Stats. See {@link ProjectDownloads}. */
+  downloads?: Record<string, ProjectDownloads>;
   /** Project slugs to pin at the top of the page. */
   featured: string[];
   /** Per-project URL-slug overrides — keyed by project id, value is the
