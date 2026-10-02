@@ -23,6 +23,7 @@ function dosName(slug: string): string {
     {/* One line on purpose: any whitespace between the parts shows as a gap. */}
     <div class="wz-path"><a href={home} title="Home: the Amstrad">A:\WZMN</a>{rest ? <><a href={base} title="All projects">\PROJECTS</a><span>\{dosName(rest)}</span></> : <span>\PROJECTS</span>}&gt;<span class="wz-caret" aria-hidden="true"></span></div>
     <nav class="wz-nav" aria-label="Main">
+      <a href={home}>Home</a>
       <a href={base} aria-current={rest ? undefined : 'page'}>Projects</a>
       <a href="/blog/">Blog</a>
       <a href="https://contact.wzmn.net/" target="_blank" rel="noopener">Contact</a>
