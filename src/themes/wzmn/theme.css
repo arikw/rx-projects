@@ -336,9 +336,13 @@ html.wz-arrive.from-crt body::before { animation: wz-undark 0.55s ease-out both;
   /* (.wz-js is set by Head.astro, so without scripts nothing stays hidden.) */
   html.wz-js:not(.wz-arrive) .wz-bar,
   html.wz-js:not(.wz-arrive) .page { opacity: 0; }
-  html.wz-arrive .wz-bar { animation: wz-settle 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  /* `backwards`, not `both`: a fill that outlives the animation leaves a
+     transform on these elements (even an identity one), which turns them into
+     the containing block of every position:fixed descendant, so the stat (?)
+     tooltips landed relative to .page instead of the screen. */
+  html.wz-arrive .wz-bar { animation: wz-settle 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
   html.wz-arrive .wz-path { clip-path: inset(0 100% 0 0); animation: wz-type 0.5s steps(20, end) 0.15s forwards; }
-  html.wz-arrive .page { animation: wz-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s both; }
+  html.wz-arrive .page { animation: wz-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s backwards; }
   html.wz-arrive.from-crt .wz-bar { animation-delay: 0.15s; }
   html.wz-arrive.from-crt .wz-path { animation-delay: 0.35s; }
   html.wz-arrive.from-crt .page { animation-delay: 0.25s; }
