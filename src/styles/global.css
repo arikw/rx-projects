@@ -1495,15 +1495,10 @@ hr.section-divider {
 }
 
 .card-title:hover {
-  color: var(--accent);
-}
-/* Underline too: a colour change alone is easy to miss when the accent sits
-   close to the text colour. */
-.card-title:hover h3,
-.card-title:focus-visible h3 {
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.18em;
+  /* Own token so a theme whose accent sits close to the text colour can pick
+     a hover colour that visibly differs. (No underline: it doubles up with
+     the accent rule under the title.) */
+  color: var(--card-title-hover, var(--accent));
 }
 
 .card-title:hover .card-arrow {

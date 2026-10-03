@@ -33,6 +33,10 @@ palette:
 }
 ```
 
+Optional: `--card-title-hover` colours a project card's title under the mouse
+(default: `--accent`). Set it when your accent is too close to the text colour
+for the hover to show.
+
 Remember the dark scheme: `default/theme.css` sets dark values under
 `@media (prefers-color-scheme: dark)` and `:root[data-theme='dark']`.
 Override both, or the dark values win when the visitor's system is dark.
