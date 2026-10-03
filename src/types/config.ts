@@ -390,6 +390,11 @@ export type ProjectsConfig = {
       /** Show the "Active users" stat (Chrome current users). */
       showUsers: boolean;
     };
+    /** Show the source / homepage link chips on each project card
+     *  (default true). Set false to keep cards to title + description +
+     *  stats; the same links stay on each project's detail page
+     *  ("Find it on" / "Homepage"). */
+    cardLinks?: boolean;
     /** Initial colour scheme when the visitor has no stored override.
      *   - `'auto'` (default) — follow the OS `prefers-color-scheme` media query.
      *   - `'light'` — always render light by default.

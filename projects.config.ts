@@ -172,6 +172,9 @@ const config: ProjectsConfig = {
       showDownloads: true,
       showUsers: true,
     },
+    // Source / homepage link chips on each card. false = links only on the
+    // project's detail page.
+    cardLinks: true,
   },
 };
 

@@ -6,6 +6,7 @@ import { featuredScore } from '../lib/featured-score';
 import { resolveTitleHref } from '../lib/title-href';
 import ProjectThumb from './ProjectThumb.astro';
 import CardSources from './CardSources.astro';
+import config from '../lib/load-config';
 
 interface Props {
   project: Project;
@@ -125,6 +126,8 @@ if (p.year && yearStyle === 'inline')
 // Chip rendering lives in CardSources.astro — see that component for
 // dedup-by-source-group, the homepage-chip resolver, and the markup.
 const titleHref = resolveTitleHref(p);
+// `ui.cardLinks: false` drops the link chips; the detail page keeps them.
+const showLinks = config.ui.cardLinks !== false;
 
 const detailHref = p.hasDetail ? `${base}${p.routeSlug}/` : null;
 
@@ -186,7 +189,7 @@ const detailHref = p.hasDetail ? `${base}${p.routeSlug}/` : null;
         <h3>{resolveDisplayTitle(p)}</h3>
       </a>
     )}
-    {chipsLayout === 'title' && <CardSources project={p} layout="title" />}
+    {showLinks && chipsLayout === 'title' && <CardSources project={p} layout="title" />}
   </header>
 
   {p.description && <p class="card-desc">{p.description}</p>}
@@ -240,5 +243,5 @@ const detailHref = p.hasDetail ? `${base}${p.routeSlug}/` : null;
     </p>
   )}
 
-  {chipsLayout === 'footer' && <CardSources project={p} layout="footer" />}
+  {showLinks && chipsLayout === 'footer' && <CardSources project={p} layout="footer" />}
 </article>
