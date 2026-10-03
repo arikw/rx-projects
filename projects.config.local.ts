@@ -121,6 +121,23 @@ const config: ProjectsConfig = {
     'chrome:gleiglfcmildnecmodgoeijleblhobjk': { firstReleased: 2023 }, // WriteRight (20 Apr 2023)
     'chrome:agpmfmfpldoabkmhjanenelnnplfcidm': { firstReleased: 2023 }, // Fullscreen Magic (18 Apr 2023)
   },
+  // Archived Firefox add-on builds, hosted on wzmn.net (kept from the old
+  // WordPress site; their URLs are in wzmn.net's must-resolve list).
+  downloads: {
+    'poper-blocker': {
+      note: 'Archived Firefox add-ons. Current Firefox versions won\'t install them.',
+      files: [
+        { label: 'Firefox add-on v2.0', url: 'https://wzmn.net/downloads/poper-blocker.xpi', note: 'For Firefox 21–35' },
+        { label: 'Firefox add-on v1.62', url: 'https://wzmn.net/downloads/poper-blocker-v1.62.xpi', note: 'For Firefox 14–16' },
+      ],
+    },
+    'auto-replay-for-youtube': {
+      note: 'Archived Firefox add-on. Current Firefox versions won\'t install it.',
+      files: [
+        { label: 'Firefox add-on v2.1', url: 'https://wzmn.net/archive/projects/YouTubeAutoReplay/YouTubeAutoReplay2.xpi', note: 'For Firefox up to 3.6' },
+      ],
+    },
+  },
   featured: [
     // 'chrome-extensions-reloader'
   ],
