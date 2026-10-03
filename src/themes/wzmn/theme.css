@@ -44,6 +44,8 @@
   --border: #d9d3c6;
   --accent: var(--navy);
   --accent-soft: #e4e9ef;
+  /* Card title under the mouse — navy (the accent) is too close to --fg to show. */
+  --card-title-hover: var(--blue-ink);
   --card-bg: #fffdf8;
   --card-shadow: 4px 4px 0 var(--paper2);
   --on-accent: #f1efe8;
