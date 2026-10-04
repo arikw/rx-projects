@@ -6,6 +6,8 @@ type ProjectStats = {
   downloadsMonthly?: number;
   users?: number;
   installs?: number;
+  /** Positive ratings (added later — a stored base may not have it). */
+  likes?: number;
 };
 
 type ProfileSnapshot = {
@@ -82,6 +84,7 @@ function saveStored(state: StoredState): void {
 
 const CARD_STAT_MAP: Array<{ key: keyof ProjectStats; label: string }> = [
   { key: 'stars', label: 'Stars' },
+  { key: 'likes', label: 'Likes' },
   { key: 'downloads', label: 'Downloads' },
   { key: 'downloadsMonthly', label: 'Monthly downloads' },
   { key: 'installs', label: 'Installs' },
@@ -108,7 +111,10 @@ function injectCardUpdates(base: DashboardState, current: DashboardState, newIds
     if (!baseStats) continue;
     const deltas: Array<{ key: keyof ProjectStats; label: string; value: number }> = [];
     for (const { key, label } of CARD_STAT_MAP) {
-      const delta = (currStats[key] ?? 0) - (baseStats[key] ?? 0);
+      // A metric the stored base never recorded (added in a later build)
+      // isn't a change — comparing against 0 would flag every project.
+      if (baseStats[key] === undefined || currStats[key] === undefined) continue;
+      const delta = currStats[key]! - baseStats[key]!;
       if (delta !== 0) deltas.push({ key, label, value: delta });
     }
     if (!deltas.length) continue;
@@ -128,8 +134,10 @@ function injectCardUpdates(base: DashboardState, current: DashboardState, newIds
       .join(' · ');
     slot.dataset.tooltip = tooltip;
     slot.removeAttribute('hidden');
-    // Flag the card so the gallery's "Updated" status filter can pick it up.
+    // Flag the card so the gallery's "Updated" status filter can pick it up,
+    // and record every move ("stars:3 users:-20") for its secondary filter.
     card.dataset.updated = '1';
+    card.dataset.changes = deltas.map((d) => `${d.key}:${d.value}`).join(' ');
   }
   // Tell the gallery a new pool of "updated" cards exists. ProjectGrid
   // listens to this and may surface an "Updated" chip on the Status row.
@@ -199,6 +207,7 @@ function injectDeltas(base: DashboardState, current: DashboardState, diffBaseSet
     // Updated status filter pool so a user filtering by "Updated"
     // sees the NEW projects alongside the ones with stat moves.
     card.dataset.updated = '1';
+    card.dataset.changes = 'new:1';
   }
   const removedProjectNames: string[] = [];
   for (const id of baseIds) {

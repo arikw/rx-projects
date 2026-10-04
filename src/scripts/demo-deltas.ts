@@ -133,6 +133,15 @@ function injectCardUpdateDemo(card: HTMLElement, update: CardUpdate): void {
   slot.dataset.tooltip = tooltip;
   slot.removeAttribute('hidden');
   card.dataset.updated = '1';
+  // Same "key:value" list diff-stats writes, for the secondary filter.
+  const keyOf: Record<string, string> = {
+    Stars: 'stars', Likes: 'likes', Users: 'users', Installs: 'installs',
+    Downloads: 'downloads', 'Monthly downloads': 'downloadsMonthly',
+  };
+  card.dataset.changes = update.breakdown
+    .filter((d) => keyOf[d.label])
+    .map((d) => `${keyOf[d.label]}:${d.value}`)
+    .join(' ');
 }
 
 function activate(): void {
@@ -166,6 +175,7 @@ function activate(): void {
     const ribbon = cards[i].querySelector<HTMLElement>('.card-new-ribbon');
     if (ribbon) ribbon.removeAttribute('hidden');
     cards[i].dataset.updated = '1';
+    cards[i].dataset.changes = 'new:1';
   }
   // Step 2 — apply per-card update chips to the NEXT cards, skipping
   // any that already display the NEW ribbon (the two are mutually

@@ -210,6 +210,8 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       tag: 'rxp:tag-filter',
       lang: 'rxp:lang-filter',
       status: 'rxp:status-filter',
+      changes: 'rxp:changes-filter',
+      direction: 'rxp:direction-filter',
     } as const;
     function lsGet(k: string): string | null {
       try { return localStorage.getItem(k); } catch { return null; }
@@ -253,6 +255,20 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     let activeTag = '';
     let activeLanguage = personalDefaultLanguage;
     let activeStatus: Status = '';
+    // Secondary filter under "Updated": which changes (several at once;
+    // none = any) and which direction ('' = either).
+    type Direction = '' | 'up' | 'down';
+    const CHANGE_LABELS: Record<string, string> = {
+      new: 'New',
+      stars: 'Stars',
+      likes: 'Likes',
+      users: 'Users',
+      installs: 'Installs',
+      downloads: 'Downloads',
+      downloadsMonthly: 'Monthly downloads',
+    };
+    let activeChanges = new Set<string>();
+    let activeDirection: Direction = '';
     let shown = pageSize;
     let overflowExpanded = false;
 
@@ -275,9 +291,27 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     const matchesLanguage = (c: HTMLElement) =>
       !activeLanguage ||
       (c.dataset.contentLanguage || 'en') === activeLanguage;
+    /** A card's recorded changes, e.g. "stars:3 users:-20" → [[stars, 3], …]. */
+    const changesOf = (c: HTMLElement): Array<[string, number]> =>
+      (c.dataset.changes ?? '')
+        .split(' ')
+        .filter(Boolean)
+        .map((p) => {
+          const [k, v] = p.split(':');
+          return [k, Number(v)] as [string, number];
+        });
+    /** True when the card has a change of one of the picked kinds (any kind
+     *  when none is picked) in the picked direction. "New" counts as up. */
+    const matchesChanges = (c: HTMLElement) => {
+      if (!activeChanges.size && !activeDirection) return true;
+      return changesOf(c).some(([k, v]) =>
+        (!activeChanges.size || activeChanges.has(k)) &&
+        (!activeDirection || (activeDirection === 'up' ? v > 0 : v < 0)),
+      );
+    };
     const matchesStatus = (c: HTMLElement) => {
       if (!activeStatus) return true;
-      if (activeStatus === 'updated') return c.dataset.updated === '1';
+      if (activeStatus === 'updated') return c.dataset.updated === '1' && matchesChanges(c);
       return (c.dataset.status ?? 'live') === activeStatus;
     };
 
@@ -448,6 +482,8 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       Object.values(STORAGE_KEYS).forEach(lsDel);
       activeLanguage = environmentDefaultLanguage;
       activeStatus = '';
+      activeChanges = new Set();
+      activeDirection = '';
       shown = pageSize;
       sourceChips.forEach((c) => {
         c.setAttribute('aria-pressed', String(!c.dataset.filterSource));
@@ -464,6 +500,7 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       statusChips.forEach((c) => {
         c.setAttribute('aria-pressed', String((c.dataset.filterStatus ?? '') === activeStatus));
       });
+      renderChangesRow();
       refreshTagCounts();
       writeHash();
       applyFilter();
@@ -542,8 +579,73 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       statusChips.forEach((c) => {
         c.setAttribute('aria-pressed', String((c.dataset.filterStatus ?? '') === status));
       });
+      renderChangesRow();
       writeHash();
       applyFilter();
+    }
+
+    function saveChanges() {
+      lsSet(STORAGE_KEYS.changes, [...activeChanges].join(','));
+      lsSet(STORAGE_KEYS.direction, activeDirection);
+      shown = pageSize;
+      renderChangesRow();
+      writeHash();
+      applyFilter();
+    }
+
+    /** The "Changes" row under Status: shown only while "Updated" is the
+     *  active status. One chip per kind of change present among the updated
+     *  cards (multi-select), then the direction (single-select toggle). */
+    function renderChangesRow() {
+      let row = root!.querySelector<HTMLElement>('.filter-row--changes');
+      const updated = cards.filter((c) => c.dataset.updated === '1');
+      if (activeStatus !== 'updated' || !updated.length) {
+        row?.setAttribute('hidden', '');
+        return;
+      }
+      if (!row) {
+        row = document.createElement('div');
+        row.className = 'filter-row filter-row--changes';
+        row.setAttribute('aria-label', 'Filter updated projects by change');
+        row.innerHTML = '<span class="filter-label">Changes</span><div class="filter-chips"></div>';
+        const statusRow = root!.querySelector('.filter-row--status');
+        statusRow?.parentNode?.insertBefore(row, statusRow.nextSibling);
+        row.addEventListener('click', (e) => {
+          const chip = (e.target as Element).closest<HTMLButtonElement>('button');
+          if (!chip) return;
+          if (chip.dataset.change !== undefined) {
+            const k = chip.dataset.change;
+            if (!k) activeChanges = new Set();
+            else if (activeChanges.has(k)) activeChanges.delete(k);
+            else activeChanges.add(k);
+          } else if (chip.dataset.direction !== undefined) {
+            const d = chip.dataset.direction as Direction;
+            activeDirection = d === activeDirection ? '' : d;
+          }
+          saveChanges();
+        });
+      }
+      row.removeAttribute('hidden');
+      // Count each kind among updated cards, in the picked direction.
+      const counts = new Map<string, number>();
+      for (const c of updated) {
+        const seen = new Set<string>();
+        for (const [k, v] of changesOf(c)) {
+          if (activeDirection && (activeDirection === 'up' ? v <= 0 : v >= 0)) continue;
+          seen.add(k);
+        }
+        seen.forEach((k) => counts.set(k, (counts.get(k) ?? 0) + 1));
+      }
+      const kinds = Object.keys(CHANGE_LABELS).filter((k) => counts.has(k) || activeChanges.has(k));
+      const chip = (attrs: string, pressed: boolean, label: string, count?: number) =>
+        `<button type="button" class="filter-chip" ${attrs} aria-pressed="${pressed}">${label}${count !== undefined ? ` <span class="filter-count">${count}</span>` : ''}</button>`;
+      row.querySelector('.filter-chips')!.innerHTML = [
+        chip('data-change=""', !activeChanges.size, 'Any'),
+        ...kinds.map((k) => chip(`data-change="${k}"`, activeChanges.has(k), CHANGE_LABELS[k], counts.get(k) ?? 0)),
+        '<span class="filter-chips-sep" aria-hidden="true"></span>',
+        chip('data-direction="up"', activeDirection === 'up', '▲ Up'),
+        chip('data-direction="down"', activeDirection === 'down', '▼ Down'),
+      ].join('');
     }
 
     // Click handlers toggle: pressing an already-active chip resets
@@ -642,6 +744,8 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
         params.set('lang', activeLanguage === '' ? 'all' : activeLanguage);
       }
       if (activeStatus) params.set('status', activeStatus);
+      if (activeStatus === 'updated' && activeChanges.size) params.set('changes', [...activeChanges].join(','));
+      if (activeStatus === 'updated' && activeDirection) params.set('direction', activeDirection);
       if (shown >= cards.length && cards.length > pageSize) params.set('show-all', '1');
       if (overflowExpanded) params.set('tags-expanded', '1');
       const s = params.toString();
@@ -690,6 +794,10 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     statusChips.forEach((c) => {
       c.setAttribute('aria-pressed', String((c.dataset.filterStatus ?? '') === activeStatus));
     });
+    const changesCandidate = initial.changes ?? lsGet(STORAGE_KEYS.changes) ?? '';
+    activeChanges = new Set(changesCandidate.split(',').filter((k) => k in CHANGE_LABELS));
+    const directionCandidate = initial.direction ?? lsGet(STORAGE_KEYS.direction) ?? '';
+    if (directionCandidate === 'up' || directionCandidate === 'down') activeDirection = directionCandidate;
     if (initial['tags-expanded'] === '1' && tagToggle) {
       overflowExpanded = true;
       const overflowCount = parseInt(tagToggle.dataset.overflowCount ?? '0', 10);
@@ -785,6 +893,7 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       if (initial.status === 'updated' && activeStatus !== 'updated') {
         setStatus('updated');
       } else {
+        renderChangesRow();
         applyFilter();
       }
     }

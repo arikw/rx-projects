@@ -1773,6 +1773,14 @@ a.card-thumb-frame:focus-visible {
   min-width: 0;
   flex: 1;
 }
+/* Divider inside a chip strip, e.g. between the kinds of change and the
+   direction in the "Changes" row. */
+.filter-chips-sep {
+  align-self: stretch;
+  width: 1px;
+  margin: 2px 4px;
+  background: var(--border);
+}
 .filter-label {
   font-size: 0.78rem;
   letter-spacing: 0.08em;

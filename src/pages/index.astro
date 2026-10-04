@@ -8,7 +8,7 @@ import SiteAbout from '../components/SiteAbout.astro';
 import AuthorBio from '../components/AuthorBio.astro';
 import config from '../lib/load-config';
 import { loadProjects, getProfiles, getSnapshot } from '../lib/load-projects';
-import { aggregateStats } from '../lib/aggregate-stats';
+import { aggregateStats, conservativePositiveCount } from '../lib/aggregate-stats';
 import { pickCarouselReviews } from '../lib/pick-reviews';
 import { featuredScore } from '../lib/featured-score';
 
@@ -100,6 +100,9 @@ const projectsState = Object.fromEntries(
     downloadsMonthly: p.stats.downloadsMonthly ?? 0,
     users: p.stats.users ?? 0,
     installs: p.stats.installs?.value ?? 0,
+    // "Likes" = positive (top-of-scale) ratings — the per-project half of
+    // the hero's "stars & likes".
+    likes: conservativePositiveCount(p.stats.rating),
   }]),
 );
 const projectTitlesState = Object.fromEntries(
