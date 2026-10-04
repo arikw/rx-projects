@@ -584,6 +584,36 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       applyFilter();
     }
 
+    const compact = (n: number) => {
+      if (Math.abs(n) >= 1000) {
+        const k = n / 1000;
+        return `${k.toFixed(Math.abs(k) < 10 ? 1 : 0).replace(/\.0$/, '')}k`;
+      }
+      return String(n);
+    };
+    /** Each updated card's badge shows one change: the largest that matches
+     *  the Changes row (picked kinds and direction), or the largest of all
+     *  when nothing is picked or nothing matches. Its tooltip still lists
+     *  every change. */
+    function refreshBadges() {
+      const filtering = activeStatus === 'updated' && (activeChanges.size > 0 || activeDirection !== '');
+      for (const c of cards) {
+        const slot = c.querySelector<HTMLElement>('.card-updated-chip');
+        if (!slot || slot.hidden) continue;
+        const all = changesOf(c).filter(([k]) => k !== 'new');
+        if (!all.length) continue;
+        const matching = filtering
+          ? all.filter(([k, v]) =>
+              (!activeChanges.size || activeChanges.has(k)) &&
+              (!activeDirection || (activeDirection === 'up' ? v > 0 : v < 0)))
+          : [];
+        const pool = matching.length ? matching : all;
+        const [, v] = pool.reduce((best, d) => (Math.abs(d[1]) > Math.abs(best[1]) ? d : best));
+        slot.classList.toggle('is-negative', v < 0);
+        slot.innerHTML = `<span class="stat-delta-arrow" aria-hidden="true">${v > 0 ? '▲' : '▼'}</span>${v > 0 ? '+' : '−'}${compact(Math.abs(v))}`;
+      }
+    }
+
     function saveChanges() {
       lsSet(STORAGE_KEYS.changes, [...activeChanges].join(','));
       lsSet(STORAGE_KEYS.direction, activeDirection);
@@ -597,6 +627,7 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
      *  active status. One chip per kind of change present among the updated
      *  cards (multi-select), then the direction (single-select toggle). */
     function renderChangesRow() {
+      refreshBadges();
       let row = root!.querySelector<HTMLElement>('.filter-row--changes');
       const updated = cards.filter((c) => c.dataset.updated === '1');
       if (activeStatus !== 'updated' || !updated.length) {
