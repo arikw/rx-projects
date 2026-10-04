@@ -94,6 +94,7 @@ Each source with a mirror has a fallback chain, so an API hiccup or an anti-bot 
 - **`projects.config.local.ts`** — your private overrides (real handles, manual entries, featured pins, language preference). Shallow-merged over the base config at build time. Not in the committed `.gitignore`, so you can choose to commit yours or keep it untracked via `.git/info/exclude`.
 - **`src/themes/<name>/`** — your own look. Set `ui: { theme: '<name>' }` and the folder's `theme.css`, `Header.astro`, `Head.astro` and `Footer.astro` replace the default theme's; anything missing falls back to `src/themes/default/`. See [`src/themes/README.md`](src/themes/README.md).
 - **`src/content/projects/<slug>.mdx`** — optional rich detail page per project. Slug matches the project id. A "Details →" link surfaces on the matching card.
+- **`downloads` in `projects.config.ts`** — files to offer on a project's detail page (label, URL, optional note), keyed by project id. They show as a "Downloads" card in the sidebar, under Stats.
 - **`thumbFit: 'contain'` + `thumbBg: '<colour>'`** on a manual entry letterboxes screenshots that don't crop nicely (J2ME phone art, retro-resolution captures, anything with built-in padding).
 - **Media cache is on by default** — every banner, icon and MP4 a connector references is downloaded into `public/_cache/<connector>/<hash>.<ext>` so the deployed dashboard survives upstream link rot. Toggle off via `media: { cache: false }`.
 

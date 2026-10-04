@@ -329,6 +329,30 @@
           "source": "chrome-stats"
         }
       ]
+    },
+    "nlfgdelijjamoelpmcafdomkbjjkbhhg": {
+      "id": "nlfgdelijjamoelpmcafdomkbjjkbhhg",
+      "url": "https://chrome-stats.com/d/nlfgdelijjamoelpmcafdomkbjjkbhhg",
+      "name": "Yamina – Auto RTL for Hebrew & Arabic",
+      "description": "Right-aligns Hebrew and Arabic text on the sites you switch it on for.",
+      "version": "0.3.1",
+      "category": "productivity/tools",
+      "itemCategory": "extension",
+      "supportedLanguages": [
+        "en"
+      ],
+      "smallBanner": "https://lh3.googleusercontent.com/1jnXYu8DQSx94D4Yz3GQoEQHiup-7BX47ebbEmUvfQA3Ic-onM6-N7mgYcI2At500PYpwO2csyBsV_89tvh3ZqzxbA",
+      "marqueeBanner": "https://lh3.googleusercontent.com/JQGUdq7aJ5qPRm1kUmxiWwxRzaU9jLNDoXHoSiQKCyXtaS12Ufm5WkxaSUf_vxeQ3FrssTTeTaUtMc21ws6bsDoe",
+      "logo": "https://lh3.googleusercontent.com/xNf3Q7_yaq8yrGWFDNUWs69Kq__BVmdfeZ1hhkGuyPy4YQoZWOFjCoex5MWDa2vc3CaIWqQA6sSbVMTTdjmbdc28iw",
+      "size": 9748,
+      "helpUrl": "https://github.com/arikw/yamina/issues",
+      "creationDate": "2026-10-01",
+      "lastUpdate": "2026-10-01",
+      "isDeleted": false,
+      "screenshots": [
+        "https://lh3.googleusercontent.com/tGgaPh8J94AAjDsqZYyL7V-IR7kaa-6pW37McLXMELHSFYzUvyp4qsIF6iIWDWVNrvH3jDFhx9BrnxisCr_vNEY7",
+        "https://lh3.googleusercontent.com/86lAL3VZ0WVy8iAKZA6a4w6hGmRmiNIYqu_U4ip4wv7RZs9Uao9dx8h2wGhUcG9zk975RKw0rhBp6UBSFox0UjuK_wc"
+      ]
     }
   }
 }

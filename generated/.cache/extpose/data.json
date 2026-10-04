@@ -103,6 +103,19 @@
       "icon": "https://lh3.googleusercontent.com/pL7rJS6i3IRRovDdbD-gaetiQs7bVSngzXQKQ5u83kVU5XFybMsJtyIFcTd2uIOzT2wSmHAQYgR94di2kWsaZ3ZYiYY=w128-h128-e365-rj-sc0x00ffffff",
       "banner": "https://lh3.googleusercontent.com/AvWbpckYl_84UytXmvqavb93NeqXfjvyNAsdSp6J2g9IlCxOYfi8Okb7M8TBHnSoWQcru4885TGThCjARe-nL4R58XE=w640-h400-e365-rj-sc0x00ffffff",
       "body": "Adds a Replay button to YouTube™, allowing you to loop the video clip.\n\nReplay and share your loops using the built-in EZ Looper integration (http://www.ezlooper.com)\n\nExcellent for musicians: Loop to practice on a specific part of a song...\n\nNotes\n\n* I've integrated between the addon and EZ Looper (http://www.ezlooper.com). Your thoughts and comments are welcome!"
+    },
+    "nlfgdelijjamoelpmcafdomkbjjkbhhg": {
+      "id": "nlfgdelijjamoelpmcafdomkbjjkbhhg",
+      "url": "https://extpose.com/ext/nlfgdelijjamoelpmcafdomkbjjkbhhg",
+      "name": "Yamina – Auto RTL for Hebrew & Arabic",
+      "description": "Right-aligns Hebrew and Arabic text on the sites you switch it on for.",
+      "userCount": 0,
+      "version": "0.3.1",
+      "lastUpdate": "2026-10-01",
+      "isDeleted": false,
+      "icon": "https://lh3.googleusercontent.com/xNf3Q7_yaq8yrGWFDNUWs69Kq__BVmdfeZ1hhkGuyPy4YQoZWOFjCoex5MWDa2vc3CaIWqQA6sSbVMTTdjmbdc28iw",
+      "banner": "https://lh3.googleusercontent.com/tGgaPh8J94AAjDsqZYyL7V-IR7kaa-6pW37McLXMELHSFYzUvyp4qsIF6iIWDWVNrvH3jDFhx9BrnxisCr_vNEY7",
+      "body": "Yamina lines up Hebrew and Arabic text the right way on sites that weren't built for it — chat apps, AI assistants, documents, forums.\n\nClick the Yamina button on a site to switch it on there. From then on, every paragraph, list item, heading or text box that is mostly Hebrew or Arabic is set right-to-left and right-aligned, so sentences start on the right and the question mark lands at the end, where it belongs. English text and code on the same page stay left-to-right.\n\n• Per site: on only where you switch it on. It stays on across visits and browser restarts; click the button again to switch it off.• Smart: each paragraph gets its own direction, decided by counting its words, so mixed Hebrew and English messages come out right.• Live: handles new messages as they arrive, infinite scroll, and text as you type.• Light: checks only what changed, in the browser's idle time, so scrolling and typing never wait on it.• Private: no permissions at install. The first click on a site asks for access to that site only. Nothing is collected or sent anywhere — there are no servers.\n\nOpen source: https://github.com/arikw/yamina"
     }
   }
 }
