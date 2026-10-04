@@ -47,6 +47,15 @@ const APPLE_TOUCH_SIZE = 180;
 // PWA manifest sizes — Chrome's installable criteria require at least one
 // 192 and one 512 icon entry.
 const MANIFEST_SIZES = [192, 512] as const;
+// Maskable icon: the launcher / splash screen crops it to its own shape
+// (often a circle), so it must be full-bleed. The source sits centred at
+// this fraction of the canvas — the maskable "safe zone" — on the manifest
+// background colour. Android's splash screen draws a maskable icon filling
+// its circle instead of a small "any" icon inside it, so it reads larger.
+const MASKABLE_SIZE = 512;
+const MASKABLE_CONTENT_FRACTION = 0.8;
+// SVG sources are rasterised once at this size, then resized like a raster.
+const SVG_RASTER_SIZE = 1024;
 
 // Connector keys whose user avatars are rendered round on the source
 // platform. When `config.meta.faviconShape` is unset / 'auto' and the
@@ -183,6 +192,66 @@ async function ensureResized(
   return `${base}_cache/favicon/${filename}`;
 }
 
+const isSvgUrl = (url: string): boolean =>
+  url.toLowerCase().endsWith('.svg') || typeFromUrl(url) === 'image/svg+xml';
+
+/** Rasterise an SVG favicon source to a SVG_RASTER_SIZE PNG so the PWA
+ *  manifest can list PNG icons (Android launchers and splash screens don't
+ *  use SVG manifest icons). The SVG is read from `public/` when the path is
+ *  local, otherwise fetched — a root path like `/favicon.svg` resolves
+ *  against `deployment.site`, which covers a dashboard served under a
+ *  sub-path of a site that owns the icon. Null when unreachable (the caller
+ *  falls back to listing the SVG as-is). */
+async function loadSvgAsRaster(url: string): Promise<{ buf: Buffer; hash: string; mtime: number } | null> {
+  try {
+    let svg: Buffer | null = null;
+    if (url.startsWith('/')) {
+      const rel = base !== '/' && url.startsWith(base) ? url.slice(base.length) : url.slice(1);
+      const disk = resolve(process.cwd(), 'public', rel);
+      if (existsSync(disk)) svg = readFileSync(disk);
+    }
+    if (!svg) {
+      const abs = /^https?:\/\//.test(url) ? url : new URL(url, config.deployment.site).href;
+      const res = await fetch(abs, { signal: AbortSignal.timeout(10_000) });
+      if (!res.ok) return null;
+      svg = Buffer.from(await res.arrayBuffer());
+    }
+    const meta = await sharp(svg).metadata();
+    const density = Math.min(72 * SVG_RASTER_SIZE / Math.max(meta.width ?? 32, meta.height ?? 32), 100_000);
+    const buf = await sharp(svg, { density })
+      .resize(SVG_RASTER_SIZE, SVG_RASTER_SIZE, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .png()
+      .toBuffer();
+    // Filenames are keyed by the SVG's hash, so mtime 0 is fine: new SVG
+    // bytes → new filenames.
+    return { buf, hash: createHash('sha256').update(svg).digest('hex').slice(0, 16), mtime: 0 };
+  } catch (err) {
+    console.warn(`[favicon] couldn't rasterise ${url}:`, err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+/** Full-bleed maskable PNG: the source at MASKABLE_CONTENT_FRACTION of the
+ *  canvas, centred on `background` (a #rrggbb colour). */
+async function ensureMaskable(srcBuf: Buffer, hash: string, size: number, background: string): Promise<string> {
+  const outDir = resolve(process.cwd(), 'public/_cache/favicon');
+  mkdirSync(outDir, { recursive: true });
+  const bgKey = background.replace('#', '').toLowerCase();
+  const filename = `${hash}-${size}-m${bgKey}v${FAVICON_ALGO_VERSION}.png`;
+  const outPath = resolve(outDir, filename);
+  if (!existsSync(outPath)) {
+    const inner = Math.round(size * MASKABLE_CONTENT_FRACTION);
+    const pad = Math.round((size - inner) / 2);
+    const content = await sharp(srcBuf).resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
+    const out = await sharp({ create: { width: size, height: size, channels: 4, background } })
+      .composite([{ input: content, top: pad, left: pad }])
+      .png({ compressionLevel: 9 })
+      .toBuffer();
+    writeFileSync(outPath, out);
+  }
+  return `${base}_cache/favicon/${filename}`;
+}
+
 /** Resolve the favicon source URL plus its originating connector key
  *  (when the source IS a profile avatar — null when it's a verbatim URL
  *  or path). Used by both the favicon and manifest pipelines, and by the
@@ -263,7 +332,10 @@ export async function resolveFavicon(profiles: ProfileFact[]): Promise<FaviconLi
  *  entry when no profile avatar is reachable — installable browsers
  *  accept SVG icons even though Chrome's strict criteria prefer raster
  *  192/512 PNGs. */
-export async function resolveManifestIcons(profiles: ProfileFact[]): Promise<ManifestIcon[]> {
+export async function resolveManifestIcons(
+  profiles: ProfileFact[],
+  background = '#ffffff',
+): Promise<ManifestIcon[]> {
   const info = resolveSourceWithInfo(profiles);
   if (!info) {
     return [
@@ -271,20 +343,26 @@ export async function resolveManifestIcons(profiles: ProfileFact[]): Promise<Man
     ];
   }
 
-  // SVG source — emit verbatim as a single any-size entry.
-  if (info.url.toLowerCase().endsWith('.svg') || typeFromUrl(info.url) === 'image/svg+xml') {
-    return [{ src: info.url, sizes: 'any', type: 'image/svg+xml', purpose: 'any' }];
-  }
-
-  const src = loadSource(info.url);
+  // SVG source → rasterise first; if that fails, list the SVG verbatim.
+  const svg = isSvgUrl(info.url);
+  const src = svg ? await loadSvgAsRaster(info.url) : loadSource(info.url);
   if (!src) {
     return [{ src: info.url, sizes: 'any', type: typeFromUrl(info.url) ?? 'image/png', purpose: 'any' }];
   }
-  const shape = resolveShape(info.sourceConnector);
+  // A designed SVG is already the shape its author wants — never re-mask it.
+  const shape = svg ? 'square' : resolveShape(info.sourceConnector);
   const icons: ManifestIcon[] = [];
   for (const size of MANIFEST_SIZES) {
     const href = await ensureResized(src.buf, src.hash, src.mtime, size, shape);
     icons.push({ src: href, sizes: `${size}x${size}`, type: 'image/png', purpose: 'any' });
+  }
+  if (/^#[0-9a-f]{6}$/i.test(background)) {
+    icons.push({
+      src: await ensureMaskable(src.buf, src.hash, MASKABLE_SIZE, background),
+      sizes: `${MASKABLE_SIZE}x${MASKABLE_SIZE}`,
+      type: 'image/png',
+      purpose: 'maskable',
+    });
   }
   return icons;
 }

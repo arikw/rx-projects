@@ -16,12 +16,14 @@ export const GET: APIRoute = async () => {
   // standalone in dev, so call it again to be safe.
   await loadProjects();
   const profiles = getProfiles();
-  const icons = await resolveManifestIcons(profiles);
   // Default the splash-screen background to a colour sampled from the
   // favicon's corners — keeps the install splash visually contiguous
   // with the home-screen icon. Falls back to white when no avatar is
   // reachable. Config can always override.
   const sampledBackground = await resolveManifestBackground(profiles);
+  const backgroundColor = config.meta.backgroundColor ?? sampledBackground ?? '#ffffff';
+  // The maskable icon is drawn on the same colour, so it blends into the splash.
+  const icons = await resolveManifestIcons(profiles, backgroundColor);
 
   const base = config.deployment.base.endsWith('/')
     ? config.deployment.base
@@ -35,7 +37,7 @@ export const GET: APIRoute = async () => {
     scope: base,
     display: 'standalone',
     theme_color: config.meta.themeColor ?? '#1f1f23',
-    background_color: config.meta.backgroundColor ?? sampledBackground ?? '#ffffff',
+    background_color: backgroundColor,
     icons,
   };
 
