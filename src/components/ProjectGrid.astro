@@ -210,8 +210,6 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       tag: 'rxp:tag-filter',
       lang: 'rxp:lang-filter',
       status: 'rxp:status-filter',
-      changes: 'rxp:changes-filter',
-      direction: 'rxp:direction-filter',
     } as const;
     function lsGet(k: string): string | null {
       try { return localStorage.getItem(k); } catch { return null; }
@@ -574,7 +572,11 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
 
     function setStatus(status: Status) {
       activeStatus = status;
-      lsSet(STORAGE_KEYS.status, status);
+      // "Updated" isn't remembered across visits: what changed is different
+      // every visit, so it (and its Changes row) only shows when picked, or
+      // when a shared link asks for it.
+      if (status === 'updated') lsDel(STORAGE_KEYS.status);
+      else lsSet(STORAGE_KEYS.status, status);
       shown = pageSize;
       statusChips.forEach((c) => {
         c.setAttribute('aria-pressed', String((c.dataset.filterStatus ?? '') === status));
@@ -615,8 +617,6 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     }
 
     function saveChanges() {
-      lsSet(STORAGE_KEYS.changes, [...activeChanges].join(','));
-      lsSet(STORAGE_KEYS.direction, activeDirection);
       shown = pageSize;
       renderChangesRow();
       writeHash();
@@ -818,16 +818,18 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       c.setAttribute('aria-pressed', String((c.dataset.filterLanguage ?? '') === activeLanguage));
     });
     const VALID_STATUSES: Status[] = ['live', 'retired', 'updated'];
-    const statusCandidate = initial.status ?? lsGet(STORAGE_KEYS.status);
+    const storedStatus = lsGet(STORAGE_KEYS.status);
+    const statusCandidate = initial.status ?? (storedStatus === 'updated' ? null : storedStatus);
     if (statusCandidate && (VALID_STATUSES as string[]).includes(statusCandidate)) {
       activeStatus = statusCandidate as Status;
     }
     statusChips.forEach((c) => {
       c.setAttribute('aria-pressed', String((c.dataset.filterStatus ?? '') === activeStatus));
     });
-    const changesCandidate = initial.changes ?? lsGet(STORAGE_KEYS.changes) ?? '';
+    // Like "Updated" itself, its Changes picks come only from the link.
+    const changesCandidate = initial.changes ?? '';
     activeChanges = new Set(changesCandidate.split(',').filter((k) => k in CHANGE_LABELS));
-    const directionCandidate = initial.direction ?? lsGet(STORAGE_KEYS.direction) ?? '';
+    const directionCandidate = initial.direction ?? '';
     if (directionCandidate === 'up' || directionCandidate === 'down') activeDirection = directionCandidate;
     if (initial['tags-expanded'] === '1' && tagToggle) {
       overflowExpanded = true;
