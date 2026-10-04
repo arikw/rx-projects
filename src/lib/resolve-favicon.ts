@@ -205,9 +205,11 @@ const isSvgUrl = (url: string): boolean =>
 async function loadSvgAsRaster(url: string): Promise<{ buf: Buffer; hash: string; mtime: number } | null> {
   try {
     let svg: Buffer | null = null;
-    if (url.startsWith('/')) {
-      const rel = base !== '/' && url.startsWith(base) ? url.slice(base.length) : url.slice(1);
-      const disk = resolve(process.cwd(), 'public', rel);
+    // public/ is served at `base`, so only a path under `base` is ours. A
+    // root path outside it (e.g. `/favicon.svg` with base `/projects/`)
+    // belongs to the host site — even if public/ has a file of that name.
+    if (url.startsWith(base)) {
+      const disk = resolve(process.cwd(), 'public', url.slice(base.length));
       if (existsSync(disk)) svg = readFileSync(disk);
     }
     if (!svg) {
