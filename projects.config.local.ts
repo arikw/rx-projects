@@ -1,8 +1,9 @@
-// Local override of projects.config.ts. GITIGNORED — never commit this file.
+// This instance's override of projects.config.ts (wzmn.net/projects).
 //
-// The loader shallow-merges this over the base config at build time when
-// present. Use it for real handles you want to test locally but not push to
-// the public repo.
+// The loader shallow-merges this over the base config at build time. In the
+// general project (live-dev-portfolio) the file is local and never committed;
+// here it IS committed on purpose: wzmn.net's Cloudflare build clones this
+// repo and needs these settings (base path, the wzmn theme, titles).
 
 import baseConfig from './projects.config';
 import type { ProjectsConfig } from './src/types/config';

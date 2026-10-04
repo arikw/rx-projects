@@ -14,12 +14,35 @@ The project is designed to double as a starter: a cloner edits a single `project
 
 - Astro 6 with `@astrojs/mdx`, `@astrojs/sitemap`. Node ≥ 22.
 - Single source of truth: **`projects.config.ts`** at the repo root. All user-tunable knobs live here.
-- Local override pattern: `projects.config.local.ts` shallow-merges over the base config so real handles can be tested locally without committing them. Excluded in the maintainer's clone via `.git/info/exclude` (not in the committed `.gitignore`, so cloners who want to commit their own personal config aren't fighting upstream `.gitignore` updates).
+- Local override pattern: `projects.config.local.ts` shallow-merges over the base config so real handles can be tested locally without committing them. In the general project it stays out of git; **in this repo (rx-projects) it is committed on purpose**: wzmn.net's build clones this repo and needs it (base `/projects`, `ui.theme: 'wzmn'`, the titles).
 - Themes: `src/themes/<name>/`, picked by `ui.theme`. `src/themes/default/theme.css` holds every colour, font and shadow token; `global.css` only uses the tokens, so never hard-code a colour there. `theme:<file>` imports resolve to the active theme's file or fall back to `default/` (resolver in `astro.config.mjs`). Details: `src/themes/README.md`.
 - Connectors: `src/connectors/{github,npm,docker,chrome}.ts` — each fetches at build time and returns a normalized `Project[]`. Failures are non-fatal; an unavailable source just contributes nothing.
 - Loader: `src/lib/load-projects.ts` runs enabled connectors in parallel, merges with `config.manual[]`, dedupes by slug, applies the `featured` pin list.
 - Optional detail pages: `src/content/projects/<slug>.mdx` auto-generates `/projects/<slug>/` when the slug matches a project's id (GitHub repo name, npm name, docker image, chrome slug, or manual slug).
 - URL strategy: `astro.config.mjs` sources `site` and `base` from `projects.config.ts` (overridable via `projects.config.local.ts`). The `base` prefix carries through every internal href and canonical tag — **never hardcode the hosting platform's URL or strip the base**.
+
+## This instance: wzmn.net/projects
+
+This repo is the maintainer's own dashboard, built on the general starter
+`live-dev-portfolio` (`upstream`; locally `/workspace/rx-dev-dashboard`).
+Generic features go there first and are merged in; only personal config,
+data and the `wzmn` theme belong here only.
+
+- **The `wzmn` theme** (`src/themes/wzmn/`) makes the dashboard part of
+  wzmn.net: `theme.css` (the tokens), `Header.astro` (the screen-lit top
+  bar: the `A:\WZMN\PROJECTS` path, nav Home, Projects, Blog, Contact, the
+  current section marked, the changes toggle), `Head.astro` and `Footer.astro`
+  (the arrival from the home page, the footer strip), `count-up.ts` (the
+  headline numbers count up), `share.ts` (the Share button and where it sits
+  on phones), `fonts/`.
+- **Shared with wzmn.net:** the arrival from the home page's computer is
+  passed in `sessionStorage` (`wzmn-from-crt`, `wzmn-dark`), and the look is
+  shared with the home page and the blog. The keys and their meanings are
+  listed in wzmn.net's `docs/ARCHITECTURE.md` ("Shared with the sub-sites");
+  change them there and on every side together.
+- `stats.json` at the site's root feeds the home page's `TYPE STATS.TXT`; keep
+  its field names (`activeUsers`, `downloadsAndPulls`, `starsAndLikes`,
+  `totalProjects`).
 
 ## Commands
 
