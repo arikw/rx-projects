@@ -210,6 +210,10 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       tag: 'rxp:tag-filter',
       lang: 'rxp:lang-filter',
       status: 'rxp:status-filter',
+      // The Changes picks are a standing preference ("I care about users"),
+      // kept even though "Updated" itself isn't.
+      changes: 'rxp:changes-filter',
+      direction: 'rxp:direction-filter',
     } as const;
     function lsGet(k: string): string | null {
       try { return localStorage.getItem(k); } catch { return null; }
@@ -617,6 +621,8 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     }
 
     function saveChanges() {
+      lsSet(STORAGE_KEYS.changes, [...activeChanges].join(','));
+      lsSet(STORAGE_KEYS.direction, activeDirection);
       shown = pageSize;
       renderChangesRow();
       writeHash();
@@ -624,8 +630,8 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     }
 
     /** The "Changes" row under Status: shown only while "Updated" is the
-     *  active status. One chip per kind of change present among the updated
-     *  cards (multi-select), then the direction (single-select toggle). */
+     *  active status. One chip per kind of change, with how many updated
+     *  cards have it (multi-select), then the direction (single-select). */
     function renderChangesRow() {
       refreshBadges();
       let row = root!.querySelector<HTMLElement>('.filter-row--changes');
@@ -667,7 +673,9 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
         }
         seen.forEach((k) => counts.set(k, (counts.get(k) ?? 0) + 1));
       }
-      const kinds = Object.keys(CHANGE_LABELS).filter((k) => counts.has(k) || activeChanges.has(k));
+      // Every kind, even with nothing in it this visit, so it can be picked
+      // ahead of time (the pick is remembered for later visits).
+      const kinds = Object.keys(CHANGE_LABELS);
       const chip = (attrs: string, pressed: boolean, label: string, count?: number) =>
         `<button type="button" class="filter-chip" ${attrs} aria-pressed="${pressed}">${label}${count !== undefined ? ` <span class="filter-count">${count}</span>` : ''}</button>`;
       row.querySelector('.filter-chips')!.innerHTML = [
@@ -826,10 +834,11 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     statusChips.forEach((c) => {
       c.setAttribute('aria-pressed', String((c.dataset.filterStatus ?? '') === activeStatus));
     });
-    // Like "Updated" itself, its Changes picks come only from the link.
-    const changesCandidate = initial.changes ?? '';
+    // The link wins; otherwise the remembered preference. (They only take
+    // effect while "Updated" is picked.)
+    const changesCandidate = initial.changes ?? lsGet(STORAGE_KEYS.changes) ?? '';
     activeChanges = new Set(changesCandidate.split(',').filter((k) => k in CHANGE_LABELS));
-    const directionCandidate = initial.direction ?? '';
+    const directionCandidate = initial.direction ?? lsGet(STORAGE_KEYS.direction) ?? '';
     if (directionCandidate === 'up' || directionCandidate === 'down') activeDirection = directionCandidate;
     if (initial['tags-expanded'] === '1' && tagToggle) {
       overflowExpanded = true;
