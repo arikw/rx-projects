@@ -33,23 +33,25 @@
   --navy: #1f2b45;
   --blue: #8fb2d0;
   --blue-ink: #2e5d86;
-  --paper2: #ece7dc;
+  --paper2: #cdd0c9;
   --phosphor: #c9cfc6;
   --phosphor-hi: #e3e8df;
   --glass: #0b0e0c;
 
-  --bg: #f5f2eb;
-  --fg: #1d1c1a;
-  --muted: #6b665c;
-  --border: #d9d3c6;
+  /* The Amstrad PC1512's case: a cool light grey (not the warm cream that
+     reads as a generic AI-made page). */
+  --bg: #e3e4df;
+  --fg: #1b1d1c;
+  --muted: #5a5f58;
+  --border: #c3c6be;
   --accent: var(--navy);
-  --accent-soft: #e4e9ef;
+  --accent-soft: #dde3e9;
   /* Card title under the mouse — navy (the accent) is too close to --fg to show. */
   --card-title-hover: var(--blue-ink);
-  --card-bg: #fffdf8;
+  --card-bg: #f2f3ef;
   --card-shadow: 4px 4px 0 var(--paper2);
-  --on-accent: #f1efe8;
-  --on-accent-muted: rgba(241, 239, 232, 0.7);
+  --on-accent: #f2f3ef;
+  --on-accent-muted: rgba(242, 243, 239, 0.7);
   --font-body: var(--sans);
   --font-quote: var(--sans);
 }
