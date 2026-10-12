@@ -60,7 +60,8 @@ export function addShareButton() {
   // The change indicators' toggle (Header.astro), on the same line, before
   // Share, and on phones still there (near the markers it hides) when Share
   // moves to the end. The count comes from the template's tooltip text
-  // ("3 changes since last visit"); "change" for one.
+  // ("3 projects changed since last visit · …": its first number, the same
+  // count as the gallery's Updated filter); "change" for one.
   const actions = document.createElement('div');
   actions.className = 'wz-actions';
   row.appendChild(actions);
