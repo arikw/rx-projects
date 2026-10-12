@@ -64,7 +64,7 @@ function init(): void {
     // button's badge (e.g. the wzmn header's "N changes").
     btn.dataset.tooltip =
       `${projects} project${projects === 1 ? '' : 's'} changed since last visit` +
-      (other ? ` · plus ${other} headline number${other === 1 ? '' : 's'}` : '');
+      (other ? ` · plus ${other} other number${other === 1 ? '' : 's'}` : '');
     btn.hidden = false;
 
     btn.addEventListener('click', () => {
