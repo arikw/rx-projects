@@ -50,7 +50,7 @@ function run(fromCrt: boolean) {
 }
 
 export function countUpOnArrive() {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  // Counts up for everyone, reduced-motion setting or not: the owner's decision.
   const root = document.documentElement;
   // Header.astro adds .wz-arrive when the page is actually shown (later, for
   // a page built ahead in the background).

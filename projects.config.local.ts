@@ -62,6 +62,9 @@ const config: ProjectsConfig = {
     /* wzmn.net look: src/themes/wzmn/ (the Amstrad home page's colours,
        font and screen-lit top bar). */
     theme: 'wzmn',
+    /* The motion for everyone, whatever the reduce-motion setting: the
+       owner's decision, as on all of wzmn.net. */
+    motion: 'always',
     /* No link chips on the cards; links live on each detail page. */
     cardLinks: false,
   },
