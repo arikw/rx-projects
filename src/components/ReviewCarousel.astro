@@ -167,7 +167,11 @@ function formatDate(ts?: string): string | null {
       if (slides.length < 2) return;
 
       const interval = parseInt(root.dataset.interval ?? '6000', 10);
-      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // No auto-advance under reduced motion, unless the site plays motion
+      // for everyone (ui.motion: 'always' → <html data-motion="always">).
+      const reduceMotion =
+        document.documentElement.dataset.motion !== 'always' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       let current = 0;
       let paused = false;
       let timer: number | null = null;

@@ -1,5 +1,6 @@
 ---
 import BaseHead from '../components/BaseHead.astro';
+import config from '../lib/load-config';
 // Theme parts resolve to src/themes/<ui.theme>/<file>, falling back to
 // src/themes/default/<file> (see the theme resolver in astro.config.mjs).
 import ThemeHead from 'theme:Head.astro';
@@ -20,10 +21,12 @@ interface Props {
 }
 
 const { title, description, ogType, author, image, imageAlt } = Astro.props;
+// `ui.motion: 'always'` → every animation plays, reduce-motion setting or not.
+const motion = config.ui.motion === 'always' ? 'always' : undefined;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-motion={motion}>
   <head>
     <BaseHead title={title} description={description} ogType={ogType} author={author} image={image} imageAlt={imageAlt} />
     <ThemeHead />

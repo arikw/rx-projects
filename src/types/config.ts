@@ -403,6 +403,12 @@ export type ProjectsConfig = {
      *  localStorage; once a visitor has clicked the toggle their choice
      *  wins on every subsequent page load until they clear it. */
     defaultTheme?: 'auto' | 'light' | 'dark';
+    /** Animations and the reduce-motion setting. `'respect'` (default):
+     *  visitors whose system asks for reduced motion get no entrance
+     *  animations and no auto-advancing reviews. `'always'`: every animation
+     *  plays for everyone (rendered as `<html data-motion="always">`, which
+     *  themes can check too). */
+    motion?: 'respect' | 'always';
     /** Visual theme: the name of a folder under `src/themes/`. Its files
      *  (theme.css, Header.astro, Head.astro, Footer.astro) replace the
      *  default theme's, and any file it lacks falls back to the default.

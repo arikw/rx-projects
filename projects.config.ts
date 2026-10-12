@@ -172,6 +172,9 @@ const config: ProjectsConfig = {
       showDownloads: true,
       showUsers: true,
     },
+    // 'always': every animation plays, even for visitors whose system asks
+    // for reduced motion. Default 'respect'.
+    motion: 'respect',
     // Source / homepage link chips on each card. false = links only on the
     // project's detail page.
     cardLinks: true,
