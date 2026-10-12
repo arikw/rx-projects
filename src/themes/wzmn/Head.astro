@@ -8,6 +8,7 @@
 //   ahead in the background (only the computer asks for that), starts dark
 //   (.from-crt) and brightens when shown. Decided here, not at the end of
 //   loading, or the light paper flashes between the darkness and the page.
+// - snaps the screen bars to whole screen pixels (below).
 ---
 
 <script is:inline>
@@ -20,6 +21,35 @@
       var d = parseFloat(sessionStorage.getItem('wzmn-dark'));
       if (d >= 0 && d <= 1) root.style.setProperty('--dark-from', String(Math.max(0.5, d)));
     } catch (e) {}
+  })();
+
+  // The top and bottom bars imitate a screen: the Amstrad font (8 pixels per
+  // character, 16 per line) and scanlines every 3px. At most sizes and zoom
+  // levels those land between screen pixels, so strokes and lines come out
+  // 1 or 2 pixels thick at random. For the current pixel ratio (it changes
+  // with zoom), pick the font size nearest each design size (within 15%) at
+  // which a font pixel is a whole number of screen pixels, and a scanline
+  // period of whole screen pixels. Out of range, the design size stays.
+  (function () {
+    var root = document.documentElement;
+    function snap() {
+      var dpr = window.devicePixelRatio || 1;
+      [24, 20, 17].forEach(function (size) {
+        var best = size, bestOff = Infinity, dev = (size / 16) * dpr;
+        [Math.floor(dev), Math.ceil(dev)].forEach(function (n) {
+          var s = (16 * n) / dpr, off = Math.abs(s - size);
+          if (n >= 1 && off <= size * 0.15 && off < bestOff) { best = s; bestOff = off; }
+        });
+        root.style.setProperty('--wz-dos-' + size, best + 'px');
+      });
+      var period = Math.max(2, Math.round(3 * dpr)), dark = Math.max(1, Math.round(dpr));
+      root.style.setProperty('--wz-scan-gap', (period - dark) / dpr + 'px');
+      root.style.setProperty('--wz-scan-period', period / dpr + 'px');
+      if (window.matchMedia) {
+        window.matchMedia('(resolution: ' + dpr + 'dppx)').addEventListener('change', snap, { once: true });
+      }
+    }
+    snap();
   })();
 </script>
 <!-- The rest of the site-wide icon set at wzmn.net's root (the SVG comes from
