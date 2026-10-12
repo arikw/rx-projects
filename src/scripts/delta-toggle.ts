@@ -1,11 +1,25 @@
 const STORAGE_KEY = 'delta-visibility';
 
+/** Projects that are new or whose numbers moved — the same set the
+ *  gallery's "Updated" filter shows, so the two counts always agree. */
+function countProjects(): number {
+  const cards = new Set<Element>();
+  document
+    .querySelectorAll('.card-new-ribbon:not([hidden]), .card-updated-chip:not([hidden])')
+    .forEach((el) => {
+      const card = el.closest('.card');
+      if (card) cards.add(card);
+    });
+  return cards.size;
+}
+
+/** Moves in the headline tiles and the profile cards (not projects). */
+function countOther(): number {
+  return document.querySelectorAll('.stat-delta:not([hidden])').length;
+}
+
 function countChanges(): number {
-  let n = 0;
-  n += document.querySelectorAll('.stat-delta:not([hidden])').length;
-  n += document.querySelectorAll('.card-new-ribbon:not([hidden])').length;
-  n += document.querySelectorAll('.card-updated-chip:not([hidden])').length;
-  return n;
+  return countProjects() + countOther();
 }
 
 function shouldShowToggle(): boolean {
@@ -40,12 +54,17 @@ function init(): void {
 
   queueMicrotask(() => {
     if (!shouldShowToggle()) return;
-    const total = countChanges();
+    const projects = countProjects();
+    const other = countOther();
 
     const hidden = readStoredHidden();
     applyVisibilityState(hidden);
 
-    btn.dataset.tooltip = `${total} change${total === 1 ? '' : 's'} since last visit`;
+    // Leads with the project count: themes read the first number as the
+    // button's badge (e.g. the wzmn header's "N changes").
+    btn.dataset.tooltip =
+      `${projects} project${projects === 1 ? '' : 's'} changed since last visit` +
+      (other ? ` · plus ${other} headline number${other === 1 ? '' : 's'}` : '');
     btn.hidden = false;
 
     btn.addEventListener('click', () => {
