@@ -127,6 +127,7 @@ const config: ProjectsConfig = {
     'chrome:fimgfedafeadlieiabdeeaodndnlbhid': { firstReleased: 2012 }, // Extensions Reloader (6 Oct 2012)
     'chrome:mcdpnidfhfjfbafmpppcplcejgepadbo': { firstReleased: 2012 }, // Auto Replay for YouTube (25 Feb 2012)
     'chrome:jdmiahadpnljimfcnfaebjggbfkjkgan': { firstReleased: 2017 }, // Feed Cleaner (7 May 2017)
+    'github:cs-haifa-website': { firstReleased: 2005 }, // Haifa CS students' site: built 2005; the repo was only created in 2017
     'chrome:gleiglfcmildnecmodgoeijleblhobjk': { firstReleased: 2023 }, // WriteRight (20 Apr 2023)
     'chrome:agpmfmfpldoabkmhjanenelnnplfcidm': { firstReleased: 2023 }, // Fullscreen Magic (18 Apr 2023)
   },
