@@ -1,10 +1,11 @@
 # Lossmol – The right direction
 
-A Thunderbird add-on for writing and reading mail in Hebrew, Arabic and the
-other right-to-left scripts (Syriac, Thaana, N'Ko): such text runs right to
-left and sits on the right, without fighting the editor. Built on today's
-Thunderbird extension APIs (Thunderbird 128 and later, Manifest V3). Below,
-"Hebrew" stands for any of these scripts.
+A Thunderbird add-on for writing and reading mail in right-to-left scripts
+(such as Hebrew, Arabic, Syriac, Thaana, N'Ko): paragraphs are displayed
+according to their dominant language, running right to left and sitting on
+the right, without fighting the editor. Built on today's Thunderbird
+extension APIs (Thunderbird 128 and later, Manifest V3). Below, "Hebrew"
+stands for any of these scripts.
 
 ## Writing
 
@@ -24,7 +25,7 @@ Thunderbird extension APIs (Thunderbird 128 and later, Manifest V3). Below,
   right-to-left / left-to-right**. A paragraph set by hand stays as you set it.
 - **Settings** (Add-ons Manager → Lossmol → Preferences): the direction a new
   message starts in; whether paragraphs follow their words at all; whether
-  received messages are fixed (below).
+  the display applies when reading (below).
 
 **Sending format.** Thunderbird's "Automatic" sending format downgrades a
 message to plain text when it sees no formatting worth keeping, and it never
@@ -40,19 +41,21 @@ paragraph like everything else, but "whole message" leaves them alone.
 
 ## Reading
 
-Received messages whose Hebrew or Arabic arrived left-aligned (a common
-result of Outlook and web forms) are shown right to left, paragraph by
-paragraph, so a mixed message comes out right in both directions. Plain-text messages are
-handled by paragraph too (a paragraph being a run of lines up to a blank one).
+Paragraphs are displayed according to their dominant language. Where
+right-to-left text (such as Hebrew or Arabic) is left-aligned (a common
+result of Outlook and web forms), it is shown right to left, paragraph by
+paragraph, so a mixed message comes out right in both directions. Plain-text
+messages are handled by paragraph too (a paragraph being a run of lines up to
+a blank one).
 
 The Lossmol button in the message header tells you what you're looking at:
-in full colour, Lossmol re-aligned something in this message (hover for how
-many paragraphs); as an outline, the message looks the way its own
-instructions say; grey with left-aligned lines, you switched Lossmol off for
-this message. Clicking it switches between the
-fixed view and the way the message arrived; the next message follows the
-setting again. Right-click the button for the setting itself ("all messages")
-and the preferences.
+in full colour, Lossmol adjusted the display of paragraphs in this message
+(hover for how many paragraphs); as an outline, the message is displayed the
+way its own instructions say; grey with left-aligned lines, you switched
+Lossmol off for this message. Clicking it switches between Lossmol's display
+and the original display; the next message follows the setting again.
+Right-click the button for the setting itself ("all messages") and the
+preferences.
 
 ## How a paragraph is judged
 
