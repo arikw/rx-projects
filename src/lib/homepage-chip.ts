@@ -14,6 +14,7 @@ const PLATFORM_HOSTS = new Set([
   'chromewebstore.google.com',
   'addons.mozilla.org',
   'extensions.gnome.org',
+  'addons.thunderbird.net',
   'play.google.com',
   'apps.apple.com',
   'apkpure.com',

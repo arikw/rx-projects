@@ -94,6 +94,7 @@ const PLATFORM_RANK: Record<string, number> = {
   npm: 1,
   docker: 2,
   gnome: 3,
+  thunderbird: 3,
   'google-play': 4,
   chrome: 5,
   manual: 6,

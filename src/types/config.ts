@@ -147,6 +147,12 @@ export type GnomeSourceConfig = {
   extensionIds: number[];
 };
 
+export type ThunderbirdSourceConfig = {
+  enabled: boolean;
+  /** Add-on slugs: the last part of addons.thunderbird.net/<locale>/thunderbird/addon/<slug>/. */
+  addons: string[];
+};
+
 export type GplaySourceConfig = {
   /** Android package names (e.g. "com.example.app"), shared by the AppBrain
    * and APKPure connectors. This is just the input list — not a connector. */
@@ -337,6 +343,7 @@ export type ProjectsConfig = {
     docker: DockerSourceConfig;
     chrome: ChromeSourceConfig;
     gnome: GnomeSourceConfig;
+    thunderbird: ThunderbirdSourceConfig;
     gplay: GplaySourceConfig;
     appbrain: AppbrainSourceConfig;
     apkpure: ApkpureSourceConfig;

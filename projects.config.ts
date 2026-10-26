@@ -98,6 +98,10 @@ const config: ProjectsConfig = {
       enabled: true,
       extensionIds: [],       // numeric pk from extensions.gnome.org/extension/<pk>/...
     },
+    thunderbird: {
+      enabled: true,
+      addons: [],             // slugs from addons.thunderbird.net/<locale>/thunderbird/addon/<slug>/
+    },
     gplay: {
       packages: [],           // Android package names, shared by appbrain + apkpure
     },

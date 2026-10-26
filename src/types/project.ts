@@ -4,6 +4,7 @@ export type ProjectSource =
   | 'docker'
   | 'chrome'
   | 'gnome'
+  | 'thunderbird'
   | 'appbrain'
   | 'apkpure'
   | 'chromestats'

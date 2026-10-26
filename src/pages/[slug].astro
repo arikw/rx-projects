@@ -374,6 +374,7 @@ const sourceLabelByPlatform: Record<string, string> = {
   chrome: 'Chrome Web Store',
   'google-play': 'Google Play',
   gnome: 'GNOME',
+  thunderbird: 'Thunderbird Add-ons',
   stackoverflow: 'Stack Overflow',
 };
 /** Canonical host suffix per platform. When the URL we have for a
@@ -387,6 +388,7 @@ const platformCanonicalHost: Record<string, RegExp> = {
   chrome: /(?:^|\.)chromewebstore\.google\.com$/i,
   'google-play': /(?:^|\.)play\.google\.com$/i,
   gnome: /(?:^|\.)gnome\.org$/i,
+  thunderbird: /(?:^|\.)addons\.thunderbird\.net$/i,
   stackoverflow: /(?:^|\.)stackoverflow\.com$/i,
 };
 function chipLabel(platform: string, url: string): string {
