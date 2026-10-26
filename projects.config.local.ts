@@ -90,6 +90,12 @@ const config: ProjectsConfig = {
         5835, // RX Input Layout Switcher
       ],
     },
+    thunderbird: {
+      ...baseConfig.sources.thunderbird,
+      addons: [
+        'lossmol', // Lossmol – The right direction (repo: lossmol-thunderbird-rtl-support)
+      ],
+    },
     gplay: {
       ...baseConfig.sources.gplay,
       packages: [
