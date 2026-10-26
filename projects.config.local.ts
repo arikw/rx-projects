@@ -93,7 +93,23 @@ const config: ProjectsConfig = {
     thunderbird: {
       ...baseConfig.sources.thunderbird,
       addons: [
-        'lossmol', // Lossmol – The right direction (repo: lossmol-thunderbird-rtl-support)
+        {
+          slug: 'lossmol',
+          // Copied from the listing (2026-10-26) while it awaits Mozilla's review and the
+          // API answers 401; the live data replaces this automatically once it's listed.
+          fallback: {
+            title: 'Lossmol – The right direction',
+            description:
+              'Ensures mail containing RTL text, such as Hebrew or Arabic, is shown correctly paragraph by paragraph according to dominant language. In addition, lets you compose mail with automatic paragraph direction applied as you write.',
+            icon: 'https://addons.thunderbird.net/user-media/addon_icons/990/990352-64.png?modified=e04252be',
+            screenshots: [
+              'https://addons.thunderbird.net/user-media/previews/full/209/209370.png?modified=1792251509',
+              'https://addons.thunderbird.net/user-media/previews/full/209/209371.png?modified=1792251509',
+            ],
+            sourceUrl: 'https://github.com/arikw/lossmol-thunderbird-rtl-support',
+            firstReleased: 2026,
+          },
+        },
       ],
     },
     gplay: {
