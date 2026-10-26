@@ -147,10 +147,26 @@ export type GnomeSourceConfig = {
   extensionIds: number[];
 };
 
+/** What a Thunderbird add-on's card shows while the site's API doesn't list
+ *  it yet (e.g. awaiting Mozilla's review). Copied by hand from its page;
+ *  ignored as soon as the API returns the add-on. */
+export type ThunderbirdFallback = {
+  title?: string;
+  description?: string;
+  icon?: string;
+  screenshots?: string[];
+  /** Source repo (merges the card with it), e.g. the listing's "home page". */
+  sourceUrl?: string;
+  firstReleased?: number;
+  users?: number;
+};
+
 export type ThunderbirdSourceConfig = {
   enabled: boolean;
-  /** Add-on slugs: the last part of addons.thunderbird.net/<locale>/thunderbird/addon/<slug>/. */
-  addons: string[];
+  /** Add-on slugs — the last part of
+   *  addons.thunderbird.net/<locale>/thunderbird/addon/<slug>/ — or
+   *  `{ slug, fallback }` to show hand-copied data until the API lists it. */
+  addons: Array<string | { slug: string; fallback?: ThunderbirdFallback }>;
 };
 
 export type GplaySourceConfig = {
