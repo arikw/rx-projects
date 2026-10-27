@@ -70,6 +70,11 @@ const config: ProjectsConfig = {
   },
   sources: {
     ...baseConfig.sources,
+    github: {
+      ...baseConfig.sources.github,
+      // Forks that are apps of their own (released as APKs on their Releases).
+      includeRepos: ['messages', 'r-recorder'],
+    },
     chrome: {
       ...baseConfig.sources.chrome,
       extensionIds: [
@@ -170,6 +175,8 @@ const config: ProjectsConfig = {
       ],
     },
   },
+  // Android apps installable with Obtainium (APKs on their GitHub Releases).
+  obtainium: ['messages', 'r-recorder'],
   featured: [
     // 'chrome-extensions-reloader'
   ],
