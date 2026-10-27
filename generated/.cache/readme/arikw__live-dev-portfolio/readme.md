@@ -82,6 +82,7 @@ npm run dev        # → http://localhost:4321/
 | Chrome Web Store    | `chromestats`, `extpose`      | banner / icon, weekly active users, rating, reviews, delisted detection |
 | Google Play         | `appbrain`, `apkpure`         | install tier, rating + histogram, banner / screenshots, 404-detected retirement |
 | GNOME Extensions    | _(self)_                      | downloads, version compatibility              |
+| Thunderbird Add-ons | _(self)_                      | daily users, rating, icon, screenshots — `sources.thunderbird.addons` (slugs); the API lists an add-on once Mozilla has reviewed it — until then `{ slug, fallback }` shows hand-copied data, replaced by the live data automatically |
 | Stack Overflow      | _(self)_                      | profile card (reputation · 🥇🥈🥉 badges)       |
 
 Each source with a mirror has a fallback chain, so an API hiccup or an anti-bot gate on one source never blanks the dashboard. A `manual` connector handles closed-source projects, retired listings, Wayback snapshots, and authoritative overrides — see [`docs/skills/add-manual-entry.md`](docs/skills/add-manual-entry.md).
