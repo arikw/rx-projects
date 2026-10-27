@@ -325,6 +325,17 @@ function formatNumber(n: number): string {
 // Downloads card — config keyed by project id, or by its URL slug.
 const downloads = config.downloads?.[project.id] ?? config.downloads?.[project.routeSlug];
 const downloadFiles = downloads?.files ?? [];
+// Obtainium (Android): installs and updates the app from its GitHub releases.
+// The redirect page opens the Obtainium app with this repo ready to add, and
+// explains how to get Obtainium when it isn't installed.
+const githubRepo = project.sourceUrls?.github;
+const obtainium =
+  githubRepo && (config.obtainium ?? []).some((k) => k === project.id || k === project.routeSlug)
+    ? {
+        install: `https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/${githubRepo}`,
+        latest: `${githubRepo.replace(/\/+$/, '')}/releases/latest`,
+      }
+    : null;
 const stats: StatChip[] = [];
 if (project.stats.stars) stats.push({ label: '★ Stars', value: formatNumber(project.stats.stars) });
 if (project.stats.forks) stats.push({ label: 'Forks', value: formatNumber(project.stats.forks) });
@@ -736,6 +747,18 @@ function projectGroups(p: Project): string[] {
           </section>
         )}
 
+        {obtainium && (
+          <section class="side-card">
+            <h2>Install</h2>
+            <a class="obtainium-button" href={obtainium.install} target="_blank" rel="noopener">Install with Obtainium</a>
+            <p class="downloads-note">
+              <a href="https://obtainium.imranr.dev/" target="_blank" rel="noopener">Obtainium</a> installs Android
+              apps from their releases and keeps them updated. Or
+              <a href={obtainium.latest} target="_blank" rel="noopener">download the latest APK</a>.
+            </p>
+          </section>
+        )}
+
         {downloadFiles.length > 0 && (
           <section class="side-card">
             <h2>Downloads</h2>
@@ -1141,6 +1164,21 @@ function projectGroups(p: Project): string[] {
   }
   .homepage-link:hover { text-decoration: underline; }
 
+  .obtainium-button {
+    display: block;
+    padding: 0.6rem 0.9rem;
+    border-radius: 6px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-align: center;
+    text-decoration: none;
+  }
+  .obtainium-button:hover,
+  .obtainium-button:focus-visible { filter: brightness(1.12); }
+  .side-card .downloads-note a { color: var(--accent); }
+  .side-card > .obtainium-button + .downloads-note { margin-top: 0.6rem; }
   .downloads-list {
     margin: 0;
     padding: 0;

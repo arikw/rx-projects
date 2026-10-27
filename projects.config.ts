@@ -80,6 +80,7 @@ const config: ProjectsConfig = {
     github: {
       enabled: true,
       includeForks: false,
+      includeRepos: [],       // forks to show anyway (repo names)
       excludeRepos: [],
     },
     npm: {
@@ -144,6 +145,12 @@ const config: ProjectsConfig = {
     //   ],
     // },
   },
+
+  // Android apps released as APKs on their GitHub repo's Releases: the
+  // detail page gets an "Install with Obtainium" button (Obtainium installs
+  // and updates apps straight from GitHub releases) and a link to the latest
+  // release. Project ids (or URL slugs).
+  obtainium: [],
 
   // Project slugs to pin at the top of the page. Works for any source:
   // match by GitHub repo name, npm package name, docker image, chrome slug,

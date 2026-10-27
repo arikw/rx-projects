@@ -76,12 +76,13 @@ async function fetchAllRepos(user: string, token?: string): Promise<GithubRepo[]
 export type GithubFetchInput = {
   handle: string;
   includeForks: boolean;
+  includeRepos?: string[];
   excludeRepos: string[];
   fixtureMode?: boolean;
 };
 
 export async function fetchGithubRepoProjects(input: GithubFetchInput): Promise<ConnectorResult[]> {
-  const { handle, includeForks, excludeRepos, fixtureMode } = input;
+  const { handle, includeForks, includeRepos = [], excludeRepos, fixtureMode } = input;
   if (isPlaceholderHandle(handle)) return [];
   if (fixtureMode) return loadFixture('github');
 
@@ -95,7 +96,7 @@ export async function fetchGithubRepoProjects(input: GithubFetchInput): Promise<
   // A repo named exactly after the handle is GitHub's "profile README" repo —
   // it renders the README on the user's profile, not a real project.
   const keptRepos = repos
-    .filter((r) => includeForks || !r.fork)
+    .filter((r) => includeForks || !r.fork || includeRepos.includes(r.name))
     .filter((r) => !excludeSet.has(r.name))
     .filter((r) => r.name.toLowerCase() !== handleLower);
 

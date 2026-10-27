@@ -32,6 +32,7 @@ export default defineConnector({
   defaultConfig: {
     enabled: true,
     includeForks: false,
+    includeRepos: [] as string[],
     excludeRepos: [] as string[],
   },
   fetch: async (config, opts) => {
@@ -44,6 +45,7 @@ export default defineConnector({
       fetchGithubRepoProjects({
         handle,
         includeForks: cfg.includeForks,
+        includeRepos: cfg.includeRepos,
         excludeRepos: cfg.excludeRepos,
         fixtureMode: opts?.fixtureMode,
       }),
@@ -80,6 +82,7 @@ export const fetchGithubProjects: Connector = async (config, options) => {
   return fetchGithubRepoProjects({
     handle: config.user.github,
     includeForks: cfg.includeForks,
+    includeRepos: cfg.includeRepos,
     excludeRepos: cfg.excludeRepos,
     fixtureMode: options?.fixtureMode,
   });

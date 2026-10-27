@@ -119,6 +119,9 @@ export type ManualProject = {
 export type GithubSourceConfig = {
   enabled: boolean;
   includeForks: boolean;
+  /** Forks to show even when `includeForks` is false (repo names) — e.g. a
+   *  fork you've turned into your own app. */
+  includeRepos?: string[];
   /** Repo names to omit from the dashboard. */
   excludeRepos: string[];
 };
@@ -385,6 +388,10 @@ export type ProjectsConfig = {
    *  project id (or its URL slug). Rendered as a "Downloads" card in the
    *  sidebar, under Stats. See {@link ProjectDownloads}. */
   downloads?: Record<string, ProjectDownloads>;
+  /** Android apps released as APKs on their GitHub repo's Releases: an
+   *  "Install with Obtainium" button on the project's detail page, plus a
+   *  link to the latest release. Project ids (or URL slugs). */
+  obtainium?: string[];
   /** Project slugs to pin at the top of the page. */
   featured: string[];
   /** Per-project URL-slug overrides — keyed by project id, value is the
