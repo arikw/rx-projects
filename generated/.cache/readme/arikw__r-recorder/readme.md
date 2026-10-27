@@ -1,0 +1,134 @@
+# R-Recorder
+
+R-Recorder is a fork of [Audio Recorder](https://github.com/Dimowner/AudioRecorder) by Dmytro Ponomarenko
+(Dimowner), licensed under the Apache License 2.0. It is not affiliated with or endorsed by the original author.
+
+What it changes:
+- **Where recordings are saved** (Settings → "Save recordings to"):
+  - the app's own folder, as in the original (other apps can't read it);
+  - `Recordings/R-Recorder`, a shared folder other apps can read (the default; Android 11+);
+  - a folder you choose: recordings are made in the app's folder and copied there when they finish.
+- Its own app id (`net.wzmn.audiorecorder`), name and icon, so it installs next to the original app.
+
+Release builds are signed with the fork's own key when `key/release/signing.properties` exists (kept out of git),
+and with the public sample key otherwise. Build in a container: `tools/Containerfile`.
+
+The original project's README follows.
+
+---
+
+# Development Plans
+<b>Release v0.9.99:</b>
+ - Update target SDK to 34
+ - Fix few main issues and bugs
+   
+<b>Release v1.0.0:</b>
+ - Add support Bluetooth mics
+ - Add ability to select recording audio sources
+ - Add backup feature to allow download all records files into a public directory 'Downloads'
+
+<br>
+<p><b>Release v2.0.0:</b> (Currently under development)</p>
+<p>Completely rework the app by adopting a new architecture written in Kotlin, designing the UI with Android Compose, integrating a Room database, using ExoPlayer for media playback, and Hilt for dependency injection. Despite these substantial changes, the app’s existing user interface will remain mostly unchanged. Additionally, focusing on achieving robust unit test coverage. These enhancements are expected to significantly enhance app stability, accelerate feature delivery, and mitigate concerns about introducing new bugs.</p>
+
+
+![Audio Recorder Logo](https://github.com/Dimowner/AudioRecorder/blob/master/app/src/releaseConfig/res/mipmap-xxxhdpi/audio_recorder_logo.png)
+
+# Audio Recorder
+
+[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
+     alt="Get it on F-Droid"
+     height="80">](https://f-droid.org/packages/com.dimowner.audiorecorder/)
+[<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png"
+     alt="Get it on Google Play"
+     height="80">](https://play.google.com/store/apps/details?id=com.dimowner.audiorecorder)
+
+
+<p><b>Audio Recorder</b> is your go-to app for seamless audio recording. Whether you’re capturing important moments or creating content, Audio Recorder got you covered. Here’s what makes our app stand out:</p>
+
+<p><b>1. Fast Startup</b>: the app optimized to launch quickly, so you won’t miss a beat when inspiration strikes.</p>
+<b>2. Flexible Formats</b>: Choose from three recording formats:
+
+ - <b>M4A</b>: High-quality audio in a compact file size.
+ - <b>WAVE (WAV)</b>: Ideal for professional-grade recordings.
+ - <b>3Gp</b>: Perfect for sharing on the go.
+
+<b>3. Customizable Settings:</b>
+ - Easy to adjust sample rate and bitrate to suit your needs.
+ - Toggle between mono and stereo recording.
+
+<b>4. Visual Waveform</b>: See your recordings come to life with waveform display.
+
+<b>5. User-Friendly Features:</b>
+ - Rename recordings for easy organization.
+ - Share your audio files effortlessly.
+ - Import existing audio files.
+ - Create bookmarks for quick access.
+ - Personalize the app with colorful themes.
+
+# Test Coverage Reports
+
+The project uses [JaCoCo](https://www.jacoco.org/) for code-coverage reporting. Two Gradle tasks are available:
+
+### Unit-test-only report (no device required)
+
+```bash
+./gradlew jacocoTestReport
+```
+
+Runs **unit tests** (`testDebugConfigDebugUnitTest`) and generates a coverage report.
+
+| Output   | Path                                                  |
+|----------|-------------------------------------------------------|
+| HTML     | `app/build/reports/jacoco/html/index.html`            |
+| XML      | `app/build/reports/jacoco/jacocoTestReport.xml`       |
+
+### Full report — unit tests + connected (instrumented) tests
+
+> **Prerequisite:** a connected device or running emulator.
+
+```bash
+./gradlew jacocoFullReport
+```
+
+Runs both **unit tests** and **connected Android tests** (`connectedDebugConfigDebugAndroidTest`), then merges the coverage data into a single report.
+
+| Output   | Path                                                  |
+|----------|-------------------------------------------------------|
+| HTML     | `app/build/reports/jacoco/htmlFull/index.html`        |
+| XML      | `app/build/reports/jacoco/jacocoFullReport.xml`       |
+
+### Coverage verification
+
+```bash
+./gradlew jacocoTestCoverageVerification
+```
+
+Runs `jacocoFullReport` and then asserts that the overall **line coverage ratio ≥ 5 %**. The build will fail if the threshold is not met.
+
+> **Tip:** For fast local iteration use `jacocoTestReport` (unit tests only). Reserve `jacocoFullReport` / `jacocoTestCoverageVerification` for CI or when you need instrumented-test coverage.
+
+# FAQ
+### <b>When option to choose recording directory will be added?</b>
+<p>There is no plans to add feature where user can change recording directory. Newer versions of Android added restrictions on ability to interact with device file system. There is no simple way how to implement the feature. So all records are stored in app's private dir. Anyway, all record files available for user to download from app's private dir to a public dir.</p> 
+
+### License
+
+```
+Copyright 2019 Dmytro Ponomarenko
+
+Licensed to the Apache Software Foundation (ASF) under one or more contributor
+license agreements. See the NOTICE file distributed with this work for
+additional information regarding copyright ownership. The ASF licenses this
+file to you under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy of
+the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+```

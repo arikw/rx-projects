@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "_generated": "Auto-generated. Maps original upstream image URLs (from a README) to local served paths. Maintained by src/lib/readme-cache.ts. Delete to force re-fetch.",
+  "map": {
+    "https://raw.githubusercontent.com/arikw/messages/main/graphics/icon.webp": "_cache/readme/arikw__messages/79e4263173aa9ea4.webp",
+    "https://raw.githubusercontent.com/arikw/messages/main/fastlane/metadata/android/en-US/images/phoneScreenshots/1_en-US.png": "_cache/readme/arikw__messages/0c99c3213f331f37.png",
+    "https://raw.githubusercontent.com/arikw/messages/main/fastlane/metadata/android/en-US/images/phoneScreenshots/3_en-US.png": "_cache/readme/arikw__messages/8a6105ca2e3b93eb.png",
+    "https://raw.githubusercontent.com/arikw/messages/main/fastlane/metadata/android/en-US/images/phoneScreenshots/2_en-US.png": "_cache/readme/arikw__messages/28f5945cf4bae6b3.png"
+  }
+}
