@@ -1,5 +1,7 @@
 {
   "version": 1,
   "_generated": "Auto-generated. Maps original upstream image URLs (from a README) to local served paths. Maintained by src/lib/readme-cache.ts. Delete to force re-fetch.",
-  "map": {}
+  "map": {
+    "https://raw.githubusercontent.com/arikw/r-recorder/master/app/src/releaseConfig/res/mipmap-xxxhdpi/audio_recorder_logo.png": "_cache/readme/arikw__r-recorder/cc95fa0228f293ea.png"
+  }
 }
