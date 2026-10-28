@@ -527,6 +527,24 @@ const positiveReviews = project.reviews && project.reviews.length > 0
 // Within the same total score, prefer projects with a real detail page so
 // the link goes somewhere worth visiting.
 const allProjectsForDiscovery = await loadProjects();
+// Tags card: the same tag set the gallery's filter row offers (config.tags
+// exclude / minCount). A tag with a filter chip links to the gallery
+// filtered by it; one below minCount has no chip, so it shows as plain text.
+const tagCfg = config.tags ?? {};
+const tagExclude = new Set((tagCfg.exclude ?? []).map((t) => t.toLowerCase()));
+const tagTotals = new Map<string, number>();
+for (const p of allProjectsForDiscovery) {
+  for (const t of p.tags ?? []) tagTotals.set(t, (tagTotals.get(t) ?? 0) + 1);
+}
+const projectTags = (project.tags ?? [])
+  .filter((t) => !tagExclude.has(t.toLowerCase()))
+  .map((t) => ({
+    name: t,
+    // tags-expanded so a tag past the top-N is visible (and so applies).
+    href: (tagTotals.get(t) ?? 0) >= (tagCfg.minCount ?? 2)
+      ? `${base}#tag=${encodeURIComponent(t)}&tags-expanded=1`
+      : null,
+  }));
 const featuredSet = new Set(config.featured ?? []);
 
 function discoveryScore(other: Project): number {
@@ -806,6 +824,17 @@ function projectGroups(p: Project): string[] {
             visitor two CTAs to the same place. Dedupe is intentionally
             strict (exact URL match): a Homepage at example.com/about
             and a chip at example.com both stay visible. */}
+        {projectTags.length > 0 && (
+          <section class="side-card">
+            <h2>Tags</h2>
+            <ul class="tag-chips">
+              {projectTags.map((t) => (
+                <li>{t.href ? <a href={t.href}>{t.name}</a> : <span>{t.name}</span>}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {project.homepage && !(sourceChips.length === 1 && sourceChips[0].url === project.homepage) && (
           <section class="side-card">
             <h2>Homepage</h2>
@@ -1183,6 +1212,27 @@ function projectGroups(p: Project): string[] {
   }
   .homepage-link:hover { text-decoration: underline; }
 
+  .tag-chips {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .tag-chips a,
+  .tag-chips span {
+    display: inline-block;
+    padding: 2px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: var(--fg);
+    text-decoration: none;
+  }
+  .tag-chips span { color: var(--muted); }
+  .tag-chips a:hover,
+  .tag-chips a:focus-visible { border-color: var(--accent); color: var(--accent); }
   .obtainium-button {
     display: block;
     padding: 0.6rem 0.9rem;
