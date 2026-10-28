@@ -27,6 +27,8 @@
     "https://wzmn.net/projects/_cache/favicon/75904bcdcb67134e-180-rv2.png": "#b9c36b",
     "https://tooleap.com/images/favicon/favicon-196x196.png": "#fe8b3e",
     "https://lh3.googleusercontent.com/xNf3Q7_yaq8yrGWFDNUWs69Kq__BVmdfeZ1hhkGuyPy4YQoZWOFjCoex5MWDa2vc3CaIWqQA6sSbVMTTdjmbdc28iw=s128-rj-sc0x00ffffff": "#1e6feb",
-    "https://addons.thunderbird.net/user-media/addon_icons/990/990352-64.png?modified=e04252be": "#016c63"
+    "https://addons.thunderbird.net/user-media/addon_icons/990/990352-64.png?modified=e04252be": "#016c63",
+    "https://raw.githubusercontent.com/arikw/r-recorder/master/fastlane/metadata/android/en-US/images/icon.png": "#f3463d",
+    "https://raw.githubusercontent.com/arikw/messages/main/fastlane/metadata/android/en-US/images/icon.png": "#0b6a1b"
   }
 }
