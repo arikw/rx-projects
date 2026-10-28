@@ -236,9 +236,13 @@ if ((tier === 'readme' || (tier === 'mdx' && appendTier === 'readme')) && owner 
     // Raw HTML <img> tags in the README (common for sized icons and
     // badges) skip the markdown image renderer above, so resolve their
     // src the same way: a repo-relative path → the raw / cached file.
+    // (Markdown images were already rewritten — to the local cache under
+    // the deploy base — so leave those alone; a second pass would treat
+    // that path as repo-relative.)
     const html = (await marked.parse(stripLeadingH1(state.readme))).replace(
       /(<img\b[^>]*?\bsrc=)(["'])([^"']+)\2/gi,
-      (_m: string, head: string, q: string, src: string) => `${head}${q}${resolveImage(src)}${q}`,
+      (_m: string, head: string, q: string, src: string) =>
+        `${head}${q}${src.startsWith(deployBase) ? src : resolveImage(src)}${q}`,
     );
     readmeHtml = sanitizeMarkdownHtml(html);
   }
