@@ -46,7 +46,31 @@ type GithubRepo = {
   fork: boolean;
   archived: boolean;
   has_pages: boolean;
+  default_branch?: string;
 };
+
+// Android apps keep their store icon in the source tree. Paths tried in
+// order: the fastlane / F-Droid metadata icon (the listing icon F-Droid and
+// other stores show), then Android Studio's 512px Play Store export.
+const ANDROID_ICON_PATHS = [
+  'fastlane/metadata/android/en-US/images/icon.png',
+  'app/src/main/ic_launcher-playstore.png',
+];
+
+/** For a repo tagged `android`, the raw URL of its store icon, if any. */
+async function findAndroidIcon(handle: string, r: GithubRepo): Promise<string | undefined> {
+  const branch = r.default_branch || 'HEAD';
+  for (const path of ANDROID_ICON_PATHS) {
+    const url = `https://raw.githubusercontent.com/${handle}/${r.name}/${branch}/${path}`;
+    try {
+      const res = await fetch(url, { method: 'HEAD', headers: { 'User-Agent': 'live-dev-portfolio' } });
+      if (res.ok) return url;
+    } catch {
+      /* offline / blocked — no icon */
+    }
+  }
+  return undefined;
+}
 
 async function fetchPage(user: string, page: number, token?: string): Promise<GithubRepo[]> {
   const headers: Record<string, string> = {
@@ -135,6 +159,17 @@ export async function fetchGithubRepoProjects(input: GithubFetchInput): Promise<
     writePagesCache(pagesCache);
   }
 
+  // Android apps without a Pages favicon: their store icon from the source.
+  const androidIcons = new Map<string, string>();
+  await Promise.all(
+    keptRepos
+      .filter((r) => (r.topics ?? []).includes('android') && !(r.has_pages && pagesCache.pages[r.name]?.favicon))
+      .map(async (r) => {
+        const icon = await findAndroidIcon(handle, r);
+        if (icon) androidIcons.set(r.name, icon);
+      }),
+  );
+
   return keptRepos.map<ConnectorResult>((r) => {
     const pagesEntry = r.has_pages ? pagesCache.pages[r.name] : undefined;
     const homepage = r.homepage?.trim() || pagesEntry?.pagesUrl || undefined;
@@ -173,7 +208,7 @@ export async function fetchGithubRepoProjects(input: GithubFetchInput): Promise<
         // undefined so the card falls through to the brand-mark layout,
         // matching how no-Pages github repos render. The Pages URL still
         // surfaces via `homepage` so the "ships as a site" signal isn't lost.
-        icon: pagesEntry?.favicon ?? undefined,
+        icon: pagesEntry?.favicon ?? androidIcons.get(r.name) ?? undefined,
         stats: { stars: r.stargazers_count, forks: r.forks_count },
       },
     };
