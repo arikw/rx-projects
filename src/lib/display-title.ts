@@ -90,13 +90,15 @@ export function resolveDisplayTitle(project: Project): string {
     // Swap to the body H1 only when it's a meaningful improvement —
     // not itself a slug (would trade one ugly identifier for another)
     // AND not sentence-length (Docker's "Proof of Concept: …" h1).
+    // An H1 that differs only in case ("R-Recorder" for `r-recorder`) is
+    // such an improvement: it's the name as its author writes it.
     // When we don't swap, drop the `<owner>/` namespace at least, so
     // "arikwe/docker-compose-webhook" still loses its redundant prefix.
     const swapOk =
       h1 != null &&
       !isSlugLike(h1) &&
       h1.length <= MAX_BODY_H1_LENGTH &&
-      h1.toLowerCase() !== title.toLowerCase();
+      h1 !== title;
     title = swapOk ? (h1 as string) : stripNamespace(title);
   }
   return trimAfterSeparator(title);
