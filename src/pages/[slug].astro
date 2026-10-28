@@ -1555,7 +1555,7 @@ function projectGroups(p: Project): string[] {
   .readme-body :global(a), .mdx-body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
   .readme-body :global(p), .mdx-body :global(p) { color: var(--fg); }
   .readme-body :global(img), .mdx-body :global(img) {
-    max-width: 100%; height: auto; border-radius: 6px;
+    max-width: 100%; border-radius: 6px;
     /* Pull in the shared spinner from the rule below — every img on
        the detail page shares the same loading state visual. */
     background-color: var(--card-bg);
@@ -1563,6 +1563,14 @@ function projectGroups(p: Project): string[] {
     background-repeat: no-repeat;
     background-position: center;
     background-size: 36px 36px;
+  }
+  /* height: auto keeps the aspect ratio when max-width shrinks an image —
+     except for one the README sized by height only (a store badge,
+     <img height="54">): there it would override the attribute and show
+     the image at its natural size. */
+  .readme-body :global(img:not([height])), .mdx-body :global(img:not([height])),
+  .readme-body :global(img[height][width]), .mdx-body :global(img[height][width]) {
+    height: auto;
   }
   /* Once loaded, drop the spinner and its backdrop — they'd otherwise
      stay visible behind transparent images (icons, badges). The script
