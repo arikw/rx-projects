@@ -301,6 +301,13 @@ if (tier === 'mdx' && mdxSlug) {
 
 // ─── Common derived values ────────────────────────────────────────────
 const base = config.deployment.base.endsWith('/') ? config.deployment.base : `${config.deployment.base}/`;
+// A homepage that is this very page (a repo whose website field points at its
+// dashboard page) would make the Homepage card link to itself — hide it then.
+const sameUrl = (a: string, b: string) =>
+  a.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+$/, '').toLowerCase() ===
+  b.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+$/, '').toLowerCase();
+const thisPageUrl = `${config.deployment.site.replace(/\/+$/, '')}${base}${project.routeSlug}/`;
+const showHomepage = !!project.homepage && !sameUrl(project.homepage, thisPageUrl);
 
 // Pull the user-facing display title via the shared resolver — same
 // rules apply on cards (so the home grid sees the friendly name too).
@@ -835,7 +842,7 @@ function projectGroups(p: Project): string[] {
           </section>
         )}
 
-        {project.homepage && !(sourceChips.length === 1 && sourceChips[0].url === project.homepage) && (
+        {showHomepage && !(sourceChips.length === 1 && sourceChips[0].url === project.homepage) && (
           <section class="side-card">
             <h2>Homepage</h2>
             <a class="homepage-link" href={project.homepage} target="_blank" rel="noopener">Visit website &#x2197;</a>
