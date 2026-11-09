@@ -23,8 +23,8 @@ self-hosted relay + MV3 extension.
                                                          ▼
                                                  ┌──────────────────┐
                                                  │  extension/      │
-                                                 │  (MV3, any       │
-                                                 │   Chromium browser) │
+                                                 │  (MV3, Chromium  │
+                                                 │   or Firefox)    │
                                                  └──────────────────┘
 ```
 
@@ -32,9 +32,8 @@ self-hosted relay + MV3 extension.
   routes to extension over WS, returns result via long-poll `/poll`.
   Bearer-token auth (POSTER for CC, PULLER for extension). sqlite for
   audit log.
-- **mcp/** — MCP stdio server loaded by Claude Code. Tools:
-  `list_browsers`, `screenshot`, `navigate`, `new_tab`, `click`, `fill`,
-  `query`.
+- **mcp/** — MCP stdio server loaded by Claude Code. Tools: see
+  [Command set](#command-set-current).
 - **extension/** — Manifest v3 extension. Persistent WS to relay,
   dispatches commands to active tab via `chrome.scripting.executeScript`
   + `chrome.tabs.captureVisibleTab`. Notification-based confirmation
@@ -43,74 +42,122 @@ self-hosted relay + MV3 extension.
 
 ## Install
 
-Five steps. Once done, the browser tools are available in **every**
-Claude Code session, regardless of which directory you launch from.
+Five steps. Each one ends with a check, so you know it worked before you
+move on. Once done, the browser tools are available in **every** Claude
+Code session, whichever directory you launch from.
 
-The install location is up to you — examples below use
-`~/tools/rx-browser-bridge-mcp`. Adjust the absolute path in step 5 to
-wherever you actually cloned.
+**You need:** Node.js 20 or newer, Docker or Podman, Claude Code (or
+another MCP client), and Chrome / Chromium / Edge / Brave **or** Firefox
+128+. The commands are for Linux and macOS.
 
-### 1. Clone and build
+**How the pieces fit:** the *relay* is a small server you run. The
+*browser extension* connects to it, and so does the *MCP server* that
+Claude Code starts. Each connection has its own password (token), and
+both tokens live in one file, `.env`:
+
+| Token in `.env` | Who uses it | Where you put it |
+|---|---|---|
+| `PULLER_TOKEN` | the browser extension | paste it into the extension's Options page (step 4) |
+| `POSTER_TOKEN` | the MCP server | nowhere: it reads `.env` itself (step 5) |
+
+The examples clone into `~/tools/rx-browser-bridge-mcp`. Any place works;
+just use the same path in step 5.
+
+### 1. Get the code and build the MCP server
 
 ```bash
 git clone https://github.com/arikw/rx-browser-bridge-mcp ~/tools/rx-browser-bridge-mcp
 cd ~/tools/rx-browser-bridge-mcp
 PUPPETEER_SKIP_DOWNLOAD=true npm install
-npm -w mcp run build      # produces mcp/dist/server.js
+npm -w mcp run build
 ```
 
-(`PUPPETEER_SKIP_DOWNLOAD=true` skips puppeteer's bundled Chromium —
-tests use system chromium at `/usr/bin/chromium`. Drop the flag if you
-don't have one.)
+**Check:** `ls mcp/dist/server.js` shows the file. (It isn't in git; you
+must build it.)
 
-### 2. Configure secrets
+`PUPPETEER_SKIP_DOWNLOAD=true` only skips a browser download used by the
+tests.
+
+### 2. Create `.env` with two random tokens
 
 ```bash
 cp .env.example .env
-# edit .env — set POSTER_TOKEN and PULLER_TOKEN to random values
-# (openssl rand -hex 32 each is a good default)
+sed -i.bak \
+  -e "s/^POSTER_TOKEN=.*/POSTER_TOKEN=$(openssl rand -hex 32)/" \
+  -e "s/^PULLER_TOKEN=.*/PULLER_TOKEN=$(openssl rand -hex 32)/" .env && rm .env.bak
 ```
 
-The same `.env` is read by all three components — relay, MCP server,
-and docker / podman compose. Edit once, applies everywhere.
+**Check:** `grep TOKEN .env` shows two long random values, not `replace-me`.
 
-### 3. Boot the relay
+Keep `PORT=3000` unless that port is taken. If you change it, use the new
+port everywhere below where you see `3000`.
+
+### 3. Start the relay
+
+Run it in a container (recommended; it keeps running in the background):
 
 ```bash
-# Option A — tsx (no build step, foreground)
-npm -w relay run dev
-
-# Option B — container via compose (auto-discovers compose.yaml)
-cd relay && docker compose up --build       # or: podman compose up --build
-
-# Option C — without compose (flags mirror compose.yaml)
-cd relay && docker build -t rx-browser-bridge-relay:dev .
-docker run -d --restart unless-stopped -p 127.0.0.1:3000:3000 --env-file ../.env \
-  -e DATA_DIR=/data -v "$PWD/data:/data" rx-browser-bridge-relay:dev
+cd relay
+docker compose up -d --build        # or: podman compose up -d --build
+cd ..
 ```
 
-Defaults:
-- Listens on `127.0.0.1:3000`
-- Audit log at `relay/data/relay.sqlite` (or `/data/relay.sqlite` inside
-  the container, bind-mounted to `relay/data/` on the host)
+Without compose:
+
+```bash
+cd relay
+docker build -t rx-browser-bridge-relay .
+docker run -d --name rx-browser-bridge-relay --restart unless-stopped \
+  -p 127.0.0.1:3000:3000 --env-file ../.env \
+  -e DATA_DIR=/data -v "$PWD/data:/data" rx-browser-bridge-relay
+cd ..
+```
+
+Or straight on the machine, in the foreground: `npm -w relay run dev`.
+
+**Check:** `curl http://localhost:3000/health` answers with JSON.
+
+The relay listens only on this machine (`127.0.0.1`). Its log is in
+`relay/data/relay.sqlite`.
 
 ### 4. Load the extension into your browser
 
-- `chrome://extensions` (or your Chromium browser's equivalent) →
-  enable "Developer mode" → "Load unpacked" → pick the `extension/`
-  directory.
-- Open the extension's Options page and fill in:
-  - **Relay URL**: `ws://localhost:3000/ws`
-  - **Puller token**: paste `PULLER_TOKEN` from `.env`
-  - **Browser id**: friendly slug, e.g. `office`
-  - **Tags**: comma-separated, e.g. `reddit, hn`
-- For the `evaluate` tool to run on CSP-locked sites (GitHub, etc.), open
-  the extension's **Details** and enable **"Allow user scripts"** — Chrome's
-  gate for the `userScripts` API. Without it, `evaluate` still works on
-  pages whose own CSP permits `eval`.
+**Chrome / Chromium / Edge / Brave**
 
-Click the toolbar icon → popup shows connection status, the last 50
-audit entries, and a kill switch.
+1. Open `chrome://extensions` and turn on **Developer mode** (top right).
+2. **Load unpacked** → choose the `extension/` folder.
+3. Optional but recommended: open the extension's **Details** and turn on
+   **Allow user scripts**. Without it, the `evaluate` tool doesn't work
+   on sites that block running code, such as GitHub.
+
+**Firefox (128 or newer)**
+
+1. Open `about:debugging#/runtime/this-firefox`.
+2. **Load Temporary Add-on…** → choose `extension/manifest.json`.
+3. Open `about:addons` → RX MCP Browser Bridge → **Permissions**, and
+   allow access to all websites, if it isn't on already.
+
+A temporary add-on is removed when Firefox closes, so you repeat these
+steps after each restart. To keep it installed, it has to be signed by
+Mozilla (see Known gaps). Two differences from Chrome: the confirmation
+for risky clicks is a notification you **click to allow** (ignore it to
+deny), and `evaluate` runs only on sites that allow running code.
+
+**Then, in either browser:** open the extension's **Options** page and fill in:
+
+| Field | Value |
+|---|---|
+| Relay URL | `ws://localhost:3000/ws` (note `ws://` and `/ws`) |
+| Puller token | the `PULLER_TOKEN` value from `.env` |
+| Browser id | a short name for this browser, e.g. `office` |
+| Tags | optional, comma-separated, e.g. `work` |
+
+**Check:** click the extension's toolbar icon. The dot is green and it
+says *connected*. If it isn't, the error under it says why. Usually the
+relay isn't running, or the token doesn't match.
+
+The same window lists what the extension is doing: what's running now,
+recent commands with ✓/✗, and a kill switch.
 
 ### 5. Register the MCP with Claude Code (user-scope)
 
@@ -201,6 +248,7 @@ unpacked extension, registers the browser, exercises the full pipe.
 |---|---|---|
 | `list_browsers` | — | no |
 | `list_tabs` | `target?` / `tag?` | no |
+| `focus_tab` | `tabId?`, `target?` / `tag?` | no (changes what's on screen) |
 | `screenshot` | `fullPage?`, `tabId?`, `target?` / `tag?` | no |
 | `navigate` | `url`, `tabId?`, `target?` / `tag?` | no |
 | `new_tab` | `url`, `active?`, `target?` / `tag?` | no |
@@ -208,6 +256,11 @@ unpacked extension, registers the browser, exercises the full pipe.
 | `fill` | `selector`, `value`, `tabId?`, `target?` / `tag?` | yes if selector mentions password |
 | `query` | `selector`, `tabId?`, `target?` / `tag?` | no |
 | `evaluate` | `code`, `tabId?`, `target?` / `tag?` | runs arbitrary JS — see note |
+
+If a page doesn't answer within 25s, the call fails with
+`tab-unresponsive` and the tab's state, instead of hanging. Usual cause:
+Chrome paused a background tab, or the page waits on an alert/confirm.
+`focus_tab` brings the tab forward, which wakes it.
 
 `evaluate` runs arbitrary JavaScript in the active tab and returns the
 final expression value (JSON-encoded; return a Promise to await async
@@ -281,10 +334,8 @@ NOT yet implemented.
 - No per-domain confirmation policy (only the heuristic match on
   selector text).
 - No retry/backpressure on flood-enqueue.
-- Extension icons are 1×1 placeholders.
-- No tab targeting beyond "active tab in active window" — can't drive
-  background tabs.
 - MCP plugin not published to a marketplace yet.
+- Firefox: loads only as a temporary add-on (not signed by Mozilla yet).
 
 ## Roadmap
 
@@ -294,7 +345,6 @@ NOT yet implemented.
 - Per-domain confirmation policy + "trust for 10min" toggle.
 - Cross-network deploy guide (Tailscale / Cloudflare Tunnel).
 - Tab targeting (URL match, window selector).
-- Firefox MV3 manifest variant.
 
 ## License
 
