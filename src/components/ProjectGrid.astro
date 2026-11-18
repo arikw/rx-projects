@@ -210,8 +210,7 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       tag: 'rxp:tag-filter',
       lang: 'rxp:lang-filter',
       status: 'rxp:status-filter',
-      // The Changes picks are a standing preference ("I care about users"),
-      // kept even though "Updated" itself isn't.
+      // The Changes picks are a standing preference ("I care about users").
       changes: 'rxp:changes-filter',
       direction: 'rxp:direction-filter',
     } as const;
@@ -574,13 +573,9 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       applyFilter();
     }
 
-    function setStatus(status: Status) {
+    function setStatus(status: Status, persist = true) {
       activeStatus = status;
-      // "Updated" isn't remembered across visits: what changed is different
-      // every visit, so it (and its Changes row) only shows when picked, or
-      // when a shared link asks for it.
-      if (status === 'updated') lsDel(STORAGE_KEYS.status);
-      else lsSet(STORAGE_KEYS.status, status);
+      if (persist) lsSet(STORAGE_KEYS.status, status);
       shown = pageSize;
       statusChips.forEach((c) => {
         c.setAttribute('aria-pressed', String((c.dataset.filterStatus ?? '') === status));
@@ -827,7 +822,10 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
     });
     const VALID_STATUSES: Status[] = ['live', 'retired', 'updated'];
     const storedStatus = lsGet(STORAGE_KEYS.status);
-    const statusCandidate = initial.status ?? (storedStatus === 'updated' ? null : storedStatus);
+    // A remembered "Updated" applies once this visit's changes are known
+    // (refreshUpdatedChip); with none, the gallery shows All for now and
+    // keeps the preference for the next visit that has changes.
+    const statusCandidate = initial.status ?? storedStatus;
     if (statusCandidate && (VALID_STATUSES as string[]).includes(statusCandidate)) {
       activeStatus = statusCandidate as Status;
     }
@@ -908,10 +906,11 @@ const statusChips: { key: 'live' | 'retired'; label: string; count: number }[] =
       const updatedCount = cards.filter((c) => c.dataset.updated === '1').length;
       const existing = root!.querySelector<HTMLButtonElement>('[data-filter-status="updated"]');
       if (updatedCount === 0) {
-        // No updates → drop the chip (and reset filter if it was active).
+        // No updates → drop the chip, and show All — without forgetting a
+        // remembered "Updated" (persist=false).
         if (existing) existing.remove();
         statusChips = Array.from(root!.querySelectorAll<HTMLButtonElement>('[data-filter-status]'));
-        if (activeStatus === 'updated') setStatus('');
+        if (activeStatus === 'updated') setStatus('', false);
         return;
       }
       const row = ensureStatusRow();

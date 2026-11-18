@@ -1761,6 +1761,11 @@ a.card-thumb-frame:focus-visible {
    Mobile (≤600px): label sits above its own row of chips, and only
    the chip container is the horizontal-scroll axis — the label never
    competes with the chips for the same scroll space. */
+.filter-row[hidden] {
+  /* display: flex below would otherwise keep a hidden row (the Changes
+     row once "Updated" is unpicked) on screen. */
+  display: none;
+}
 .filter-row {
   display: flex;
   /* baseline (not center) so when the chips container wraps to a

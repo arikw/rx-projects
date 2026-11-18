@@ -357,6 +357,11 @@ const obtainium =
 const stats: StatChip[] = [];
 if (project.stats.stars) stats.push({ label: '★ Stars', value: formatNumber(project.stats.stars) });
 if (project.stats.forks) stats.push({ label: 'Forks', value: formatNumber(project.stats.forks) });
+if (project.stats.dependents) stats.push({
+  label: 'Dependents',
+  value: formatNumber(project.stats.dependents),
+  title: 'Other npm packages that depend on this one',
+});
 if (project.stats.users) stats.push({ label: 'Users', value: formatNumber(project.stats.users) });
 if (project.stats.downloads) stats.push({ label: 'Downloads', value: formatNumber(project.stats.downloads) });
 if (project.stats.rating) stats.push({
