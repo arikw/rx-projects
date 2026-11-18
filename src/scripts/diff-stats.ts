@@ -8,6 +8,9 @@ type ProjectStats = {
   installs?: number;
   /** Positive ratings (added later — a stored base may not have it). */
   likes?: number;
+  /** GitHub forks and npm dependents (added later, likewise). */
+  forks?: number;
+  dependents?: number;
 };
 
 type ProfileSnapshot = {
@@ -85,6 +88,8 @@ function saveStored(state: StoredState): void {
 const CARD_STAT_MAP: Array<{ key: keyof ProjectStats; label: string }> = [
   { key: 'stars', label: 'Stars' },
   { key: 'likes', label: 'Likes' },
+  { key: 'forks', label: 'Forks' },
+  { key: 'dependents', label: 'Dependents' },
   { key: 'downloads', label: 'Downloads' },
   { key: 'downloadsMonthly', label: 'Monthly downloads' },
   { key: 'installs', label: 'Installs' },

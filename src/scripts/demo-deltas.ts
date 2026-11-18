@@ -135,7 +135,7 @@ function injectCardUpdateDemo(card: HTMLElement, update: CardUpdate): void {
   card.dataset.updated = '1';
   // Same "key:value" list diff-stats writes, for the secondary filter.
   const keyOf: Record<string, string> = {
-    Stars: 'stars', Likes: 'likes', Users: 'users', Installs: 'installs',
+    Stars: 'stars', Likes: 'likes', Forks: 'forks', Dependents: 'dependents', Users: 'users', Installs: 'installs',
     Downloads: 'downloads', 'Monthly downloads': 'downloadsMonthly',
   };
   card.dataset.changes = update.breakdown

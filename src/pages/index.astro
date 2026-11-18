@@ -103,6 +103,8 @@ const projectsState = Object.fromEntries(
     // "Likes" = positive (top-of-scale) ratings — the per-project half of
     // the hero's "stars & likes".
     likes: conservativePositiveCount(p.stats.rating),
+    forks: p.stats.forks ?? 0,
+    dependents: p.stats.dependents ?? 0,
   }]),
 );
 const projectTitlesState = Object.fromEntries(
