@@ -72,6 +72,23 @@ function init(): void {
       hide();
     }
   }, { passive: true });
+  // A tooltip trigger inside a link (the change badge sits on the card's
+  // thumbnail, which links to the project page): on touch, the tap is for
+  // the tooltip, so swallow the click that follows it instead of navigating.
+  let touchedTrigger: Element | null = null;
+  document.addEventListener('touchend', (e) => {
+    touchedTrigger = e.target instanceof Element ? e.target.closest('[data-tooltip]') : null;
+  }, { passive: true });
+  document.addEventListener('click', (e) => {
+    if (!touchedTrigger || !(e.target instanceof Element)) return;
+    const chip = e.target.closest('[data-tooltip]');
+    const wasTouched = chip === touchedTrigger;
+    touchedTrigger = null;
+    if (wasTouched && chip.closest('a[href]')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
   window.addEventListener('scroll', hide, { passive: true });
   window.addEventListener('touchmove', hide, { passive: true });
   window.addEventListener('resize', () => {
